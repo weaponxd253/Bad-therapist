@@ -1,15 +1,33 @@
+* {
+	box-sizing: border-box;
+}
+
+html {
+	min-width: 320px;
+	background-color: #4b49eb;
+}
+
 body {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: center;
-	height: 100vh;
+	min-height: 100vh;
+	min-height: 100dvh;
 	margin: 0;
+	padding:
+		max(16px, env(safe-area-inset-top))
+		max(16px, env(safe-area-inset-right))
+		max(16px, env(safe-area-inset-bottom))
+		max(16px, env(safe-area-inset-left));
 	background-color: #4b49eb;
 	font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+	overflow-x: hidden;
 }
 
 button {
-	font-size: 1.05em;
+	min-height: 44px;
+	font: inherit;
+	font-size: max(1rem, 16px);
 	padding: 10px 16px;
 	cursor: pointer;
 	border: none;
@@ -26,7 +44,8 @@ button#start {
 }
 
 .wrap {
-	width: min(860px, 92vw);
+	width: min(860px, 100%);
+	margin: auto 0;
 }
 
 .card {
@@ -49,7 +68,7 @@ button#start {
 
 .title h1 {
 	margin: 0;
-	font-size: 1.15rem;
+	font-size: clamp(1.15rem, 1rem + 1vw, 1.5rem);
 	letter-spacing: 0.2px;
 }
 .meta {
@@ -109,8 +128,8 @@ button#start {
 .bubble {
 	padding: 12px 14px;
 	border-radius: 16px;
-	line-height: 1.35;
-	font-size: 1rem;
+	line-height: 1.45;
+	font-size: clamp(1rem, 0.96rem + 0.2vw, 1.08rem);
 	white-space: pre-wrap;
 	word-break: break-word;
 }
@@ -143,6 +162,8 @@ button#start {
 }
 
 .choiceBtn {
+	width: 100%;
+	min-height: 48px;
 	background: #111;
 	color: #fffdf7;
 	text-align: left;
@@ -174,6 +195,7 @@ button#start {
 }
 
 .pill {
+	min-width: 0;
 	background: rgba(0, 0, 0, 0.08);
 	padding: 8px 10px;
 	border-radius: 999px;
@@ -182,6 +204,7 @@ button#start {
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
+	overflow-wrap: anywhere;
 }
 
 .nextBtn,
@@ -294,4 +317,101 @@ button#start {
 	padding: 2px 8px;
 	border-radius: 999px;
 	margin-left: 8px;
+	white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+	body {
+		padding:
+			max(10px, env(safe-area-inset-top))
+			max(10px, env(safe-area-inset-right))
+			max(10px, env(safe-area-inset-bottom))
+			max(10px, env(safe-area-inset-left));
+	}
+
+	.wrap {
+		margin: 0;
+	}
+
+	.card {
+		padding: 14px;
+		border-radius: 14px;
+	}
+
+	.title {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.meta {
+		white-space: normal;
+		line-height: 1.3;
+	}
+
+	.startScreen {
+		padding: 12px 2px;
+	}
+
+	.bubble {
+		max-width: 94%;
+		padding: 11px 12px;
+	}
+
+	.choiceBtn {
+		padding: 13px 12px;
+		line-height: 1.4;
+	}
+
+	.controls {
+		align-items: stretch;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.pill {
+		justify-content: center;
+		text-align: center;
+	}
+
+	.nextBtn,
+	.shareBtn,
+	.restartBtn {
+		width: 100%;
+	}
+
+	.nextBtn {
+		grid-column: 1 / -1;
+	}
+
+	#resultScreen .controls {
+		grid-template-columns: 1fr;
+	}
+
+	.toast {
+		position: fixed;
+		left: max(10px, env(safe-area-inset-left));
+		right: max(10px, env(safe-area-inset-right));
+		bottom: max(10px, env(safe-area-inset-bottom));
+	}
+}
+
+@media (max-width: 360px) {
+	.controls {
+		grid-template-columns: 1fr;
+	}
+
+	.nextBtn {
+		grid-column: auto;
+	}
+
+	.kbd {
+		padding-inline: 6px;
+	}
+}
+
+@media (max-height: 600px) and (orientation: landscape) {
+	.wrap {
+		margin: 0;
+	}
 }
