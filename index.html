@@ -1,0 +1,67 @@
+<main class="wrap">
+	<section class="card" id="card">
+		<div class="ethicsOverlay"></div>
+
+		<div class="title">
+			<h1>Bad Therapist</h1>
+			<div class="meta" id="meta"></div>
+		</div>
+
+		<div class="progressBar" aria-hidden="true">
+			<div class="progressFill" id="progressFill"></div>
+		</div>
+
+		<div id="startScreen" class="screen active startScreen">
+			<p>
+				Press <b>Start</b> to become the therapist. A client will share something confidential.
+				Your job is to pick the <i>worst possible</i> responses for 10 questions.
+			</p>
+			<button id="start">start</button>
+			<p class="disclaimer">
+				This is a parody game for entertainment. Not therapy, not advice.
+				If you’re dealing with something serious, consider talking to a qualified professional.
+			</p>
+		</div>
+
+		<div id="gameScreen" class="screen">
+			<div class="chat" aria-live="polite">
+				<div class="bubble client" id="clientBubble"></div>
+				<div class="bubble therapist" id="therapistBubble" style="display:none;"></div>
+				<div class="bubble client" id="reactionBubble" style="display:none;"></div>
+			</div>
+			<p class="tiny" id="skipHint" style="display:none; margin-top:10px;">
+				(Press <b>Space</b> to skip)
+			</p>
+
+			<div class="choices" id="choices"></div>
+
+			<div class="controls">
+				<div class="pill" id="progressPill">Question 1/10</div>
+				<div class="pill" id="scorePill">Badness: 0</div>
+				<div class="pill" id="violPill">Violations: 0</div>
+				<div class="pill" id="moodPill">Mood: 🙂 100</div>
+				<button class="nextBtn" id="nextBtn" disabled>Next</button>
+			</div>
+
+			<p class="tiny">
+				Hotkeys: <b>1–4</b> choose an answer, <b>Enter</b> next.
+			</p>
+		</div>
+
+		<div id="resultScreen" class="screen">
+			<div class="resultBox" id="resultBox"></div>
+			<div class="controls">
+				<div class="pill" id="finalScorePill"></div>
+				<div class="pill" id="finalViolPill"></div>
+				<div class="pill" id="bestPill"></div>
+				<button class="shareBtn" id="shareBtn">Copy Result</button>
+				<button class="restartBtn" id="restartBtn">Restart</button>
+			</div>
+			<p class="disclaimer">
+				Reminder: Real therapy should be respectful, ethical, and supportive.
+			</p>
+		</div>
+
+		<div class="toast" id="toast"></div>
+	</section>
+</main>
