@@ -44,10 +44,20 @@
 				<div class="bubble client" id="reactionBubble" style="display:none;"></div>
 			</div>
 			<p class="tiny" id="skipHint" style="display:none; margin-top:10px;">
-				(Press <b>Space</b> to skip)
+				(Press <b>Space</b> to reveal this exchange immediately)
 			</p>
 
 			<div class="choices" id="choices" role="group" aria-label="Choose a response" aria-describedby="clientBubble"></div>
+
+			<section class="outcomeFeedback" id="outcomeFeedback" aria-labelledby="outcomeTitle" hidden>
+				<h3 id="outcomeTitle">Choice outcome</h3>
+				<div class="outcomeStats">
+					<span class="outcomeStat outcomeBadness" id="outcomeBadness"></span>
+					<span class="outcomeStat outcomeMood" id="outcomeMood"></span>
+					<span class="outcomeStat outcomeViolation" id="outcomeViolation" hidden></span>
+				</div>
+				<p id="outcomeExplanation"></p>
+			</section>
 
 			<div class="controls">
 				<div class="pill" id="progressPill">Question 1/10</div>

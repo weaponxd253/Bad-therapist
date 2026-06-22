@@ -306,6 +306,11 @@ const el = {
 	therapistBubble: document.getElementById("therapistBubble"),
 	reactionBubble: document.getElementById("reactionBubble"),
 	choices: document.getElementById("choices"),
+	outcomeFeedback: document.getElementById("outcomeFeedback"),
+	outcomeBadness: document.getElementById("outcomeBadness"),
+	outcomeMood: document.getElementById("outcomeMood"),
+	outcomeViolation: document.getElementById("outcomeViolation"),
+	outcomeExplanation: document.getElementById("outcomeExplanation"),
 	progressPill: document.getElementById("progressPill"),
 	scorePill: document.getElementById("scorePill"),
 	violPill: document.getElementById("violPill"),
@@ -329,9 +334,20 @@ let idx = 0;
 let score = 0;
 let violations = 0;
 let mood = 100;
+const INTERACTION_STATES = Object.freeze({
+	IDLE: "idle",
+	PRESENTING: "presenting",
+	CHOOSING: "choosing",
+	RESPONDING: "responding",
+	ROUND_COMPLETE: "round-complete",
+	RESULTS: "results"
+});
+
 let locked = false;
 let typing = false;
 let skipTypingNow = false;
+let skipCurrentSequence = false;
+let interactionState = INTERACTION_STATES.IDLE;
 let endedEarly = false;
 let soundEnabled = true;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -344,23 +360,26 @@ function announce(message) {
 }
 
 function animateChoicesIn(buttons) {
-	if (reducedMotion.matches || !window.gsap || buttons.length === 0) return;
+	if (reducedMotion.matches || !window.gsap || buttons.length === 0) {
+		return Promise.resolve();
+	}
 
-	// Disable interaction during entrance animation
 	el.choices.style.pointerEvents = "none";
-
 	gsap.killTweensOf(buttons);
 	gsap.set(buttons, { autoAlpha: 0, y: 10 });
 
-	gsap.to(buttons, {
-		autoAlpha: 1,
-		y: 0,
-		duration: 0.28,
-		ease: "power2.out",
-		stagger: 0.12,
-		onComplete: () => {
-			el.choices.style.pointerEvents = "";
-		}
+	return new Promise((resolve) => {
+		gsap.to(buttons, {
+			autoAlpha: 1,
+			y: 0,
+			duration: 0.28,
+			ease: "power2.out",
+			stagger: 0.12,
+			onComplete: () => {
+				el.choices.style.pointerEvents = "";
+				resolve();
+			}
+		});
 	});
 }
 
@@ -449,15 +468,31 @@ function playBeep(type) {
 	}
 }
 
+function beginMessageSequence() {
+	skipCurrentSequence = false;
+	skipTypingNow = false;
+}
+
 function requestSkipTyping() {
 	skipTypingNow = true;
+	skipCurrentSequence = true;
+}
+
+async function pacingDelay(ms) {
+	if (reducedMotion.matches || skipCurrentSequence || ms <= 0) return;
+
+	const startedAt = performance.now();
+	while (performance.now() - startedAt < ms) {
+		if (skipCurrentSequence) return;
+		await new Promise((resolve) => window.setTimeout(resolve, 25));
+	}
 }
 
 async function typeInto(elm, text, speed = 12) {
 	typing = true;
-	skipTypingNow = false;
+	skipTypingNow = skipCurrentSequence;
 
-	if (reducedMotion.matches) {
+	if (reducedMotion.matches || skipCurrentSequence) {
 		elm.textContent = text;
 		typing = false;
 		announce(text);
@@ -502,13 +537,51 @@ function updateHUD() {
 function resetRoundUI() {
 	el.therapistBubble.style.display = "none";
 	el.reactionBubble.style.display = "none";
+	el.outcomeFeedback.hidden = true;
+	el.outcomeBadness.textContent = "";
+	el.outcomeMood.textContent = "";
+	el.outcomeViolation.textContent = "";
+	el.outcomeViolation.hidden = true;
+	el.outcomeExplanation.textContent = "";
 	el.nextBtn.disabled = true;
-	locked = false;
+	locked = true;
 }
 
 function lockChoices() {
-	[...el.choices.querySelectorAll("button")].forEach((b) => (b.disabled = true));
+	[...el.choices.querySelectorAll("button")].forEach((button) => {
+		button.setAttribute("aria-disabled", "true");
+	});
 	locked = true;
+}
+
+function outcomeExplanation(chosen) {
+	if (chosen.violation) {
+		return "Ethics violation: this response breaches confidentiality and sharply damages trust.";
+	}
+	if (chosen.badness === 0) {
+		return "Accidentally helpful: this response is respectful, practical, and supportive.";
+	}
+	if (chosen.badness >= 3) {
+		return "This response is strongly dismissive or harmful and significantly damages trust.";
+	}
+	return "This response is unhelpful and leaves the client feeling less supported.";
+}
+
+function showOutcome(chosen, moodLoss) {
+	const violationGain = chosen.violation ? 1 : 0;
+	el.outcomeBadness.textContent = `Badness +${chosen.badness}`;
+	el.outcomeMood.textContent = `Mood −${moodLoss}`;
+	el.outcomeViolation.hidden = !chosen.violation;
+	el.outcomeViolation.textContent = chosen.violation ? "Violation +1" : "";
+	el.outcomeExplanation.textContent = outcomeExplanation(chosen);
+	el.outcomeFeedback.hidden = false;
+
+	announce(
+		`Choice outcome. Badness increased by ${chosen.badness}. ` +
+		`Client mood decreased by ${moodLoss}. ` +
+		`${violationGain ? "One ethics violation added. " : ""}` +
+		outcomeExplanation(chosen)
+	);
 }
 
 function buildQuestionsForRun() {
@@ -520,6 +593,8 @@ function buildQuestionsForRun() {
 
 async function renderQuestion() {
 	const q = questions[idx];
+	interactionState = INTERACTION_STATES.PRESENTING;
+	beginMessageSequence();
 
 	updateHUD();
 	resetRoundUI();
@@ -535,8 +610,8 @@ async function renderQuestion() {
 	// Let browser apply hidden state before typing
 	await new Promise(requestAnimationFrame);
 
-	await typeInto(el.clientBubble, `Client (confidential): ${q.client}`, 20);
-	if (!reducedMotion.matches) await new Promise((r) => setTimeout(r, 500));
+	await typeInto(el.clientBubble, `Client (confidential): ${q.client}`, 14);
+	await pacingDelay(250);
 
 	// Build choices AFTER typing finishes
 	const buttons = [];
@@ -546,6 +621,7 @@ async function renderQuestion() {
 		btn.type = "button";
 		btn.dataset.choiceIndex = String(i);
 		btn.setAttribute("aria-pressed", "false");
+		btn.setAttribute("aria-disabled", "false");
 		btn.textContent = c.text;
 
 		const k = document.createElement("span");
@@ -561,7 +637,9 @@ async function renderQuestion() {
 
 	// Reveal container, then animate each button in
 	el.choices.classList.remove("hidden");
-	animateChoicesIn(buttons);
+	await animateChoicesIn(buttons);
+	locked = false;
+	interactionState = INTERACTION_STATES.CHOOSING;
 }
 
 function ethicsAlarm() {
@@ -576,14 +654,27 @@ function ethicsAlarm() {
 }
 
 async function onPick(choiceIndex) {
-	if (locked || typing) return;
+	if (interactionState !== INTERACTION_STATES.CHOOSING || locked || typing) return;
+	interactionState = INTERACTION_STATES.RESPONDING;
+	beginMessageSequence();
 
 	const q = questions[idx];
 	const chosen = q.choices[choiceIndex];
-	const selectedButton = el.choices.querySelector(`button[data-choice-index="${choiceIndex}"]`);
-	selectedButton?.setAttribute("aria-pressed", "true");
+	const buttons = [...el.choices.querySelectorAll("button")];
+	const selectedButton = buttons.find(
+		(button) => Number(button.dataset.choiceIndex) === choiceIndex
+	);
+
+	buttons.forEach((button) => {
+		const selected = button === selectedButton;
+		button.classList.toggle("is-selected", selected);
+		button.classList.toggle("is-unselected", !selected);
+		button.setAttribute("aria-pressed", String(selected));
+	});
+	selectedButton?.setAttribute("aria-label", `${chosen.text} Selected response`);
 	lockChoices();
 
+	const moodBefore = mood;
 	score += chosen.badness;
 	if (chosen.violation) {
 		violations += 1;
@@ -591,15 +682,20 @@ async function onPick(choiceIndex) {
 
 	const moodHit = chosen.badness * 8 + (chosen.violation ? 18 : 0);
 	mood = clamp(mood - moodHit, 0, 100);
+	const moodLoss = moodBefore - mood;
 	updateHUD();
+	showOutcome(chosen, moodLoss);
 
-	if (mood <= MOOD_END_THRESHOLD) {
-		const why = chosen.violation
-			? "Confidentiality breach + vibes destroyed"
-			: "Vibes destroyed beyond repair";
-		endSessionEarly(why);
-		return;
-	}
+	const sessionWillEnd = mood <= MOOD_END_THRESHOLD;
+	const earlyEndReason = chosen.violation
+		? "Confidentiality breach + vibes destroyed"
+		: "Vibes destroyed beyond repair";
+
+	el.therapistBubble.style.display = "block";
+	el.reactionBubble.style.display = "block";
+
+	await typeInto(el.therapistBubble, `Therapist (you): ${chosen.text}`, 6);
+	await typeInto(el.reactionBubble, chosen.reaction, 8);
 
 	if (chosen.violation) {
 		ethicsAlarm();
@@ -607,16 +703,16 @@ async function onPick(choiceIndex) {
 		playBeep("pick");
 	}
 
-	announce(`Badness increased by ${chosen.badness}. ${chosen.violation ? "Confidentiality violation. " : ""}Client mood is ${mood}.`);
+	if (sessionWillEnd) {
+		announce(`The client is ending the session. ${earlyEndReason}.`);
+		await pacingDelay(900);
+		endSessionEarly(earlyEndReason);
+		return;
+	}
 
-	el.therapistBubble.style.display = "block";
-	el.reactionBubble.style.display = "block";
-
-	await typeInto(el.therapistBubble, `Therapist (you): ${chosen.text}`, 8);
-	await typeInto(el.reactionBubble, chosen.reaction, 10);
-
+	interactionState = INTERACTION_STATES.ROUND_COMPLETE;
 	el.nextBtn.disabled = false;
-	el.nextBtn.focus();
+	announce("Response complete. Next question is available.");
 }
 
 function weightedScore(totalBadness, totalViolations) {
@@ -702,6 +798,7 @@ function updateFinalScorePills() {
 }
 
 function finishGame() {
+	interactionState = INTERACTION_STATES.RESULTS;
 	showScreen("result");
 	updateFinalScorePills();
 
@@ -716,6 +813,8 @@ function finishGame() {
 }
 
 async function startGame() {
+	if (interactionState !== INTERACTION_STATES.IDLE && interactionState !== INTERACTION_STATES.RESULTS) return;
+	interactionState = INTERACTION_STATES.PRESENTING;
 	idx = 0;
 	score = 0;
 	violations = 0;
@@ -731,7 +830,8 @@ async function startGame() {
 }
 
 async function next() {
-	if (!locked || typing) return;
+	if (interactionState !== INTERACTION_STATES.ROUND_COMPLETE || typing) return;
+	interactionState = INTERACTION_STATES.PRESENTING;
 	idx += 1;
 	if (idx >= questions.length) {
 		finishGame();
@@ -743,6 +843,7 @@ async function next() {
 }
 
 function restart() {
+	interactionState = INTERACTION_STATES.IDLE;
 	showScreen("start");
 	el.meta.textContent = "";
 	el.progressBar.setAttribute("aria-valuenow", "0");
@@ -770,6 +871,7 @@ async function copyResult() {
 }
 
 function endSessionEarly(reason) {
+	interactionState = INTERACTION_STATES.RESULTS;
 	endedEarly = true;
 	// Optional: lock UI so no more input
 	lockChoices();
@@ -812,7 +914,11 @@ updateTopMeta();
 document.addEventListener("keydown", (e) => {
 	if (!el.gameScreen.classList.contains("active")) return;
 
-	if (e.code === "Space" && typing) {
+	const canSkip =
+		interactionState === INTERACTION_STATES.PRESENTING ||
+		interactionState === INTERACTION_STATES.RESPONDING;
+
+	if (e.code === "Space" && canSkip) {
 		e.preventDefault();
 		requestSkipTyping();
 		return;
@@ -820,14 +926,19 @@ document.addEventListener("keydown", (e) => {
 
 	if (typing) return;
 
-	if (e.key === "Enter" && !el.nextBtn.disabled) {
+	if (e.key === "Enter" && interactionState === INTERACTION_STATES.ROUND_COMPLETE) {
 		e.preventDefault();
 		el.nextBtn.click();
 		return;
 	}
 
 	const n = Number(e.key);
-	if (!Number.isNaN(n) && n >= 1 && n <= 4 && !locked) {
+	if (
+		!Number.isNaN(n) &&
+		n >= 1 &&
+		n <= 4 &&
+		interactionState === INTERACTION_STATES.CHOOSING
+	) {
 		const btn = el.choices.querySelector(`button[data-choice-index="${n - 1}"]`);
 		if (btn && !btn.disabled) btn.click();
 	}

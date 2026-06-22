@@ -223,15 +223,79 @@ button#start {
 .choiceBtn:active {
 	transform: translateY(0px) scale(0.99);
 }
-.choiceBtn:disabled {
+.choiceBtn:disabled,
+.choiceBtn[aria-disabled="true"] {
 	opacity: 0.55;
 	cursor: not-allowed;
 	transform: none;
 }
 
+.choiceBtn.is-selected,
 .choiceBtn[aria-pressed="true"] {
+	opacity: 1;
 	outline: 4px solid #4b49eb;
 	outline-offset: 2px;
+}
+
+.choiceBtn.is-selected::after {
+	content: "Selected";
+	display: inline-block;
+	margin-left: 10px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: #fffdf7;
+	color: #111;
+	font-size: 0.78em;
+	font-weight: 700;
+}
+
+.choiceBtn.is-unselected {
+	opacity: 0.32;
+}
+
+.outcomeFeedback {
+	margin-top: 14px;
+	padding: 12px 14px;
+	border: 2px solid rgba(75, 73, 235, 0.28);
+	border-radius: 14px;
+	background: rgba(75, 73, 235, 0.08);
+}
+
+.outcomeFeedback h3,
+.outcomeFeedback p {
+	margin: 0;
+}
+
+.outcomeFeedback h3 {
+	font-size: 1rem;
+}
+
+.outcomeFeedback p {
+	margin-top: 9px;
+	line-height: 1.4;
+}
+
+.outcomeStats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 9px;
+}
+
+.outcomeStat {
+	display: inline-flex;
+	align-items: center;
+	min-height: 32px;
+	padding: 5px 9px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.08);
+	font-size: 0.9rem;
+	font-weight: 700;
+}
+
+.outcomeViolation {
+	background: #7c1820;
+	color: #fff;
 }
 
 .controls {
@@ -493,6 +557,11 @@ button#start {
 		border: 2px solid ButtonText;
 	}
 
+
+	.outcomeFeedback,
+	.outcomeStat {
+		border: 2px solid CanvasText;
+	}
 	.choiceBtn[aria-pressed="true"] {
 		outline: 3px solid Highlight;
 	}
