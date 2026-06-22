@@ -543,6 +543,10 @@ async function onPick(choiceIndex) {
 	const chosen = q.choices[choiceIndex];
 
 	score += chosen.badness;
+	if (chosen.violation) {
+		violations += 1;
+	}
+
 	const moodHit = chosen.badness * 8 + (chosen.violation ? 18 : 0);
 	mood = clamp(mood - moodHit, 0, 100);
 
@@ -555,7 +559,6 @@ async function onPick(choiceIndex) {
 	}
 
 	if (chosen.violation) {
-		violations += 1;
 		ethicsAlarm();
 	} else {
 		playBeep("pick");
@@ -631,15 +634,17 @@ function loadBest() {
 function saveBestIfNeeded(current) {
 	const best = loadBest();
 	if (!best || current.weighted > best.weighted) {
-		localStorage.setItem(LS_KEY, JSON.stringify(current));
+		try {
+			localStorage.setItem(LS_KEY, JSON.stringify(current));
+		} catch {
+			// Keep the result screen usable when browser storage is unavailable.
+		}
 		return current;
 	}
 	return best;
 }
 
-function finishGame() {
-	showScreen("result");
-
+function updateFinalScorePills() {
 	const maxBadness = questions.length * 3;
 	el.finalScorePill.textContent = `Final Badness: ${score} / ${maxBadness}`;
 	el.finalViolPill.textContent = `Final Violations: ${violations} / ${questions.length}`;
@@ -652,6 +657,11 @@ function finishGame() {
 	};
 	const best = saveBestIfNeeded(current);
 	el.bestPill.textContent = `Best Chaos: ${best.weighted} (B:${best.score} V:${best.violations})`;
+}
+
+function finishGame() {
+	showScreen("result");
+	updateFinalScorePills();
 
 	el.resultBox.innerHTML = resultMessage(score, violations);
 
@@ -695,10 +705,11 @@ function restart() {
 async function copyResult() {
 	const label = resultLabel(score, violations);
 	const text =
-		`Bad Therapist Result: ${label}\n` +
+		`Bad Therapist Result: ${endedEarly ? "Session Ended Early" : label}\n` +
 		`Badness: ${score}/${questions.length * 3}\n` +
 		`Violations: ${violations}/${questions.length}\n` +
-		`Weighted Chaos: ${weightedScore(score, violations)}\n`;
+		`Weighted Chaos: ${weightedScore(score, violations)}\n` +
+		(endedEarly ? `Client Mood: ${mood}\n` : "");
 
 	try {
 		await navigator.clipboard.writeText(text);
@@ -718,9 +729,7 @@ function endSessionEarly(reason) {
 	// Jump to results with a custom message
 	showScreen("result");
 
-	const maxBadness = questions.length * 3;
-	el.finalScorePill.textContent = `Final Badness: ${score} / ${maxBadness}`;
-	el.finalViolPill.textContent = `Final Violations: ${violations} / ${questions.length}`;
+	updateFinalScorePills();
 
 	el.resultBox.innerHTML = `
     <h2 style="margin:0 0 8px;">Session ended early</h2>
