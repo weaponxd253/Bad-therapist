@@ -1,0 +1,297 @@
+body {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100vh;
+	margin: 0;
+	background-color: #4b49eb;
+	font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+button {
+	font-size: 1.05em;
+	padding: 10px 16px;
+	cursor: pointer;
+	border: none;
+	border-radius: 10px;
+}
+
+button#start {
+	color: #fffdf7;
+	background-color: black;
+	text-transform: uppercase;
+	padding: 12px 22px;
+	font-size: 1.2em;
+	border-radius: 12px;
+}
+
+.wrap {
+	width: min(860px, 92vw);
+}
+
+.card {
+	background: rgba(255, 255, 255, 0.92);
+	border-radius: 18px;
+	padding: 18px;
+	box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+	position: relative;
+	overflow: hidden;
+	transform: translateZ(0);
+}
+
+.title {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+
+.title h1 {
+	margin: 0;
+	font-size: 1.15rem;
+	letter-spacing: 0.2px;
+}
+.meta {
+	font-size: 0.9rem;
+	opacity: 0.8;
+	white-space: nowrap;
+}
+
+.progressBar {
+	width: 100%;
+	height: 8px;
+	background: rgba(0, 0, 0, 0.08);
+	border-radius: 999px;
+	overflow: hidden;
+	margin: 10px 0 14px;
+}
+
+.progressFill {
+	height: 100%;
+	width: 0%;
+	background: rgba(0, 0, 0, 0.55);
+	border-radius: 999px;
+	transition: width 220ms ease;
+}
+
+.disclaimer {
+	font-size: 0.9rem;
+	opacity: 0.75;
+	margin: 10px 0 0;
+	line-height: 1.35;
+}
+
+.screen {
+	display: none;
+}
+.screen.active {
+	display: block;
+}
+
+.startScreen {
+	text-align: center;
+	padding: 20px 10px;
+}
+.startScreen p {
+	margin: 10px auto 18px;
+	max-width: 60ch;
+	opacity: 0.85;
+	line-height: 1.35;
+}
+
+.chat {
+	display: grid;
+	gap: 12px;
+	margin-top: 6px;
+}
+
+.bubble {
+	padding: 12px 14px;
+	border-radius: 16px;
+	line-height: 1.35;
+	font-size: 1rem;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.client {
+	background: rgba(0, 0, 0, 0.06);
+	border-top-left-radius: 6px;
+	justify-self: start;
+	max-width: 80ch;
+}
+
+.therapist {
+	background: rgba(0, 0, 0, 0.1);
+	border-top-right-radius: 6px;
+	justify-self: end;
+	max-width: 80ch;
+}
+
+.choices {
+	display: grid;
+	gap: 10px;
+	margin-top: 12px;
+	opacity: 1;
+	transition: opacity 180ms ease;
+}
+
+.choices.hidden {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.choiceBtn {
+	background: #111;
+	color: #fffdf7;
+	text-align: left;
+	line-height: 1.25;
+	padding: 12px 14px;
+	border-radius: 12px;
+	transition: transform 120ms ease, opacity 120ms ease;
+	user-select: none;
+}
+.choiceBtn:hover {
+	transform: translateY(-1px);
+}
+.choiceBtn:active {
+	transform: translateY(0px) scale(0.99);
+}
+.choiceBtn:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+	transform: none;
+}
+
+.controls {
+	display: flex;
+	gap: 10px;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 14px;
+	flex-wrap: wrap;
+}
+
+.pill {
+	background: rgba(0, 0, 0, 0.08);
+	padding: 8px 10px;
+	border-radius: 999px;
+	font-size: 0.9rem;
+	opacity: 0.9;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.nextBtn,
+.restartBtn,
+.shareBtn {
+	background: #fff;
+	color: #111;
+	border: 2px solid rgba(0, 0, 0, 0.12);
+	padding: 10px 14px;
+	border-radius: 12px;
+	font-weight: 650;
+}
+.nextBtn:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.resultBox {
+	margin-top: 10px;
+	padding: 14px;
+	border-radius: 14px;
+	background: rgba(0, 0, 0, 0.06);
+	line-height: 1.4;
+}
+
+.tiny {
+	font-size: 0.88rem;
+	opacity: 0.8;
+}
+
+.toast {
+	position: absolute;
+	left: 14px;
+	right: 14px;
+	bottom: 14px;
+	padding: 10px 12px;
+	border-radius: 12px;
+	background: rgba(0, 0, 0, 0.86);
+	color: #fffdf7;
+	font-size: 0.95rem;
+	display: none;
+}
+.toast.show {
+	display: block;
+	animation: toastIn 180ms ease;
+}
+@keyframes toastIn {
+	from {
+		transform: translateY(6px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.ethicsOverlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(255, 0, 0, 0.1);
+	opacity: 0;
+	pointer-events: none;
+}
+
+.card.ethicsFlash .ethicsOverlay {
+	animation: flash 520ms ease;
+}
+@keyframes flash {
+	0% {
+		opacity: 0;
+	}
+	20% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+.card.shake {
+	animation: shake 420ms ease;
+}
+@keyframes shake {
+	0% {
+		transform: translate(0, 0);
+	}
+	15% {
+		transform: translate(-2px, 0);
+	}
+	30% {
+		transform: translate(2px, 0);
+	}
+	45% {
+		transform: translate(-2px, 0);
+	}
+	60% {
+		transform: translate(2px, 0);
+	}
+	100% {
+		transform: translate(0, 0);
+	}
+}
+
+.kbd {
+	font-size: 0.85em;
+	opacity: 0.85;
+	background: rgba(255, 255, 255, 0.12);
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	padding: 2px 8px;
+	border-radius: 999px;
+	margin-left: 8px;
+}
