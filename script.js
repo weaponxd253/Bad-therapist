@@ -1,297 +1,12 @@
 const {
 	SCORING,
+	VIOLATION_TYPES,
 	calculateChoiceOutcome
 } = window.BadTherapistScoring;
-const QUESTIONS_BASE = [
-	{
-		client:
-			"I’ve been feeling anxious lately and I can’t shut my thoughts off at night.",
-		choices: [
-			{
-				text:
-					"“Okay but like… can you make this anxiety story shorter? I have a lot of clients.”",
-				badness: 3,
-				reaction: "Client: Oh. I’m… sorry for taking up space."
-			},
-			{
-				text:
-					"“Have you tried deleting the thoughts? Like, swipe them away mentally.”",
-				badness: 2,
-				reaction: "Client: That’s not how thoughts work."
-			},
-			{
-				text:
-					"“This would be SUCH a good anonymous story for my group chat. No names… probably.”",
-				badness: 3,
-				violation: "confidentiality",
-				reaction: "Client: Wait—are you going to tell people this?!"
-			},
-			{
-				text:
-					"“Let’s map what shows up at night and add one small calming routine to test this week.”",
-				badness: 0,
-				reaction: "Client: That sounds practical."
-			}
-		]
-	},
-	{
-		client:
-			"I haven’t told anyone this, but I feel like I’m disappointing my family.",
-		choices: [
-			{
-				text:
-					"“Well… have you tried being less disappointing? Just brainstorming.”",
-				badness: 3,
-				reaction: "Client: That… hurts to hear."
-			},
-			{
-				text: "“What if we make a PowerPoint to convince them you’re fine.”",
-				badness: 2,
-				reaction: "Client: I don’t want to ‘pitch’ my life."
-			},
-			{
-				text:
-					"“If you tell me their names, I can casually bring it up if I ever meet them.”",
-				badness: 3,
-				violation: "confidentiality",
-				reaction: "Client: Please don’t ever talk to them?!"
-			},
-			{
-				text:
-					"“What does ‘disappointing’ mean to you—whose standards are you holding?”",
-				badness: 0,
-				reaction: "Client: Yeah… it’s their voice in my head."
-			}
-		]
-	},
-	{
-		client: "I get jealous in relationships and I hate that side of myself.",
-		choices: [
-			{
-				text: "“Jealousy is basically love with a better marketing team.”",
-				badness: 2,
-				reaction: "Client: That doesn’t make me feel better."
-			},
-			{
-				text: "“Have you considered going full detective? It’ll keep you busy.”",
-				badness: 3,
-				reaction: "Client: That sounds unhealthy."
-			},
-			{
-				text:
-					"“If you give me their handle, I can ‘just check’ their posts for you.”",
-				badness: 3,
-				violation: "boundaries",
-				reaction: "Client: That’s… wildly inappropriate."
-			},
-			{
-				text:
-					"“Let’s identify the fear under the jealousy and what reassurance would actually help.”",
-				badness: 0,
-				reaction: "Client: I can try that."
-			}
-		]
-	},
-	{
-		client: "I can’t stop comparing myself to everyone online.",
-		choices: [
-			{
-				text:
-					"“Comparison is normal. The trick is to compare to people doing worse.”",
-				badness: 3,
-				reaction: "Client: That feels… mean?"
-			},
-			{
-				text: "“Let’s open your feed right now and roast it together.”",
-				badness: 3,
-				reaction: "Client: I didn’t come here to bully strangers."
-			},
-			{
-				text: "“Honestly? I could screenshot this for ‘clinical reasons.’”",
-				badness: 3,
-				violation: "confidentiality",
-				reaction: "Client: Absolutely do NOT screenshot me."
-			},
-			{
-				text:
-					"“We can build boundaries with social media and practice a kinder internal voice.”",
-				badness: 0,
-				reaction: "Client: I’d like that."
-			}
-		]
-	},
-	{
-		client: "I feel burned out at work, like I’m running on fumes.",
-		choices: [
-			{
-				text: "“Maybe your personality is just ‘tired.’ Some people pick that.”",
-				badness: 3,
-				reaction: "Client: I don’t *pick* this."
-			},
-			{
-				text: "“Have you tried turning your job into content? Burnout gets views.”",
-				badness: 3,
-				reaction: "Client: That’s… bleak."
-			},
-			{
-				text:
-					"“Tell me your company name. I want to leave a strongly worded review on your behalf.”",
-				badness: 3,
-				violation: "boundaries",
-				reaction: "Client: Please don’t drag my workplace into this."
-			},
-			{
-				text:
-					"“Let’s look at workload, recovery, and boundaries—what’s one small lever you can move?”",
-				badness: 0,
-				reaction: "Client: That’s what I need."
-			}
-		]
-	},
-	{
-		client: "I keep procrastinating and then I feel ashamed.",
-		choices: [
-			{
-				text: "“Shame means you care. So… congratulations? Next question.”",
-				badness: 2,
-				reaction: "Client: That’s not helpful."
-			},
-			{
-				text: "“I’m going to be honest: procrastination gives me the ick.”",
-				badness: 3,
-				reaction: "Client: Wow. Okay."
-			},
-			{
-				text:
-					"“If you want accountability, I can text your boss a ‘fun update’ on your progress.”",
-				badness: 3,
-				violation: "boundaries",
-				reaction: "Client: DO NOT text my boss??"
-			},
-			{
-				text:
-					"“Let’s shrink the task, remove friction, and address the shame spiral.”",
-				badness: 0,
-				reaction: "Client: That sounds doable."
-			}
-		]
-	},
-	{
-		client: "Sometimes I feel lonely even when I’m around people.",
-		choices: [
-			{
-				text: "“Have you tried being more interesting?”",
-				badness: 3,
-				reaction: "Client: That’s… cruel."
-			},
-			{
-				text: "“Lonely around people? That’s very indie-film of you.”",
-				badness: 2,
-				reaction: "Client: I’m not a movie."
-			},
-			{
-				text:
-					"“We can talk about this on my podcast—no one will know it’s you (unless they do).”",
-				badness: 3,
-				violation: "confidentiality",
-				reaction: "Client: You have a PODCAST? About clients?!"
-			},
-			{
-				text:
-					"“Let’s explore what ‘connection’ feels like for you and where it breaks down.”",
-				badness: 0,
-				reaction: "Client: Yes. That."
-			}
-		]
-	},
-	{
-		client:
-			"I got into an argument with my friend and I can’t stop replaying it.",
-		choices: [
-			{
-				text:
-					"“You should absolutely send a seven-paragraph message. Tonight. Immediately.”",
-				badness: 3,
-				reaction: "Client: That would explode everything."
-			},
-			{
-				text: "“What if you just ghost them as a learning experience. For them.”",
-				badness: 3,
-				reaction: "Client: That’s awful."
-			},
-			{
-				text: "“Give me their number. I’ll ‘mediate’ by texting them myself.”",
-				badness: 3,
-				violation: "boundaries",
-				reaction: "Client: Please don’t contact my friends!"
-			},
-			{
-				text:
-					"“We can decide whether repair, boundary-setting, or letting go fits best—and plan one next step.”",
-				badness: 0,
-				reaction: "Client: Thank you."
-			}
-		]
-	},
-	{
-		client: "I’m afraid people will leave me if they really know me.",
-		choices: [
-			{
-				text: "“I mean… some people do leave. That’s just facts.”",
-				badness: 3,
-				reaction: "Client: That’s my worst fear—why would you say it like that?"
-			},
-			{
-				text:
-					"“Let’s test it: tell me your most embarrassing secret and we’ll see if I stay.”",
-				badness: 3,
-				reaction: "Client: No. Absolutely not."
-			},
-			{
-				text:
-					"“If you tell me who, I can ‘accidentally’ mention your fear to them so they reassure you.”",
-				badness: 3,
-				violation: "confidentiality",
-				reaction: "Client: That’s a violation. Please stop."
-			},
-			{
-				text:
-					"“That fear is common. We can build safer vulnerability and look at evidence from your relationships.”",
-				badness: 0,
-				reaction: "Client: I want to try."
-			}
-		]
-	},
-	{
-		client: "I want to be happier, but I don’t even know what I want anymore.",
-		choices: [
-			{
-				text: "“What if you simply choose a personality and commit.”",
-				badness: 3,
-				reaction: "Client: That’s not how identity works."
-			},
-			{
-				text: "“I’m going to assign you a hobby. Crochet. Next.”",
-				badness: 3,
-				reaction: "Client: That feels… controlling?"
-			},
-			{
-				text:
-					"“We should record this session so I can ‘review the juicy parts’ later.”",
-				badness: 3,
-				violation: "boundaries",
-				reaction: "Client: The… JUICY parts?!"
-			},
-			{
-				text:
-					"“Let’s start with values and small moments of meaning—then build wants from there.”",
-				badness: 0,
-				reaction: "Client: That makes sense."
-			}
-		]
-	}
-];
-
+const { update: updateSavedRecords } = window.BadTherapistPersistence;
+const { validateQuestions } = window.BadTherapistContentSchema;
+const QUESTIONS_BASE = window.BadTherapistQuestions;
+const contentErrors = validateQuestions(QUESTIONS_BASE, VIOLATION_TYPES);
 const el = {
 	card: document.getElementById("card"),
 	startBtn: document.getElementById("start"),
@@ -302,6 +17,7 @@ const el = {
 	progressBar: document.getElementById("progressBar"),
 	progressFill: document.getElementById("progressFill"),
 	startHeading: document.getElementById("startHeading"),
+	contentError: document.getElementById("contentError"),
 	gameHeading: document.getElementById("gameHeading"),
 	resultHeading: document.getElementById("resultHeading"),
 	soundBtn: document.getElementById("soundBtn"),
@@ -331,7 +47,7 @@ const el = {
 };
 
 
-const LS_KEY = "bad-therapist-best";
+
 let questions = [];
 let idx = 0;
 let score = 0;
@@ -429,7 +145,11 @@ function recordChoiceOutcome(question, choice, outcome) {
 		questionNumber: idx + 1,
 		client: question.client,
 		response: choice.text,
+		questionId: question.id,
+		choiceId: choice.id,
+		topic: question.topic,
 		reaction: choice.reaction,
+		feedback: choice.feedback,
 		badness: outcome.badnessGained,
 		moodLost: outcome.moodLost,
 		moodRemaining: outcome.moodRemaining,
@@ -584,21 +304,15 @@ function lockChoices() {
 	locked = true;
 }
 
-function outcomeExplanation(outcome) {
+function outcomeExplanation(outcome, feedback) {
 	if (outcome.violation) {
-		return `Ethics violation — ${outcome.violation.label}: ${outcome.violation.explanation}`;
+		return `Ethics violation — ${outcome.violation.label}: ${outcome.violation.explanation} ${feedback}`;
 	}
-	if (outcome.badnessGained === 0) {
-		return "Accidentally helpful: this response is respectful, practical, and supportive.";
-	}
-	if (outcome.badnessGained >= 3) {
-		return "This response is strongly dismissive or harmful and significantly damages trust.";
-	}
-	return "This response is unhelpful and leaves the client feeling less supported.";
+	return feedback;
 }
 
-function showOutcome(outcome) {
-	const explanation = outcomeExplanation(outcome);
+function showOutcome(outcome, feedback) {
+	const explanation = outcomeExplanation(outcome, feedback);
 	el.outcomeBadness.textContent = `Badness +${outcome.badnessGained}`;
 	el.outcomeMood.textContent = `Mood −${outcome.moodLost}`;
 	el.outcomeViolation.hidden = !outcome.violation;
@@ -710,7 +424,7 @@ async function onPick(choiceIndex) {
 	applyChoiceOutcome(outcome);
 	recordChoiceOutcome(q, chosen, outcome);
 	updateHUD();
-	showOutcome(outcome);
+	showOutcome(outcome, chosen.feedback);
 
 	const earlyEndReason = outcome.violation
 		? `${outcome.violation.label} violation and client trust collapsed`
@@ -864,42 +578,21 @@ function resultMessage(summary) {
 		</section>
 	`;
 }
-function loadBest() {
-	try {
-		const raw = localStorage.getItem(LS_KEY);
-		return raw ? JSON.parse(raw) : null;
-	} catch {
-		return null;
-	}
-}
-
-function saveBestIfNeeded(current) {
-	const best = loadBest();
-	if (!best || current.weighted > best.weighted) {
-		try {
-			localStorage.setItem(LS_KEY, JSON.stringify(current));
-		} catch {
-			// Keep the result screen usable when browser storage is unavailable.
-		}
-		return current;
-	}
-	return best;
+function formatSavedRecord(label, record) {
+	return record
+		? `${label}: ${record.weighted} (B:${record.score} V:${record.violations})`
+		: `${label}: —`;
 }
 
 function updateFinalScorePills(summary) {
 	el.finalScorePill.textContent = `Final Badness: ${summary.totalBadness} / ${summary.questionsTotal * 3}`;
 	el.finalViolPill.textContent = `Final Violations: ${summary.totalViolations}`;
 
-	const current = {
-		weighted: summary.weighted,
-		score: summary.totalBadness,
-		violations: summary.totalViolations,
-		completed: summary.completed,
-		questionsAnswered: summary.questionsAnswered,
-		at: new Date().toISOString()
-	};
-	const best = saveBestIfNeeded(current);
-	el.bestPill.textContent = `Best Chaos: ${best.weighted} (B:${best.score} V:${best.violations})`;
+	const saved = updateSavedRecords(window.localStorage, summary);
+	el.bestPill.textContent = [
+		formatSavedRecord("Highest Chaos", saved.records.highestChaos),
+		formatSavedRecord("Best Completed", saved.records.bestCompleted)
+	].join(" · ");
 }
 
 function showResults(summary) {
@@ -933,6 +626,7 @@ function finishGame() {
 }
 
 async function startGame() {
+	if (contentErrors.length > 0) return;
 	if (interactionState !== INTERACTION_STATES.IDLE && interactionState !== INTERACTION_STATES.RESULTS) return;
 	interactionState = INTERACTION_STATES.PRESENTING;
 	idx = 0;
@@ -973,22 +667,33 @@ function restart() {
 	el.startBtn.focus();
 }
 
-async function copyResult() {
-	const summary = latestResultSummary || summarizeRun({ completed: !endedEarly });
+function formatShareText(summary) {
 	const breakdown = summary.violationBreakdown.length
 		? summary.violationBreakdown.map((item) => `${item.label}: ${item.count}`).join(", ")
 		: "None";
 	const worst = summary.worstResponse
-		? `${summary.worstResponse.response} (Badness +${summary.worstResponse.badness}, Mood −${summary.worstResponse.moodLost})`
+		? `${summary.worstResponse.response} (Badness +${summary.worstResponse.badness}, Mood −${summary.worstResponse.moodLost}${
+			summary.worstResponse.violation
+				? `, ${summary.worstResponse.violation.label}`
+				: ""
+		})`
 		: "None";
-	const text =
-		`Bad Therapist Result: ${summary.grade}\n` +
-		`Status: ${summary.statusLabel}\n` +
-		`Badness: ${summary.totalBadness}/${summary.questionsTotal * 3}\n` +
-		`Violations: ${summary.totalViolations} (${breakdown})\n` +
-		`Mood Remaining: ${summary.moodRemaining}\n` +
-		`Questions Survived: ${summary.questionsAnswered}/${summary.questionsTotal}\n` +
-		`Worst Response: ${worst}\n`;
+
+	return [
+		`Bad Therapist Result: ${summary.grade}`,
+		`Status: ${summary.statusLabel}`,
+		summary.reason ? `Reason: ${summary.reason}` : null,
+		`Badness: ${summary.totalBadness}/${summary.questionsTotal * 3}`,
+		`Violations: ${summary.totalViolations} (${breakdown})`,
+		`Mood Remaining: ${summary.moodRemaining}`,
+		`Questions Survived: ${summary.questionsAnswered}/${summary.questionsTotal}`,
+		`Worst Response: ${worst}`
+	].filter(Boolean).join("\n") + "\n";
+}
+
+async function copyResult() {
+	const summary = latestResultSummary || summarizeRun({ completed: !endedEarly });
+	const text = formatShareText(summary);
 
 	try {
 		await navigator.clipboard.writeText(text);
@@ -1012,6 +717,20 @@ el.startBtn.addEventListener("click", startGame);
 el.nextBtn.addEventListener("click", next);
 el.restartBtn.addEventListener("click", restart);
 el.shareBtn.addEventListener("click", copyResult);
+function initializeContent() {
+	if (contentErrors.length === 0) {
+		el.contentError.hidden = true;
+		el.startBtn.disabled = false;
+		updateTopMeta();
+		return;
+	}
+
+	el.startBtn.disabled = true;
+	el.contentError.hidden = false;
+	el.meta.textContent = "Game content unavailable";
+	console.error("Bad Therapist content validation failed:", contentErrors);
+}
+
 el.soundBtn.addEventListener("click", () => {
 	soundEnabled = !soundEnabled;
 	el.soundBtn.setAttribute("aria-pressed", String(soundEnabled));
@@ -1020,7 +739,7 @@ el.soundBtn.addEventListener("click", () => {
 	if (soundEnabled) playBeep("pick");
 });
 
-updateTopMeta();
+initializeContent();
 
 document.addEventListener("keydown", (e) => {
 	if (!el.gameScreen.classList.contains("active")) return;

@@ -3,6 +3,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const scoring = require("./scoring.js");
+const persistence = require("./persistence.js");
+const questionsContent = require("./questions.js");
+const contentSchema = require("./content-schema.js");
 
 function makeElement() {
 	const attributes = {};
@@ -33,8 +36,15 @@ async function main() {
 	choices.querySelectorAll = () => [selectedButton];
 	elements.set("choices", choices);
 
+	const storageValues = new Map();
+	const localStorage = {
+		getItem(key) { return storageValues.has(key) ? storageValues.get(key) : null; },
+		setItem(key, value) { storageValues.set(key, value); }
+	};
+	let clipboardText = "";
+
 	const context = {
-		console,
+		console: { ...console, error() {} },
 		document: {
 			getElementById(id) {
 				if (!elements.has(id)) elements.set(id, makeElement());
@@ -45,6 +55,10 @@ async function main() {
 		},
 		window: {
 			BadTherapistScoring: scoring,
+			BadTherapistPersistence: persistence,
+			BadTherapistQuestions: questionsContent,
+			BadTherapistContentSchema: contentSchema,
+			localStorage,
 			matchMedia: () => ({ matches: true }),
 			setTimeout,
 			clearTimeout,
@@ -54,14 +68,20 @@ async function main() {
 		setTimeout,
 		clearTimeout,
 		requestAnimationFrame: (callback) => callback(),
-		performance
+		performance,
+		localStorage,
+		navigator: {
+			clipboard: {
+				async writeText(value) { clipboardText = value; }
+			}
+		}
 	};
 
 	vm.createContext(context);
 	const gameSource = fs.readFileSync(path.join(__dirname, "script.js"), "utf8");
 	vm.runInContext(gameSource, context);
 	vm.runInContext(
-		`questions = [{ client: "Client question", choices: [{ badness: 3, text: "Bad response", reaction: "Client reaction" }] }];` +
+		`questions = [{ id: "test-question", topic: "work", client: "Client question", choices: [{ id: "bad-response", badness: 3, text: "Bad response", reaction: "Client reaction", feedback: "Authored feedback." }] }];` +
 		`idx = 0; interactionState = INTERACTION_STATES.CHOOSING; locked = false;`,
 		context
 	);
@@ -85,7 +105,11 @@ async function main() {
 		questionNumber: 1,
 		client: "Client question",
 		response: "Bad response",
+		questionId: "test-question",
+		choiceId: "bad-response",
+		topic: "work",
 		reaction: "Client reaction",
+		feedback: "Authored feedback.",
 		badness: 3,
 		moodLost: 15,
 		moodRemaining: 85,
@@ -117,7 +141,29 @@ async function main() {
 	assert.match(markup, /Worst selected response/);
 	assert.match(markup, /Confidentiality/);
 
-	console.log("Game-state interaction and result-history tests passed.");
+	const shareText = vm.runInContext(`formatShareText(${JSON.stringify(summary)})`, context);
+	assert.match(shareText, /Status: Session ended early/);
+	assert.match(shareText, /Reason: Trust collapsed/);
+	assert.match(shareText, /Violations: 2 \(Confidentiality: 1, Professional Boundaries: 1\)/);
+	assert.match(shareText, /Worst Response: Shared secret .*Confidentiality/);
+
+	vm.runInContext(`latestResultSummary = ${JSON.stringify(summary)}`, context);
+	await vm.runInContext("copyResult()", context);
+	assert.equal(clipboardText, shareText);
+
+	vm.runInContext(`updateFinalScorePills(${JSON.stringify({ ...summary, completed: true })})`, context);
+	const saved = persistence.load(localStorage);
+	assert.equal(saved.records.highestChaos.weighted, summary.weighted);
+	assert.equal(saved.records.bestCompleted.weighted, summary.weighted);
+	assert.match(elements.get("bestPill").textContent, /Highest Chaos/);
+	assert.match(elements.get("bestPill").textContent, /Best Completed/);
+
+	assert.equal(elements.get("start").disabled, false);
+	vm.runInContext(`contentErrors.push({ path: "questions", message: "Broken" }); initializeContent();`, context);
+	assert.equal(elements.get("start").disabled, true);
+	assert.equal(elements.get("contentError").hidden, false);
+
+	console.log("Game-state, history, persistence, sharing, and content-gating tests passed.");
 }
 
 main().catch((error) => {

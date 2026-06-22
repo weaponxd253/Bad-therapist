@@ -138,6 +138,17 @@ button#start {
 	transition: width 220ms ease;
 }
 
+.contentError {
+	margin: 12px auto;
+	padding: 10px 12px;
+	max-width: 55ch;
+	border: 2px solid #7c1820;
+	border-radius: 10px;
+	background: rgba(124, 24, 32, 0.1);
+	color: #571017;
+	font-weight: 650;
+}
+
 .disclaimer {
 	font-size: 0.9rem;
 	opacity: 0.75;

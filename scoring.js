@@ -66,8 +66,11 @@
 		const badnessGained = Number.isFinite(choice.badness) ? choice.badness : 0;
 		const violation = getViolationDefinition(choice.violation);
 		const violationPenalty = violation?.moodPenalty || 0;
-		const rawMoodLoss =
-			badnessGained * SCORING.moodLossPerBadness + violationPenalty;
+		const moodModifier = Number.isInteger(choice.moodModifier) ? choice.moodModifier : 0;
+		const rawMoodLoss = Math.max(
+			0,
+			badnessGained * SCORING.moodLossPerBadness + violationPenalty + moodModifier
+		);
 		const moodRemaining = clamp(safeMood - rawMoodLoss, 0, 100);
 
 		return {

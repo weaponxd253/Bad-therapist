@@ -30,6 +30,9 @@ assert.equal(confidentiality.violation.label, "Confidentiality");
 assert.equal(confidentiality.violationPenalty, VIOLATION_TYPES.confidentiality.moodPenalty);
 assert.equal(confidentiality.moodLost, 27);
 
+const modified = calculateChoiceOutcome({ choice: { badness: 2, moodModifier: 4 }, currentMood: 100 });
+assert.equal(modified.moodLost, 14);
+
 const boundaries = calculateChoiceOutcome({
 	choice: { badness: 3, violation: "boundaries" },
 	currentMood: 100
