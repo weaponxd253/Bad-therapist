@@ -5,6 +5,7 @@ const {
 } = window.BadTherapistScoring;
 const { update: updateSavedRecords } = window.BadTherapistPersistence;
 const { validateQuestions } = window.BadTherapistContentSchema;
+const { selectQuestionsForRun } = window.BadTherapistQuestionSelector;
 const QUESTIONS_BASE = window.BadTherapistQuestions;
 const contentErrors = validateQuestions(QUESTIONS_BASE, VIOLATION_TYPES);
 const el = {
@@ -116,18 +117,6 @@ function showScreen(name) {
 		screen.classList.toggle("active", active);
 		screen.hidden = !active;
 	});
-}
-
-function deepCopy(obj) {
-	return JSON.parse(JSON.stringify(obj));
-}
-
-function shuffle(arr) {
-	for (let i = arr.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		[arr[i], arr[j]] = [arr[j], arr[i]];
-	}
-	return arr;
 }
 
 function clamp(n, min, max) {
@@ -331,10 +320,16 @@ function showOutcome(outcome, feedback) {
 }
 
 function buildQuestionsForRun() {
-	const q = deepCopy(QUESTIONS_BASE);
-	shuffle(q);
-	q.forEach((qq) => shuffle(qq.choices));
-	return q;
+	return selectQuestionsForRun(
+		QUESTIONS_BASE,
+		{
+			count: 10,
+			minimumTopics: 6,
+			maximumPerTopic: 2,
+			minimumViolationCategories: 3
+		},
+		Math.random
+	);
 }
 
 async function renderQuestion() {

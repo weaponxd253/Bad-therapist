@@ -8,11 +8,11 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 
 ## Features
 
-- Ten randomized client questions per session
+- Ten balanced questions per session selected from a 28-question pool
 - Four shuffled responses for every question
 - Badness, ethics-violation, and client-mood scoring
 - Early endings when the client's mood gets too low
-- Persistent local high score
+- Separate persistent records for highest chaos and completed sessions
 - Keyboard controls and skippable typing animation
 - Responsive layout for phones, tablets, and desktop
 - No build process or runtime dependencies
@@ -43,9 +43,15 @@ Then visit [http://localhost:8000](http://localhost:8000).
 ## Project structure
 
 ```text
-index.html   Page structure
-styles.css   Visual design and responsive layout
-script.js    Questions, scoring, state, and interactions
+index.html             Page structure
+styles.css             Visual design and responsive layout
+script.js              Game state and interactions
+questions.js           Validated question content
+content-schema.js      Runtime content validation
+question-selector.js   Balanced run selection
+scoring.js             Scoring and violation rules
+persistence.js         Versioned local records
+CONTENT.md             Content authoring guidelines
 ```
 
 ## Deployment

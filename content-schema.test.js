@@ -4,6 +4,16 @@ const { VIOLATION_TYPES } = require("./scoring.js");
 const { validateQuestions } = require("./content-schema.js");
 
 assert.deepEqual(validateQuestions(questions, VIOLATION_TYPES), []);
+assert.ok(questions.length >= 24 && questions.length <= 30);
+const representedTopics = new Set(questions.map((question) => question.topic));
+assert.deepEqual([...representedTopics].sort(), [
+	"anxiety", "conflict", "family", "identity", "loneliness",
+	"motivation", "relationships", "social-media", "work"
+]);
+const representedViolations = new Set(
+	questions.flatMap((question) => question.choices.map((choice) => choice.violation).filter(Boolean))
+);
+assert.deepEqual([...representedViolations].sort(), Object.keys(VIOLATION_TYPES).sort());
 const snapshot = JSON.stringify(questions);
 validateQuestions(questions, VIOLATION_TYPES);
 assert.equal(JSON.stringify(questions), snapshot, "validation must not mutate content");

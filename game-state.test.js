@@ -6,6 +6,7 @@ const scoring = require("./scoring.js");
 const persistence = require("./persistence.js");
 const questionsContent = require("./questions.js");
 const contentSchema = require("./content-schema.js");
+const questionSelector = require("./question-selector.js");
 
 function makeElement() {
 	const attributes = {};
@@ -58,6 +59,7 @@ async function main() {
 			BadTherapistPersistence: persistence,
 			BadTherapistQuestions: questionsContent,
 			BadTherapistContentSchema: contentSchema,
+			BadTherapistQuestionSelector: questionSelector,
 			localStorage,
 			matchMedia: () => ({ matches: true }),
 			setTimeout,
