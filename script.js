@@ -1,3 +1,7 @@
+const {
+	SCORING,
+	calculateChoiceOutcome
+} = window.BadTherapistScoring;
 const QUESTIONS_BASE = [
 	{
 		client:
@@ -19,7 +23,7 @@ const QUESTIONS_BASE = [
 				text:
 					"“This would be SUCH a good anonymous story for my group chat. No names… probably.”",
 				badness: 3,
-				violation: true,
+				violation: "confidentiality",
 				reaction: "Client: Wait—are you going to tell people this?!"
 			},
 			{
@@ -49,7 +53,7 @@ const QUESTIONS_BASE = [
 				text:
 					"“If you tell me their names, I can casually bring it up if I ever meet them.”",
 				badness: 3,
-				violation: true,
+				violation: "confidentiality",
 				reaction: "Client: Please don’t ever talk to them?!"
 			},
 			{
@@ -77,7 +81,7 @@ const QUESTIONS_BASE = [
 				text:
 					"“If you give me their handle, I can ‘just check’ their posts for you.”",
 				badness: 3,
-				violation: true,
+				violation: "boundaries",
 				reaction: "Client: That’s… wildly inappropriate."
 			},
 			{
@@ -105,7 +109,7 @@ const QUESTIONS_BASE = [
 			{
 				text: "“Honestly? I could screenshot this for ‘clinical reasons.’”",
 				badness: 3,
-				violation: true,
+				violation: "confidentiality",
 				reaction: "Client: Absolutely do NOT screenshot me."
 			},
 			{
@@ -133,7 +137,7 @@ const QUESTIONS_BASE = [
 				text:
 					"“Tell me your company name. I want to leave a strongly worded review on your behalf.”",
 				badness: 3,
-				violation: true,
+				violation: "boundaries",
 				reaction: "Client: Please don’t drag my workplace into this."
 			},
 			{
@@ -161,7 +165,7 @@ const QUESTIONS_BASE = [
 				text:
 					"“If you want accountability, I can text your boss a ‘fun update’ on your progress.”",
 				badness: 3,
-				violation: true,
+				violation: "boundaries",
 				reaction: "Client: DO NOT text my boss??"
 			},
 			{
@@ -189,7 +193,7 @@ const QUESTIONS_BASE = [
 				text:
 					"“We can talk about this on my podcast—no one will know it’s you (unless they do).”",
 				badness: 3,
-				violation: true,
+				violation: "confidentiality",
 				reaction: "Client: You have a PODCAST? About clients?!"
 			},
 			{
@@ -218,7 +222,7 @@ const QUESTIONS_BASE = [
 			{
 				text: "“Give me their number. I’ll ‘mediate’ by texting them myself.”",
 				badness: 3,
-				violation: true,
+				violation: "boundaries",
 				reaction: "Client: Please don’t contact my friends!"
 			},
 			{
@@ -247,7 +251,7 @@ const QUESTIONS_BASE = [
 				text:
 					"“If you tell me who, I can ‘accidentally’ mention your fear to them so they reassure you.”",
 				badness: 3,
-				violation: true,
+				violation: "confidentiality",
 				reaction: "Client: That’s a violation. Please stop."
 			},
 			{
@@ -275,7 +279,7 @@ const QUESTIONS_BASE = [
 				text:
 					"“We should record this session so I can ‘review the juicy parts’ later.”",
 				badness: 3,
-				violation: true,
+				violation: "boundaries",
 				reaction: "Client: The… JUICY parts?!"
 			},
 			{
@@ -326,7 +330,6 @@ const el = {
 	skipHint: document.getElementById("skipHint")
 };
 
-const MOOD_END_THRESHOLD = 15;
 
 const LS_KEY = "bad-therapist-best";
 let questions = [];
@@ -334,6 +337,8 @@ let idx = 0;
 let score = 0;
 let violations = 0;
 let mood = 100;
+let runHistory = [];
+let latestResultSummary = null;
 const INTERACTION_STATES = Object.freeze({
 	IDLE: "idle",
 	PRESENTING: "presenting",
@@ -411,6 +416,31 @@ function shuffle(arr) {
 
 function clamp(n, min, max) {
 	return Math.max(min, Math.min(max, n));
+}
+
+function applyChoiceOutcome(outcome) {
+	score += outcome.badnessGained;
+	mood = outcome.moodRemaining;
+	if (outcome.violation) violations += 1;
+}
+
+function recordChoiceOutcome(question, choice, outcome) {
+	runHistory.push({
+		questionNumber: idx + 1,
+		client: question.client,
+		response: choice.text,
+		reaction: choice.reaction,
+		badness: outcome.badnessGained,
+		moodLost: outcome.moodLost,
+		moodRemaining: outcome.moodRemaining,
+		violation: outcome.violation
+			? {
+				type: outcome.violation.type,
+				label: outcome.violation.label,
+				penalty: outcome.violationPenalty
+			}
+			: null
+	});
 }
 
 function moodEmoji(v) {
@@ -554,33 +584,35 @@ function lockChoices() {
 	locked = true;
 }
 
-function outcomeExplanation(chosen) {
-	if (chosen.violation) {
-		return "Ethics violation: this response breaches confidentiality and sharply damages trust.";
+function outcomeExplanation(outcome) {
+	if (outcome.violation) {
+		return `Ethics violation — ${outcome.violation.label}: ${outcome.violation.explanation}`;
 	}
-	if (chosen.badness === 0) {
+	if (outcome.badnessGained === 0) {
 		return "Accidentally helpful: this response is respectful, practical, and supportive.";
 	}
-	if (chosen.badness >= 3) {
+	if (outcome.badnessGained >= 3) {
 		return "This response is strongly dismissive or harmful and significantly damages trust.";
 	}
 	return "This response is unhelpful and leaves the client feeling less supported.";
 }
 
-function showOutcome(chosen, moodLoss) {
-	const violationGain = chosen.violation ? 1 : 0;
-	el.outcomeBadness.textContent = `Badness +${chosen.badness}`;
-	el.outcomeMood.textContent = `Mood −${moodLoss}`;
-	el.outcomeViolation.hidden = !chosen.violation;
-	el.outcomeViolation.textContent = chosen.violation ? "Violation +1" : "";
-	el.outcomeExplanation.textContent = outcomeExplanation(chosen);
+function showOutcome(outcome) {
+	const explanation = outcomeExplanation(outcome);
+	el.outcomeBadness.textContent = `Badness +${outcome.badnessGained}`;
+	el.outcomeMood.textContent = `Mood −${outcome.moodLost}`;
+	el.outcomeViolation.hidden = !outcome.violation;
+	el.outcomeViolation.textContent = outcome.violation
+		? `Violation +1 · ${outcome.violation.label}`
+		: "";
+	el.outcomeExplanation.textContent = explanation;
 	el.outcomeFeedback.hidden = false;
 
 	announce(
-		`Choice outcome. Badness increased by ${chosen.badness}. ` +
-		`Client mood decreased by ${moodLoss}. ` +
-		`${violationGain ? "One ethics violation added. " : ""}` +
-		outcomeExplanation(chosen)
+		`Choice outcome. Badness increased by ${outcome.badnessGained}. ` +
+		`Client mood decreased by ${outcome.moodLost}. ` +
+		`${outcome.violation ? `One ${outcome.violation.label} violation added. ` : ""}` +
+		explanation
 	);
 }
 
@@ -642,7 +674,7 @@ async function renderQuestion() {
 	interactionState = INTERACTION_STATES.CHOOSING;
 }
 
-function ethicsAlarm() {
+function ethicsAlarm(violation) {
 	if (!reducedMotion.matches) {
 		el.card.classList.remove("ethicsFlash", "shake");
 		void el.card.offsetWidth;
@@ -650,7 +682,7 @@ function ethicsAlarm() {
 		window.setTimeout(() => el.card.classList.remove("shake"), 500);
 	}
 	playBeep("violation");
-	showToast("ETHICS ALARM: Confidentiality breached");
+	showToast(`ETHICS ALARM: ${violation.label}`);
 }
 
 async function onPick(choiceIndex) {
@@ -674,22 +706,15 @@ async function onPick(choiceIndex) {
 	selectedButton?.setAttribute("aria-label", `${chosen.text} Selected response`);
 	lockChoices();
 
-	const moodBefore = mood;
-	score += chosen.badness;
-	if (chosen.violation) {
-		violations += 1;
-	}
-
-	const moodHit = chosen.badness * 8 + (chosen.violation ? 18 : 0);
-	mood = clamp(mood - moodHit, 0, 100);
-	const moodLoss = moodBefore - mood;
+	const outcome = calculateChoiceOutcome({ choice: chosen, currentMood: mood });
+	applyChoiceOutcome(outcome);
+	recordChoiceOutcome(q, chosen, outcome);
 	updateHUD();
-	showOutcome(chosen, moodLoss);
+	showOutcome(outcome);
 
-	const sessionWillEnd = mood <= MOOD_END_THRESHOLD;
-	const earlyEndReason = chosen.violation
-		? "Confidentiality breach + vibes destroyed"
-		: "Vibes destroyed beyond repair";
+	const earlyEndReason = outcome.violation
+		? `${outcome.violation.label} violation and client trust collapsed`
+		: "Client trust collapsed beyond repair";
 
 	el.therapistBubble.style.display = "block";
 	el.reactionBubble.style.display = "block";
@@ -697,13 +722,13 @@ async function onPick(choiceIndex) {
 	await typeInto(el.therapistBubble, `Therapist (you): ${chosen.text}`, 6);
 	await typeInto(el.reactionBubble, chosen.reaction, 8);
 
-	if (chosen.violation) {
-		ethicsAlarm();
+	if (outcome.violation) {
+		ethicsAlarm(outcome.violation);
 	} else {
 		playBeep("pick");
 	}
 
-	if (sessionWillEnd) {
+	if (outcome.sessionWillEnd) {
 		announce(`The client is ending the session. ${earlyEndReason}.`);
 		await pacingDelay(900);
 		endSessionEarly(earlyEndReason);
@@ -724,7 +749,7 @@ function resultLabel(totalBadness, totalViolations) {
 	const maxViolations = questions.length;
 	const w = weightedScore(totalBadness, totalViolations);
 	const wMax = maxBadness + maxViolations * 2;
-	const pct = w / wMax;
+	const pct = wMax === 0 ? 0 : w / wMax;
 
 	if (pct <= 0.22) return "Accidentally Competent";
 	if (pct <= 0.48) return "Questionable Vibes";
@@ -732,10 +757,64 @@ function resultLabel(totalBadness, totalViolations) {
 	return "License? Never Heard Of Her";
 }
 
-function resultMessage(totalBadness, totalViolations) {
-	const label = resultLabel(totalBadness, totalViolations);
-	const maxBadness = questions.length * 3;
+function summarizeRun({ completed, reason = "" } = {}) {
+	const violationCounts = new Map();
+	let totalBadness = 0;
+	let totalMoodLost = 0;
+	let worstResponse = null;
 
+	runHistory.forEach((entry) => {
+		totalBadness += entry.badness;
+		totalMoodLost += entry.moodLost;
+
+		if (entry.violation) {
+			violationCounts.set(
+				entry.violation.label,
+				(violationCounts.get(entry.violation.label) || 0) + 1
+			);
+		}
+
+		const impact = entry.moodLost;
+		if (!worstResponse || impact > worstResponse.impact) {
+			worstResponse = { ...entry, impact };
+		}
+	});
+
+	const violationBreakdown = [...violationCounts.entries()]
+		.map(([label, count]) => ({ label, count }))
+		.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+	const totalViolations = violationBreakdown.reduce((sum, item) => sum + item.count, 0);
+	const moodRemaining = runHistory.length
+		? runHistory[runHistory.length - 1].moodRemaining
+		: 100;
+
+	return {
+		completed,
+		statusLabel: completed ? "Session completed" : "Session ended early",
+		reason,
+		grade: resultLabel(totalBadness, totalViolations),
+		totalBadness,
+		totalViolations,
+		totalMoodLost,
+		moodRemaining,
+		questionsAnswered: runHistory.length,
+		questionsTotal: questions.length,
+		weighted: weightedScore(totalBadness, totalViolations),
+		violationBreakdown,
+		worstResponse
+	};
+}
+
+function escapeHTML(value) {
+	return String(value)
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#039;");
+}
+
+function resultMessage(summary) {
 	const notes = {
 		"Accidentally Competent":
 			"You kept stumbling into empathy. This game is disappointed in you (respectfully).",
@@ -746,20 +825,45 @@ function resultMessage(totalBadness, totalViolations) {
 		"License? Never Heard Of Her":
 			"You have achieved peak chaos. The client has spiritually teleported out of the session."
 	};
-
-	const vioLine =
-		totalViolations === 0
-			? "Miraculously, you did not break confidentiality."
-			: `You broke confidentiality <b>${totalViolations}</b> time(s). Somewhere, an ethics textbook just caught fire.`;
+	const violationsMarkup = summary.violationBreakdown.length
+		? `<ul class="resultBreakdown">${summary.violationBreakdown
+			.map((item) => `<li><span>${escapeHTML(item.label)}</span><b>${item.count}</b></li>`)
+			.join("")}</ul>`
+		: '<p class="resultEmpty">No formal ethics violations.</p>';
+	const worstMarkup = summary.worstResponse
+		? `<blockquote class="worstResponse">
+			<p>${escapeHTML(summary.worstResponse.response)}</p>
+			<footer>Badness +${summary.worstResponse.badness} · Mood −${summary.worstResponse.moodLost}${
+				summary.worstResponse.violation
+					? ` · ${escapeHTML(summary.worstResponse.violation.label)}`
+					: ""
+			}</footer>
+		</blockquote>`
+		: '<p class="resultEmpty">No responses recorded.</p>';
 
 	return `
-        <h3 style="margin:0 0 8px;">Result: ${label}</h3>
-        <p style="margin:0 0 8px;">Badness: <b>${totalBadness}</b> / ${maxBadness}</p>
-        <p style="margin:0 0 10px;">${vioLine}</p>
-        <p style="margin:0;">${notes[label]}</p>
-      `;
+		<header class="resultHeader">
+			<p class="resultStatus">${escapeHTML(summary.statusLabel)}</p>
+			<h3>Result: ${escapeHTML(summary.grade)}</h3>
+			<p>${escapeHTML(notes[summary.grade])}</p>
+			${summary.reason ? `<p class="resultReason"><b>Reason:</b> ${escapeHTML(summary.reason)}</p>` : ""}
+		</header>
+		<div class="resultMetrics">
+			<div><span>Badness</span><b>${summary.totalBadness} / ${summary.questionsTotal * 3}</b></div>
+			<div><span>Violations</span><b>${summary.totalViolations}</b></div>
+			<div><span>Mood remaining</span><b>${summary.moodRemaining}</b></div>
+			<div><span>Questions survived</span><b>${summary.questionsAnswered} / ${summary.questionsTotal}</b></div>
+		</div>
+		<section class="resultSection">
+			<h4>Violation breakdown</h4>
+			${violationsMarkup}
+		</section>
+		<section class="resultSection">
+			<h4>Worst selected response</h4>
+			${worstMarkup}
+		</section>
+	`;
 }
-
 function loadBest() {
 	try {
 		const raw = localStorage.getItem(LS_KEY);
@@ -782,33 +886,49 @@ function saveBestIfNeeded(current) {
 	return best;
 }
 
-function updateFinalScorePills() {
-	const maxBadness = questions.length * 3;
-	el.finalScorePill.textContent = `Final Badness: ${score} / ${maxBadness}`;
-	el.finalViolPill.textContent = `Final Violations: ${violations} / ${questions.length}`;
+function updateFinalScorePills(summary) {
+	el.finalScorePill.textContent = `Final Badness: ${summary.totalBadness} / ${summary.questionsTotal * 3}`;
+	el.finalViolPill.textContent = `Final Violations: ${summary.totalViolations}`;
 
 	const current = {
-		weighted: weightedScore(score, violations),
-		score,
-		violations,
+		weighted: summary.weighted,
+		score: summary.totalBadness,
+		violations: summary.totalViolations,
+		completed: summary.completed,
+		questionsAnswered: summary.questionsAnswered,
 		at: new Date().toISOString()
 	};
 	const best = saveBestIfNeeded(current);
 	el.bestPill.textContent = `Best Chaos: ${best.weighted} (B:${best.score} V:${best.violations})`;
 }
 
-function finishGame() {
-	interactionState = INTERACTION_STATES.RESULTS;
+function showResults(summary) {
+	latestResultSummary = summary;
 	showScreen("result");
-	updateFinalScorePills();
-
-	el.resultBox.innerHTML = resultMessage(score, violations);
-
-	el.progressBar.setAttribute("aria-valuenow", String(questions.length));
-	el.progressBar.setAttribute("aria-valuetext", `${questions.length} of ${questions.length} questions completed`);
+	updateFinalScorePills(summary);
+	el.resultBox.innerHTML = resultMessage(summary);
+	el.progressBar.setAttribute("aria-valuenow", String(summary.questionsAnswered));
+	el.progressBar.setAttribute(
+		"aria-valuetext",
+		summary.completed
+			? `${summary.questionsTotal} of ${summary.questionsTotal} questions completed`
+			: `Session ended after ${summary.questionsAnswered} questions`
+	);
 	el.progressFill.style.width = "100%";
 	el.resultHeading.focus();
-	announce(`Game results. ${resultLabel(score, violations)}. Badness ${score}. Violations ${violations}.`);
+	announce(
+		`${summary.statusLabel}. ${summary.grade}. ` +
+		`Badness ${summary.totalBadness}. Violations ${summary.totalViolations}. ` +
+		`Mood remaining ${summary.moodRemaining}. ` +
+		`${summary.questionsAnswered} of ${summary.questionsTotal} questions survived.`
+	);
+}
+
+function finishGame() {
+	interactionState = INTERACTION_STATES.RESULTS;
+	endedEarly = false;
+	const summary = summarizeRun({ completed: true });
+	showResults(summary);
 	showToast("Result ready. Copy it and flex privately.", 1400);
 }
 
@@ -819,6 +939,8 @@ async function startGame() {
 	score = 0;
 	violations = 0;
 	mood = 100;
+	runHistory = [];
+	latestResultSummary = null;
 	questions = buildQuestionsForRun();
 	endedEarly = false;
 
@@ -837,7 +959,6 @@ async function next() {
 		finishGame();
 		return;
 	}
-	// fill based on completed questions
 	el.progressFill.style.width = `${Math.round((idx / questions.length) * 100)}%`;
 	await renderQuestion();
 }
@@ -853,13 +974,21 @@ function restart() {
 }
 
 async function copyResult() {
-	const label = resultLabel(score, violations);
+	const summary = latestResultSummary || summarizeRun({ completed: !endedEarly });
+	const breakdown = summary.violationBreakdown.length
+		? summary.violationBreakdown.map((item) => `${item.label}: ${item.count}`).join(", ")
+		: "None";
+	const worst = summary.worstResponse
+		? `${summary.worstResponse.response} (Badness +${summary.worstResponse.badness}, Mood −${summary.worstResponse.moodLost})`
+		: "None";
 	const text =
-		`Bad Therapist Result: ${endedEarly ? "Session Ended Early" : label}\n` +
-		`Badness: ${score}/${questions.length * 3}\n` +
-		`Violations: ${violations}/${questions.length}\n` +
-		`Weighted Chaos: ${weightedScore(score, violations)}\n` +
-		(endedEarly ? `Client Mood: ${mood}\n` : "");
+		`Bad Therapist Result: ${summary.grade}\n` +
+		`Status: ${summary.statusLabel}\n` +
+		`Badness: ${summary.totalBadness}/${summary.questionsTotal * 3}\n` +
+		`Violations: ${summary.totalViolations} (${breakdown})\n` +
+		`Mood Remaining: ${summary.moodRemaining}\n` +
+		`Questions Survived: ${summary.questionsAnswered}/${summary.questionsTotal}\n` +
+		`Worst Response: ${worst}\n`;
 
 	try {
 		await navigator.clipboard.writeText(text);
@@ -873,30 +1002,12 @@ async function copyResult() {
 function endSessionEarly(reason) {
 	interactionState = INTERACTION_STATES.RESULTS;
 	endedEarly = true;
-	// Optional: lock UI so no more input
 	lockChoices();
 	el.nextBtn.disabled = true;
-
-	// Jump to results with a custom message
-	showScreen("result");
-
-	updateFinalScorePills();
-
-	el.resultBox.innerHTML = `
-    <h3 style="margin:0 0 8px;">Session ended early</h3>
-    <p style="margin:0 0 8px;"><b>Reason:</b> ${reason}</p>
-    <p style="margin:0 0 8px;">Client mood hit <b>${mood}</b> (≤ ${MOOD_END_THRESHOLD}).</p>
-    <p style="margin:0;">The client stands up, says “I think I’m done,” and leaves.</p>
-  `;
-
-	el.progressBar.setAttribute("aria-valuenow", String(idx + 1));
-	el.progressBar.setAttribute("aria-valuetext", `Session ended after ${idx + 1} questions`);
-	el.progressFill.style.width = "100%";
-	el.resultHeading.focus();
-	announce(`Session ended early. ${reason}. Client mood ${mood}. Badness ${score}. Violations ${violations}.`);
+	const summary = summarizeRun({ completed: false, reason });
+	showResults(summary);
 	showToast("Client left the session.", 1600);
 }
-
 el.startBtn.addEventListener("click", startGame);
 el.nextBtn.addEventListener("click", next);
 el.restartBtn.addEventListener("click", restart);

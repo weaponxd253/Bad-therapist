@@ -343,6 +343,114 @@ button#start {
 	line-height: 1.4;
 }
 
+.resultHeader h3,
+.resultHeader p,
+.resultSection h4 {
+	margin: 0;
+}
+
+.resultHeader h3 {
+	margin-top: 4px;
+	font-size: clamp(1.25rem, 1.1rem + 0.8vw, 1.65rem);
+}
+
+.resultHeader > p:not(.resultStatus) {
+	margin-top: 8px;
+}
+
+.resultStatus {
+	display: inline-flex;
+	padding: 4px 9px;
+	border-radius: 999px;
+	background: #111;
+	color: #fffdf7;
+	font-size: 0.82rem;
+	font-weight: 700;
+}
+
+.resultReason {
+	padding: 9px 10px;
+	border-left: 4px solid #7c1820;
+	background: rgba(124, 24, 32, 0.08);
+}
+
+.resultMetrics {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+	margin-top: 16px;
+}
+
+.resultMetrics > div {
+	display: grid;
+	gap: 3px;
+	min-width: 0;
+	padding: 10px;
+	border-radius: 12px;
+	background: rgba(0, 0, 0, 0.07);
+}
+
+.resultMetrics span {
+	font-size: 0.8rem;
+	opacity: 0.78;
+}
+
+.resultMetrics b {
+	font-size: 1rem;
+	overflow-wrap: anywhere;
+}
+
+.resultSection {
+	margin-top: 16px;
+}
+
+.resultSection h4 {
+	margin-bottom: 8px;
+	font-size: 1rem;
+}
+
+.resultBreakdown {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.resultBreakdown li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 10px;
+	border-radius: 10px;
+	background: rgba(124, 24, 32, 0.09);
+}
+
+.resultEmpty {
+	margin: 0;
+	opacity: 0.75;
+}
+
+.worstResponse {
+	margin: 0;
+	padding: 10px 12px;
+	border-left: 4px solid #4b49eb;
+	background: rgba(75, 73, 235, 0.08);
+}
+
+.worstResponse p,
+.worstResponse footer {
+	margin: 0;
+}
+
+.worstResponse footer {
+	margin-top: 7px;
+	font-size: 0.85rem;
+	font-weight: 700;
+	opacity: 0.8;
+}
+
 .tiny {
 	font-size: 0.88rem;
 	opacity: 0.8;
@@ -505,6 +613,10 @@ button#start {
 		grid-template-columns: 1fr;
 	}
 
+	.resultMetrics {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
 	.toast {
 		position: fixed;
 		left: max(10px, env(safe-area-inset-left));
@@ -514,6 +626,10 @@ button#start {
 }
 
 @media (max-width: 360px) {
+	.resultMetrics {
+		grid-template-columns: 1fr;
+	}
+
 	.controls {
 		grid-template-columns: 1fr;
 	}
