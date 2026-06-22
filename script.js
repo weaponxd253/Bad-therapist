@@ -295,7 +295,13 @@ const el = {
 	gameScreen: document.getElementById("gameScreen"),
 	resultScreen: document.getElementById("resultScreen"),
 	meta: document.getElementById("meta"),
+	progressBar: document.getElementById("progressBar"),
 	progressFill: document.getElementById("progressFill"),
+	startHeading: document.getElementById("startHeading"),
+	gameHeading: document.getElementById("gameHeading"),
+	resultHeading: document.getElementById("resultHeading"),
+	soundBtn: document.getElementById("soundBtn"),
+	announcer: document.getElementById("announcer"),
 	clientBubble: document.getElementById("clientBubble"),
 	therapistBubble: document.getElementById("therapistBubble"),
 	reactionBubble: document.getElementById("reactionBubble"),
@@ -327,9 +333,18 @@ let locked = false;
 let typing = false;
 let skipTypingNow = false;
 let endedEarly = false;
+let soundEnabled = true;
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function announce(message) {
+	el.announcer.textContent = "";
+	window.setTimeout(() => {
+		el.announcer.textContent = message;
+	}, 20);
+}
 
 function animateChoicesIn(buttons) {
-	if (!window.gsap || buttons.length === 0) return;
+	if (reducedMotion.matches || !window.gsap || buttons.length === 0) return;
 
 	// Disable interaction during entrance animation
 	el.choices.style.pointerEvents = "none";
@@ -350,12 +365,17 @@ function animateChoicesIn(buttons) {
 }
 
 function showScreen(name) {
-	el.startScreen.classList.remove("active");
-	el.gameScreen.classList.remove("active");
-	el.resultScreen.classList.remove("active");
-	if (name === "start") el.startScreen.classList.add("active");
-	if (name === "game") el.gameScreen.classList.add("active");
-	if (name === "result") el.resultScreen.classList.add("active");
+	const screens = {
+		start: el.startScreen,
+		game: el.gameScreen,
+		result: el.resultScreen
+	};
+
+	Object.entries(screens).forEach(([screenName, screen]) => {
+		const active = screenName === name;
+		screen.classList.toggle("active", active);
+		screen.hidden = !active;
+	});
 }
 
 function deepCopy(obj) {
@@ -390,6 +410,8 @@ function showToast(msg, ms = 1200) {
 }
 
 function playBeep(type) {
+	if (!soundEnabled) return;
+
 	const AudioCtx = window.AudioContext || window.webkitAudioContext;
 	if (!AudioCtx) return;
 
@@ -434,8 +456,15 @@ function requestSkipTyping() {
 async function typeInto(elm, text, speed = 12) {
 	typing = true;
 	skipTypingNow = false;
-	if (el.skipHint) el.skipHint.style.display = "block";
 
+	if (reducedMotion.matches) {
+		elm.textContent = text;
+		typing = false;
+		announce(text);
+		return;
+	}
+
+	if (el.skipHint) el.skipHint.style.display = "block";
 	elm.textContent = "";
 
 	for (let i = 0; i < text.length; i++) {
@@ -450,6 +479,7 @@ async function typeInto(elm, text, speed = 12) {
 
 	typing = false;
 	if (el.skipHint) el.skipHint.style.display = "none";
+	announce(text);
 }
 
 function updateTopMeta() {
@@ -457,10 +487,15 @@ function updateTopMeta() {
 }
 
 function updateHUD() {
-	el.progressPill.textContent = `Question ${idx + 1}/${questions.length}`;
+	const questionNumber = Math.min(idx + 1, questions.length);
+	el.progressPill.textContent = `Question ${questionNumber}/${questions.length}`;
 	el.scorePill.textContent = `Badness: ${score}`;
 	el.violPill.textContent = `Violations: ${violations}`;
 	el.moodPill.textContent = `Mood: ${moodEmoji(mood)} ${mood}`;
+	el.gameHeading.textContent = `Question ${questionNumber} of ${questions.length}`;
+	el.progressBar.setAttribute("aria-valuemax", String(questions.length));
+	el.progressBar.setAttribute("aria-valuenow", String(idx));
+	el.progressBar.setAttribute("aria-valuetext", `${idx} of ${questions.length} questions completed`);
 	el.progressFill.style.width = `${Math.round((idx / questions.length) * 100)}%`;
 }
 
@@ -488,6 +523,7 @@ async function renderQuestion() {
 
 	updateHUD();
 	resetRoundUI();
+	el.gameHeading.focus();
 
 	el.choices.classList.add("hidden");
 	el.choices.innerHTML = "";
@@ -500,7 +536,7 @@ async function renderQuestion() {
 	await new Promise(requestAnimationFrame);
 
 	await typeInto(el.clientBubble, `Client (confidential): ${q.client}`, 20);
-	await new Promise((r) => setTimeout(r, 500));
+	if (!reducedMotion.matches) await new Promise((r) => setTimeout(r, 500));
 
 	// Build choices AFTER typing finishes
 	const buttons = [];
@@ -509,10 +545,12 @@ async function renderQuestion() {
 		btn.className = "choiceBtn";
 		btn.type = "button";
 		btn.dataset.choiceIndex = String(i);
+		btn.setAttribute("aria-pressed", "false");
 		btn.textContent = c.text;
 
 		const k = document.createElement("span");
 		k.className = "kbd";
+		k.setAttribute("aria-hidden", "true");
 		k.textContent = `${i + 1}`;
 		btn.appendChild(k);
 
@@ -527,13 +565,14 @@ async function renderQuestion() {
 }
 
 function ethicsAlarm() {
-	el.card.classList.remove("ethicsFlash", "shake");
-	// force reflow to retrigger animation
-	void el.card.offsetWidth;
-	el.card.classList.add("ethicsFlash", "shake");
+	if (!reducedMotion.matches) {
+		el.card.classList.remove("ethicsFlash", "shake");
+		void el.card.offsetWidth;
+		el.card.classList.add("ethicsFlash", "shake");
+		window.setTimeout(() => el.card.classList.remove("shake"), 500);
+	}
 	playBeep("violation");
-	showToast("🚨 ETHICS ALARM: Confidentiality breached");
-	window.setTimeout(() => el.card.classList.remove("shake"), 500);
+	showToast("ETHICS ALARM: Confidentiality breached");
 }
 
 async function onPick(choiceIndex) {
@@ -541,6 +580,9 @@ async function onPick(choiceIndex) {
 
 	const q = questions[idx];
 	const chosen = q.choices[choiceIndex];
+	const selectedButton = el.choices.querySelector(`button[data-choice-index="${choiceIndex}"]`);
+	selectedButton?.setAttribute("aria-pressed", "true");
+	lockChoices();
 
 	score += chosen.badness;
 	if (chosen.violation) {
@@ -549,6 +591,7 @@ async function onPick(choiceIndex) {
 
 	const moodHit = chosen.badness * 8 + (chosen.violation ? 18 : 0);
 	mood = clamp(mood - moodHit, 0, 100);
+	updateHUD();
 
 	if (mood <= MOOD_END_THRESHOLD) {
 		const why = chosen.violation
@@ -564,7 +607,7 @@ async function onPick(choiceIndex) {
 		playBeep("pick");
 	}
 
-	updateHUD();
+	announce(`Badness increased by ${chosen.badness}. ${chosen.violation ? "Confidentiality violation. " : ""}Client mood is ${mood}.`);
 
 	el.therapistBubble.style.display = "block";
 	el.reactionBubble.style.display = "block";
@@ -572,7 +615,6 @@ async function onPick(choiceIndex) {
 	await typeInto(el.therapistBubble, `Therapist (you): ${chosen.text}`, 8);
 	await typeInto(el.reactionBubble, chosen.reaction, 10);
 
-	lockChoices();
 	el.nextBtn.disabled = false;
 	el.nextBtn.focus();
 }
@@ -615,7 +657,7 @@ function resultMessage(totalBadness, totalViolations) {
 			: `You broke confidentiality <b>${totalViolations}</b> time(s). Somewhere, an ethics textbook just caught fire.`;
 
 	return `
-        <h2 style="margin:0 0 8px;">Result: ${label}</h2>
+        <h3 style="margin:0 0 8px;">Result: ${label}</h3>
         <p style="margin:0 0 8px;">Badness: <b>${totalBadness}</b> / ${maxBadness}</p>
         <p style="margin:0 0 10px;">${vioLine}</p>
         <p style="margin:0;">${notes[label]}</p>
@@ -665,8 +707,12 @@ function finishGame() {
 
 	el.resultBox.innerHTML = resultMessage(score, violations);
 
+	el.progressBar.setAttribute("aria-valuenow", String(questions.length));
+	el.progressBar.setAttribute("aria-valuetext", `${questions.length} of ${questions.length} questions completed`);
 	el.progressFill.style.width = "100%";
-	showToast("Result ready. Copy it and flex (privately).", 1400);
+	el.resultHeading.focus();
+	announce(`Game results. ${resultLabel(score, violations)}. Badness ${score}. Violations ${violations}.`);
+	showToast("Result ready. Copy it and flex privately.", 1400);
 }
 
 async function startGame() {
@@ -699,7 +745,10 @@ async function next() {
 function restart() {
 	showScreen("start");
 	el.meta.textContent = "";
+	el.progressBar.setAttribute("aria-valuenow", "0");
+	el.progressBar.setAttribute("aria-valuetext", "0 of 10 questions completed");
 	el.progressFill.style.width = "0%";
+	el.startBtn.focus();
 }
 
 async function copyResult() {
@@ -732,20 +781,31 @@ function endSessionEarly(reason) {
 	updateFinalScorePills();
 
 	el.resultBox.innerHTML = `
-    <h2 style="margin:0 0 8px;">Session ended early</h2>
+    <h3 style="margin:0 0 8px;">Session ended early</h3>
     <p style="margin:0 0 8px;"><b>Reason:</b> ${reason}</p>
     <p style="margin:0 0 8px;">Client mood hit <b>${mood}</b> (≤ ${MOOD_END_THRESHOLD}).</p>
     <p style="margin:0;">The client stands up, says “I think I’m done,” and leaves.</p>
   `;
 
+	el.progressBar.setAttribute("aria-valuenow", String(idx + 1));
+	el.progressBar.setAttribute("aria-valuetext", `Session ended after ${idx + 1} questions`);
 	el.progressFill.style.width = "100%";
-	showToast("🧍‍♂️ Client left the session.", 1600);
+	el.resultHeading.focus();
+	announce(`Session ended early. ${reason}. Client mood ${mood}. Badness ${score}. Violations ${violations}.`);
+	showToast("Client left the session.", 1600);
 }
 
 el.startBtn.addEventListener("click", startGame);
 el.nextBtn.addEventListener("click", next);
 el.restartBtn.addEventListener("click", restart);
 el.shareBtn.addEventListener("click", copyResult);
+el.soundBtn.addEventListener("click", () => {
+	soundEnabled = !soundEnabled;
+	el.soundBtn.setAttribute("aria-pressed", String(soundEnabled));
+	el.soundBtn.textContent = `Sound: ${soundEnabled ? "On" : "Off"}`;
+	announce(`Sound ${soundEnabled ? "on" : "off"}`);
+	if (soundEnabled) playBeep("pick");
+});
 
 updateTopMeta();
 

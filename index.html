@@ -8,20 +8,23 @@
 	<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<main class="wrap">
-	<section class="card" id="card">
-		<div class="ethicsOverlay"></div>
+<a class="skipLink" href="#gameContent">Skip to game</a>
+<main class="wrap" id="gameContent" tabindex="-1">
+	<section class="card" id="card" aria-labelledby="appTitle">
+		<div class="ethicsOverlay" aria-hidden="true"></div>
 
 		<div class="title">
-			<h1>Bad Therapist</h1>
+			<h1 id="appTitle">Bad Therapist</h1>
 			<div class="meta" id="meta"></div>
+			<button class="soundBtn" id="soundBtn" type="button" aria-pressed="true">Sound: On</button>
 		</div>
 
-		<div class="progressBar" aria-hidden="true">
+		<div class="progressBar" id="progressBar" role="progressbar" aria-label="Game progress" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
 			<div class="progressFill" id="progressFill"></div>
 		</div>
 
 		<div id="startScreen" class="screen active startScreen">
+			<h2 class="srOnly" id="startHeading" tabindex="-1">Start game</h2>
 			<p>
 				Press <b>Start</b> to become the therapist. A client will share something confidential.
 				Your job is to pick the <i>worst possible</i> responses for 10 questions.
@@ -33,8 +36,9 @@
 			</p>
 		</div>
 
-		<div id="gameScreen" class="screen">
-			<div class="chat" aria-live="polite">
+		<div id="gameScreen" class="screen" hidden>
+			<h2 class="srOnly" id="gameHeading" tabindex="-1">Question 1 of 10</h2>
+			<div class="chat">
 				<div class="bubble client" id="clientBubble"></div>
 				<div class="bubble therapist" id="therapistBubble" style="display:none;"></div>
 				<div class="bubble client" id="reactionBubble" style="display:none;"></div>
@@ -43,7 +47,7 @@
 				(Press <b>Space</b> to skip)
 			</p>
 
-			<div class="choices" id="choices"></div>
+			<div class="choices" id="choices" role="group" aria-label="Choose a response" aria-describedby="clientBubble"></div>
 
 			<div class="controls">
 				<div class="pill" id="progressPill">Question 1/10</div>
@@ -53,12 +57,11 @@
 				<button class="nextBtn" id="nextBtn" disabled>Next</button>
 			</div>
 
-			<p class="tiny">
-				Hotkeys: <b>1–4</b> choose an answer, <b>Enter</b> next.
-			</p>
+			<p class="tiny">Hotkeys: <b>1–4</b> choose an answer, <b>Enter</b> next.</p>
 		</div>
 
-		<div id="resultScreen" class="screen">
+		<div id="resultScreen" class="screen" hidden>
+			<h2 class="srOnly" id="resultHeading" tabindex="-1">Game results</h2>
 			<div class="resultBox" id="resultBox"></div>
 			<div class="controls">
 				<div class="pill" id="finalScorePill"></div>
@@ -67,12 +70,11 @@
 				<button class="shareBtn" id="shareBtn">Copy Result</button>
 				<button class="restartBtn" id="restartBtn">Restart</button>
 			</div>
-			<p class="disclaimer">
-				Reminder: Real therapy should be respectful, ethical, and supportive.
-			</p>
+			<p class="disclaimer">Reminder: Real therapy should be respectful, ethical, and supportive.</p>
 		</div>
 
-		<div class="toast" id="toast"></div>
+		<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+		<div class="srOnly" id="announcer" aria-live="polite" aria-atomic="true"></div>
 	</section>
 </main>
 <script src="script.js"></script>

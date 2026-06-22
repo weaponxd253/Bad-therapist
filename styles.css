@@ -34,6 +34,40 @@ button {
 	border-radius: 10px;
 }
 
+.skipLink {
+	position: fixed;
+	z-index: 20;
+	top: 8px;
+	left: 8px;
+	padding: 10px 14px;
+	border-radius: 8px;
+	background: #111;
+	color: #fff;
+	transform: translateY(-150%);
+}
+
+.skipLink:focus {
+	transform: translateY(0);
+}
+
+.srOnly {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+button:focus-visible,
+.skipLink:focus-visible {
+	outline: 3px solid #ffdf3f;
+	outline-offset: 3px;
+}
+
 button#start {
 	color: #fffdf7;
 	background-color: black;
@@ -74,6 +108,16 @@ button#start {
 .meta {
 	font-size: 0.9rem;
 	opacity: 0.8;
+	white-space: nowrap;
+}
+
+.soundBtn {
+	min-height: 44px;
+	padding: 7px 10px;
+	border: 2px solid rgba(0, 0, 0, 0.2);
+	background: #fff;
+	color: #111;
+	font-size: 0.9rem;
 	white-space: nowrap;
 }
 
@@ -183,6 +227,11 @@ button#start {
 	opacity: 0.55;
 	cursor: not-allowed;
 	transform: none;
+}
+
+.choiceBtn[aria-pressed="true"] {
+	outline: 4px solid #4b49eb;
+	outline-offset: 2px;
 }
 
 .controls {
@@ -349,6 +398,10 @@ button#start {
 		line-height: 1.3;
 	}
 
+	.soundBtn {
+		width: 100%;
+	}
+
 	.startScreen {
 		padding: 12px 2px;
 	}
@@ -413,5 +466,38 @@ button#start {
 @media (max-height: 600px) and (orientation: landscape) {
 	.wrap {
 		margin: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		scroll-behavior: auto !important;
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
+
+@media (forced-colors: active) {
+	.card,
+	.bubble,
+	.pill,
+	.resultBox,
+	.choiceBtn,
+	.nextBtn,
+	.restartBtn,
+	.shareBtn,
+	.soundBtn {
+		border: 2px solid ButtonText;
+	}
+
+	.choiceBtn[aria-pressed="true"] {
+		outline: 3px solid Highlight;
+	}
+
+	.progressFill {
+		background: Highlight;
 	}
 }
