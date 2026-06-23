@@ -1,3 +1,4 @@
+const { getMode } = window.BadTherapistModes;
 const {
 	SCORING,
 	VIOLATION_TYPES,
@@ -6,6 +7,11 @@ const {
 const { update: updateSavedRecords } = window.BadTherapistPersistence;
 const { validateQuestions } = window.BadTherapistContentSchema;
 const { selectQuestionsForRun } = window.BadTherapistQuestionSelector;
+const {
+	load: loadQuestionHistory,
+	recordRun: recordQuestionRun,
+	getRecentQuestionWeights
+} = window.BadTherapistQuestionHistory;
 const QUESTIONS_BASE = window.BadTherapistQuestions;
 const contentErrors = validateQuestions(QUESTIONS_BASE, VIOLATION_TYPES);
 const el = {
@@ -18,6 +24,7 @@ const el = {
 	progressBar: document.getElementById("progressBar"),
 	progressFill: document.getElementById("progressFill"),
 	startHeading: document.getElementById("startHeading"),
+	modePicker: document.getElementById("modePicker"),
 	contentError: document.getElementById("contentError"),
 	gameHeading: document.getElementById("gameHeading"),
 	resultHeading: document.getElementById("resultHeading"),
@@ -70,6 +77,7 @@ let typing = false;
 let skipTypingNow = false;
 let skipCurrentSequence = false;
 let interactionState = INTERACTION_STATES.IDLE;
+let activeMode = getMode("classic");
 let endedEarly = false;
 let soundEnabled = true;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -82,7 +90,7 @@ function announce(message) {
 }
 
 function animateChoicesIn(buttons) {
-	if (reducedMotion.matches || !window.gsap || buttons.length === 0) {
+	if (activeMode.instantPacing || reducedMotion.matches || !window.gsap || buttons.length === 0) {
 		return Promise.resolve();
 	}
 
@@ -132,6 +140,8 @@ function applyChoiceOutcome(outcome) {
 function recordChoiceOutcome(question, choice, outcome) {
 	runHistory.push({
 		questionNumber: idx + 1,
+		modeId: activeMode.id,
+		modeLabel: activeMode.label,
 		client: question.client,
 		response: choice.text,
 		questionId: question.id,
@@ -218,7 +228,7 @@ function requestSkipTyping() {
 }
 
 async function pacingDelay(ms) {
-	if (reducedMotion.matches || skipCurrentSequence || ms <= 0) return;
+	if (activeMode.instantPacing || reducedMotion.matches || skipCurrentSequence || ms <= 0) return;
 
 	const startedAt = performance.now();
 	while (performance.now() - startedAt < ms) {
@@ -231,7 +241,7 @@ async function typeInto(elm, text, speed = 12) {
 	typing = true;
 	skipTypingNow = skipCurrentSequence;
 
-	if (reducedMotion.matches || skipCurrentSequence) {
+	if (activeMode.instantPacing || reducedMotion.matches || skipCurrentSequence) {
 		elm.textContent = text;
 		typing = false;
 		announce(text);
@@ -320,13 +330,16 @@ function showOutcome(outcome, feedback) {
 }
 
 function buildQuestionsForRun() {
+	const recentHistory = loadQuestionHistory(window.localStorage);
 	return selectQuestionsForRun(
 		QUESTIONS_BASE,
 		{
-			count: 10,
+			count: activeMode.questionCount,
 			minimumTopics: 6,
 			maximumPerTopic: 2,
-			minimumViolationCategories: 3
+			minimumViolationCategories: activeMode.minimumViolationCategories,
+			preferredViolationCategories: activeMode.preferredViolationCategories,
+			recentQuestionWeights: getRecentQuestionWeights(recentHistory)
 		},
 		Math.random
 	);
@@ -415,7 +428,11 @@ async function onPick(choiceIndex) {
 	selectedButton?.setAttribute("aria-label", `${chosen.text} Selected response`);
 	lockChoices();
 
-	const outcome = calculateChoiceOutcome({ choice: chosen, currentMood: mood });
+	const outcome = calculateChoiceOutcome({
+		choice: chosen,
+		currentMood: mood,
+		modifiers: activeMode.scoringModifiers
+	});
 	applyChoiceOutcome(outcome);
 	recordChoiceOutcome(q, chosen, outcome);
 	updateHUD();
@@ -499,6 +516,8 @@ function summarizeRun({ completed, reason = "" } = {}) {
 
 	return {
 		completed,
+		modeId: activeMode.id,
+		modeLabel: activeMode.label,
 		statusLabel: completed ? "Session completed" : "Session ended early",
 		reason,
 		grade: resultLabel(totalBadness, totalViolations),
@@ -553,6 +572,7 @@ function resultMessage(summary) {
 	return `
 		<header class="resultHeader">
 			<p class="resultStatus">${escapeHTML(summary.statusLabel)}</p>
+			<p class="resultMode">Mode: <b>${escapeHTML(summary.modeLabel)}</b></p>
 			<h3>Result: ${escapeHTML(summary.grade)}</h3>
 			<p>${escapeHTML(notes[summary.grade])}</p>
 			${summary.reason ? `<p class="resultReason"><b>Reason:</b> ${escapeHTML(summary.reason)}</p>` : ""}
@@ -584,9 +604,10 @@ function updateFinalScorePills(summary) {
 	el.finalViolPill.textContent = `Final Violations: ${summary.totalViolations}`;
 
 	const saved = updateSavedRecords(window.localStorage, summary);
+	const modeRecords = saved.recordsByMode[summary.modeId];
 	el.bestPill.textContent = [
-		formatSavedRecord("Highest Chaos", saved.records.highestChaos),
-		formatSavedRecord("Best Completed", saved.records.bestCompleted)
+		formatSavedRecord("Highest Chaos", modeRecords.highestChaos),
+		formatSavedRecord("Best Completed", modeRecords.bestCompleted)
 	].join(" · ");
 }
 
@@ -605,7 +626,7 @@ function showResults(summary) {
 	el.progressFill.style.width = "100%";
 	el.resultHeading.focus();
 	announce(
-		`${summary.statusLabel}. ${summary.grade}. ` +
+		`${summary.modeLabel} mode. ${summary.statusLabel}. ${summary.grade}. ` +
 		`Badness ${summary.totalBadness}. Violations ${summary.totalViolations}. ` +
 		`Mood remaining ${summary.moodRemaining}. ` +
 		`${summary.questionsAnswered} of ${summary.questionsTotal} questions survived.`
@@ -623,6 +644,9 @@ function finishGame() {
 async function startGame() {
 	if (contentErrors.length > 0) return;
 	if (interactionState !== INTERACTION_STATES.IDLE && interactionState !== INTERACTION_STATES.RESULTS) return;
+	const selectedMode = el.modePicker?.querySelector('input[name="gameMode"]:checked')?.value;
+	activeMode = getMode(selectedMode);
+	el.modePicker.disabled = true;
 	interactionState = INTERACTION_STATES.PRESENTING;
 	idx = 0;
 	score = 0;
@@ -631,6 +655,7 @@ async function startGame() {
 	runHistory = [];
 	latestResultSummary = null;
 	questions = buildQuestionsForRun();
+	recordQuestionRun(window.localStorage, questions.map((question) => question.id));
 	endedEarly = false;
 
 	updateTopMeta();
@@ -654,6 +679,7 @@ async function next() {
 
 function restart() {
 	interactionState = INTERACTION_STATES.IDLE;
+	el.modePicker.disabled = false;
 	showScreen("start");
 	el.meta.textContent = "";
 	el.progressBar.setAttribute("aria-valuenow", "0");
@@ -676,6 +702,7 @@ function formatShareText(summary) {
 
 	return [
 		`Bad Therapist Result: ${summary.grade}`,
+		`Mode: ${summary.modeLabel}`,
 		`Status: ${summary.statusLabel}`,
 		summary.reason ? `Reason: ${summary.reason}` : null,
 		`Badness: ${summary.totalBadness}/${summary.questionsTotal * 3}`,

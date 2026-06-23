@@ -45,6 +45,69 @@ const first = selectQuestionsForRun(questions, {}, seededRandom(42));
 const second = selectQuestionsForRun(questions, {}, seededRandom(42));
 assert.deepEqual(first, second, "seeded selection should be deterministic");
 
+const replayFirst = selectQuestionsForRun(questions, {}, seededRandom(1001));
+const firstWeights = Object.fromEntries(replayFirst.map((question) => [question.id, 100]));
+const replaySecond = selectQuestionsForRun(
+	questions,
+	{ recentQuestionWeights: firstWeights },
+	seededRandom(1002)
+);
+const firstIds = new Set(replayFirst.map((question) => question.id));
+assert.equal(
+	replaySecond.filter((question) => firstIds.has(question.id)).length,
+	0,
+	"the second run should avoid the first when enough unseen content exists"
+);
+
+const secondIds = new Set(replaySecond.map((question) => question.id));
+const thirdWeights = {
+	...Object.fromEntries(replayFirst.map((question) => [question.id, 35])),
+	...Object.fromEntries(replaySecond.map((question) => [question.id, 100]))
+};
+const replayThird = selectQuestionsForRun(
+	questions,
+	{ recentQuestionWeights: thirdWeights },
+	seededRandom(1003)
+);
+assert.equal(
+	replayThird.filter((question) => secondIds.has(question.id)).length,
+	0,
+	"the third run should prefer older questions before the immediately previous run"
+);
+assert.ok(
+	new Set([...replayFirst, ...replaySecond, ...replayThird].map((question) => question.id)).size >= 27,
+	"the first three runs should cover nearly the full pool"
+);
+const replayMetrics = runMetrics(replayThird);
+assert.ok(replayMetrics.topics.size >= 6);
+assert.ok(replayMetrics.violations.size >= 3);
+
+const weightedA = selectQuestionsForRun(
+	questions,
+	{ recentQuestionWeights: thirdWeights },
+	seededRandom(77)
+);
+const weightedB = selectQuestionsForRun(
+	questions,
+	{ recentQuestionWeights: thirdWeights },
+	seededRandom(77)
+);
+assert.deepEqual(weightedA, weightedB, "weighted seeded selection should remain deterministic");
+
+const minefieldRun = selectQuestionsForRun(
+	questions,
+	{
+		minimumViolationCategories: 4,
+		preferredViolationCategories: ["judgment", "coercion", "harmfulAdvice"]
+	},
+	seededRandom(909)
+);
+const minefieldCategories = new Set(
+	minefieldRun.flatMap((question) => question.choices.map((choice) => choice.violation).filter(Boolean))
+);
+assert.ok(minefieldCategories.size >= 4);
+assert.ok(["judgment", "coercion", "harmfulAdvice"].every((category) => minefieldCategories.has(category)));
+
 const smallPool = questions.slice(0, 4);
 const smallRun = selectQuestionsForRun(smallPool, { count: 10 }, seededRandom(7));
 assert.equal(smallRun.length, 4);

@@ -61,11 +61,16 @@
 		};
 	}
 
-	function calculateChoiceOutcome({ choice = {}, currentMood = 100 } = {}) {
+	function calculateChoiceOutcome({ choice = {}, currentMood = 100, modifiers = {} } = {}) {
 		const safeMood = Number.isFinite(currentMood) ? currentMood : 100;
 		const badnessGained = Number.isFinite(choice.badness) ? choice.badness : 0;
 		const violation = getViolationDefinition(choice.violation);
-		const violationPenalty = violation?.moodPenalty || 0;
+		const penaltyMultiplier = Number.isFinite(modifiers.violationPenaltyMultiplier)
+			? Math.max(0, modifiers.violationPenaltyMultiplier)
+			: 1;
+		const violationPenalty = violation
+			? Math.round(violation.moodPenalty * penaltyMultiplier)
+			: 0;
 		const moodModifier = Number.isInteger(choice.moodModifier) ? choice.moodModifier : 0;
 		const rawMoodLoss = Math.max(
 			0,

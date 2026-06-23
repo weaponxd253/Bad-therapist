@@ -33,15 +33,35 @@
 		return { topics, categories, topicCounts };
 	}
 
+	function recencyWeight(question, options) {
+		const weight = options.recentQuestionWeights?.[question.id];
+		return Number.isFinite(weight) && weight > 0 ? weight : 0;
+	}
+
+	function preferredCategoryCount(question, options) {
+		const preferred = new Set(options.preferredViolationCategories);
+		return [...violationCategories(question)].filter((category) => preferred.has(category)).length;
+	}
+
 	function quality(selected, options) {
 		const run = metrics(selected);
 		const overflow = [...run.topicCounts.values()]
 			.reduce((sum, count) => sum + Math.max(0, count - options.maximumPerTopic), 0);
+		const recencyPenalty = selected.reduce(
+			(sum, question) => sum + recencyWeight(question, options),
+			0
+		);
+		const preferredCoverage = selected.reduce(
+			(sum, question) => sum + preferredCategoryCount(question, options),
+			0
+		);
 		return (
 			selected.length * 1000 +
 			Math.min(run.topics.size, options.minimumTopics) * 100 +
-			Math.min(run.categories.size, options.minimumViolationCategories) * 40 -
-			overflow * 500
+			Math.min(run.categories.size, options.minimumViolationCategories) * 40 +
+			preferredCoverage * 25 -
+			overflow * 500 -
+			recencyPenalty * 10
 		);
 	}
 
@@ -67,6 +87,8 @@
 					(newCategories > 0 && run.categories.size < options.minimumViolationCategories
 						? newCategories * 35
 						: newCategories * 6) +
+					preferredCategoryCount(question, options) * 25 -
+					recencyWeight(question, options) * 10 +
 					random();
 				if (score > bestScore) {
 					bestScore = score;
@@ -91,6 +113,14 @@
 				0,
 				requestedOptions.minimumViolationCategories ?? 3
 			),
+			recentQuestionWeights:
+				requestedOptions.recentQuestionWeights &&
+				typeof requestedOptions.recentQuestionWeights === "object"
+					? { ...requestedOptions.recentQuestionWeights }
+					: {},
+			preferredViolationCategories: Array.isArray(requestedOptions.preferredViolationCategories)
+				? [...requestedOptions.preferredViolationCategories]
+				: [],
 			attempts: Math.max(1, requestedOptions.attempts ?? 48)
 		};
 		const targetCount = Math.min(options.count, pool.length);

@@ -28,7 +28,23 @@
 			<p>
 				Press <b>Start</b> to become the therapist. A client will share something confidential.
 				Your job is to pick the <i>worst possible</i> responses for 10 questions.
+				Each session favors questions you haven’t seen recently.
 			</p>
+			<fieldset class="modePicker" id="modePicker">
+				<legend>Choose a mode</legend>
+				<label class="modeOption">
+					<input type="radio" name="gameMode" value="classic" checked>
+					<span><b>Classic</b><small>Original pacing and balance.</small></span>
+				</label>
+				<label class="modeOption">
+					<input type="radio" name="gameMode" value="speed">
+					<span><b>Speed Session</b><small>No typing or transition delays.</small></span>
+				</label>
+				<label class="modeOption">
+					<input type="radio" name="gameMode" value="minefield">
+					<span><b>Ethics Minefield</b><small>Subtler traps and harsher violation penalties.</small></span>
+				</label>
+			</fieldset>
 			<button id="start">start</button>
 			<p class="contentError" id="contentError" role="alert" hidden>
 				Game content could not be loaded. Please refresh or try again later.
@@ -90,10 +106,12 @@
 		<div class="srOnly" id="announcer" aria-live="polite" aria-atomic="true"></div>
 	</section>
 </main>
+<script src="game-modes.js"></script>
 <script src="scoring.js"></script>
 <script src="persistence.js"></script>
 <script src="questions.js"></script>
 <script src="content-schema.js"></script>
+<script src="question-history.js"></script>
 <script src="question-selector.js"></script>
 <script src="script.js"></script>
 </body>

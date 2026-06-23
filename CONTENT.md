@@ -14,3 +14,7 @@ New questions must follow the schema in `questions.js` and pass `content-schema.
 - Use `moodModifier` only for exceptional balance needs and keep it between -10 and 10.
 
 Run-selection goals are ten unique questions, at least six topics, no more than two questions per topic, and at least three violation categories whenever the pool permits.
+
+Replay selection favors unseen questions, then older questions, while preserving topic and violation-category balance. Stable IDs must never be recycled because history is keyed by question ID.
+
+Ethics Minefield prefers judgment, coercion, and harmful-advice content. New content should keep these categories subtle enough that the ethical problem becomes clear after selection rather than through cartoonishly obvious wording.

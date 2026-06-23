@@ -7,6 +7,8 @@ const persistence = require("./persistence.js");
 const questionsContent = require("./questions.js");
 const contentSchema = require("./content-schema.js");
 const questionSelector = require("./question-selector.js");
+const questionHistory = require("./question-history.js");
+const gameModes = require("./game-modes.js");
 
 function makeElement() {
 	const attributes = {};
@@ -44,6 +46,7 @@ async function main() {
 	};
 	let clipboardText = "";
 
+	const mediaPreference = { matches: true };
 	const context = {
 		console: { ...console, error() {} },
 		document: {
@@ -55,13 +58,15 @@ async function main() {
 			createElement: makeElement
 		},
 		window: {
+			BadTherapistModes: gameModes,
 			BadTherapistScoring: scoring,
 			BadTherapistPersistence: persistence,
 			BadTherapistQuestions: questionsContent,
 			BadTherapistContentSchema: contentSchema,
 			BadTherapistQuestionSelector: questionSelector,
+			BadTherapistQuestionHistory: questionHistory,
 			localStorage,
-			matchMedia: () => ({ matches: true }),
+			matchMedia: () => mediaPreference,
 			setTimeout,
 			clearTimeout,
 			AudioContext: null,
@@ -105,6 +110,8 @@ async function main() {
 	assert.equal(selectedButton.attributes["aria-pressed"], "true");
 	assert.deepEqual(state.runHistory, [{
 		questionNumber: 1,
+		modeId: "classic",
+		modeLabel: "Classic",
 		client: "Client question",
 		response: "Bad response",
 		questionId: "test-question",
@@ -144,6 +151,7 @@ async function main() {
 	assert.match(markup, /Confidentiality/);
 
 	const shareText = vm.runInContext(`formatShareText(${JSON.stringify(summary)})`, context);
+	assert.match(shareText, /Mode: Classic/);
 	assert.match(shareText, /Status: Session ended early/);
 	assert.match(shareText, /Reason: Trust collapsed/);
 	assert.match(shareText, /Violations: 2 \(Confidentiality: 1, Professional Boundaries: 1\)/);
@@ -155,8 +163,8 @@ async function main() {
 
 	vm.runInContext(`updateFinalScorePills(${JSON.stringify({ ...summary, completed: true })})`, context);
 	const saved = persistence.load(localStorage);
-	assert.equal(saved.records.highestChaos.weighted, summary.weighted);
-	assert.equal(saved.records.bestCompleted.weighted, summary.weighted);
+	assert.equal(saved.recordsByMode.classic.highestChaos.weighted, summary.weighted);
+	assert.equal(saved.recordsByMode.classic.bestCompleted.weighted, summary.weighted);
 	assert.match(elements.get("bestPill").textContent, /Highest Chaos/);
 	assert.match(elements.get("bestPill").textContent, /Best Completed/);
 
@@ -165,7 +173,17 @@ async function main() {
 	assert.equal(elements.get("start").disabled, true);
 	assert.equal(elements.get("contentError").hidden, false);
 
-	console.log("Game-state, history, persistence, sharing, and content-gating tests passed.");
+	mediaPreference.matches = false;
+	const speedTarget = makeElement();
+	context.speedTarget = speedTarget;
+	vm.runInContext(`activeMode = getMode("speed")`, context);
+	const speedStarted = performance.now();
+	await vm.runInContext(`typeInto(speedTarget, "This should appear immediately", 40)`, context);
+	await vm.runInContext(`pacingDelay(500)`, context);
+	assert.ok(performance.now() - speedStarted < 100, "Speed mode must bypass artificial delays");
+	assert.equal(speedTarget.textContent, "This should appear immediately");
+
+	console.log("Game-state, modes, history, persistence, sharing, and content-gating tests passed.");
 }
 
 main().catch((error) => {

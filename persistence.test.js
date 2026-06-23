@@ -10,52 +10,55 @@ function memoryStorage(seed = {}) {
 	};
 }
 
-const legacyStorage = memoryStorage({
-	[persistence.LEGACY_KEY]: JSON.stringify({ weighted: 22, score: 18, violations: 2 })
+const v2Storage = memoryStorage({
+	[persistence.PREVIOUS_KEY]: JSON.stringify({
+		version: 2,
+		records: {
+			highestChaos: { weighted: 22, score: 18, violations: 2 },
+			bestCompleted: { weighted: 20, score: 16, violations: 2, completed: true }
+		}
+	})
 });
-const migrated = persistence.load(legacyStorage);
-assert.equal(migrated.version, 2);
-assert.equal(migrated.records.highestChaos.weighted, 22);
-assert.equal(migrated.records.bestCompleted, null);
-assert.ok(legacyStorage.values.has(persistence.STORAGE_KEY));
+const migratedV2 = persistence.load(v2Storage);
+assert.equal(migratedV2.version, 3);
+assert.equal(migratedV2.recordsByMode.classic.highestChaos.weighted, 22);
+assert.equal(migratedV2.recordsByMode.classic.bestCompleted.weighted, 20);
+assert.equal(migratedV2.recordsByMode.speed.highestChaos, null);
+assert.ok(v2Storage.values.has(persistence.STORAGE_KEY));
 
-const completedSummary = {
-	weighted: 28,
-	totalBadness: 24,
-	totalViolations: 2,
-	completed: true,
-	questionsAnswered: 10,
-	moodRemaining: 12,
-	grade: "Ethics Committee Summoned"
-};
-const updated = persistence.update(legacyStorage, completedSummary);
-assert.equal(updated.records.highestChaos.weighted, 28);
-assert.equal(updated.records.bestCompleted.weighted, 28);
+const legacyStorage = memoryStorage({
+	[persistence.LEGACY_KEY]: JSON.stringify({ weighted: 19, score: 17, violations: 1 })
+});
+const migratedLegacy = persistence.load(legacyStorage);
+assert.equal(migratedLegacy.recordsByMode.classic.highestChaos.weighted, 19);
+assert.equal(migratedLegacy.recordsByMode.classic.bestCompleted, null);
 
-const earlySummary = {
-	...completedSummary,
-	weighted: 31,
-	totalBadness: 27,
-	completed: false,
-	questionsAnswered: 7,
-	moodRemaining: 7
-};
-const afterEarly = persistence.update(legacyStorage, earlySummary);
-assert.equal(afterEarly.records.highestChaos.weighted, 31);
-assert.equal(afterEarly.records.bestCompleted.weighted, 28);
+const summary = (modeId, weighted, completed = true) => ({
+	modeId,
+	modeLabel: modeId === "speed" ? "Speed Session" : modeId === "minefield" ? "Ethics Minefield" : "Classic",
+	weighted,
+	totalBadness: weighted - 2,
+	totalViolations: 1,
+	completed,
+	questionsAnswered: completed ? 10 : 6,
+	moodRemaining: completed ? 20 : 8,
+	grade: "Questionable Vibes"
+});
+const storage = memoryStorage();
+persistence.update(storage, summary("classic", 24));
+persistence.update(storage, summary("speed", 30));
+persistence.update(storage, summary("minefield", 35, false));
+const separated = persistence.load(storage);
+assert.equal(separated.recordsByMode.classic.highestChaos.weighted, 24);
+assert.equal(separated.recordsByMode.speed.highestChaos.weighted, 30);
+assert.equal(separated.recordsByMode.minefield.highestChaos.weighted, 35);
+assert.equal(separated.recordsByMode.minefield.bestCompleted, null);
 
-const malformed = persistence.load(memoryStorage({
-	[persistence.STORAGE_KEY]: "not json",
-	[persistence.LEGACY_KEY]: JSON.stringify({ nope: true })
-}));
+const malformed = persistence.load(memoryStorage({ [persistence.STORAGE_KEY]: "not json" }));
 assert.deepEqual(malformed, persistence.emptyRecords());
-
-const blockedStorage = {
-	getItem() { throw new Error("blocked"); },
-	setItem() { throw new Error("blocked"); }
-};
-assert.doesNotThrow(() => persistence.load(blockedStorage));
-assert.doesNotThrow(() => persistence.update(blockedStorage, completedSummary));
-assert.equal(persistence.save(blockedStorage, persistence.emptyRecords()), false);
+const blocked = { getItem() { throw new Error("blocked"); }, setItem() { throw new Error("blocked"); } };
+assert.doesNotThrow(() => persistence.load(blocked));
+assert.doesNotThrow(() => persistence.update(blocked, summary("classic", 10)));
+assert.equal(persistence.save(blocked, persistence.emptyRecords()), false);
 
 console.log("Persistence tests passed.");

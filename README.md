@@ -9,6 +9,8 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 ## Features
 
 - Ten balanced questions per session selected from a 28-question pool
+- Replay-aware selection favors unseen and least-recent questions
+- Classic, Speed Session, and Ethics Minefield modes
 - Four shuffled responses for every question
 - Badness, ethics-violation, and client-mood scoring
 - Early endings when the client's mood gets too low
@@ -48,7 +50,9 @@ styles.css             Visual design and responsive layout
 script.js              Game state and interactions
 questions.js           Validated question content
 content-schema.js      Runtime content validation
-question-selector.js   Balanced run selection
+question-selector.js   Balanced, replay-aware run selection
+question-history.js    Versioned recent-run history
+game-modes.js          Declarative game mode configuration
 scoring.js             Scoring and violation rules
 persistence.js         Versioned local records
 CONTENT.md             Content authoring guidelines

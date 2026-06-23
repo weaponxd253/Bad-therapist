@@ -29,6 +29,13 @@ const confidentiality = calculateChoiceOutcome({
 assert.equal(confidentiality.violation.label, "Confidentiality");
 assert.equal(confidentiality.violationPenalty, VIOLATION_TYPES.confidentiality.moodPenalty);
 assert.equal(confidentiality.moodLost, 27);
+const minefield = calculateChoiceOutcome({
+	choice: { badness: 3, violation: "confidentiality" },
+	currentMood: 100,
+	modifiers: { violationPenaltyMultiplier: 1.25 }
+});
+assert.equal(minefield.violationPenalty, 15);
+assert.equal(minefield.moodLost, 30);
 
 const modified = calculateChoiceOutcome({ choice: { badness: 2, moodModifier: 4 }, currentMood: 100 });
 assert.equal(modified.moodLost, 14);
