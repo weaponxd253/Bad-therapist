@@ -69,7 +69,7 @@ function makeElement() {
 async function main() {
 	const elements = new Map();
 	const selectedButton = makeElement();
-	selectedButton.dataset = { choiceIndex: "0" };
+	selectedButton.dataset = { choiceIndex: "0", choiceText: "Bad response" };
 
 	const choices = makeElement();
 	choices.querySelectorAll = () => [selectedButton];
@@ -156,7 +156,16 @@ async function main() {
 	assert.equal(elements.get("therapistBubble").style.display, "block");
 	assert.equal(elements.get("reactionBubble").style.display, "block");
 	assert.equal(elements.get("nextBtn").disabled, false);
+	assert.equal(elements.get("nextBtn").textContent, "See results");
+	assert.equal(elements.get("nextBtn").classList.contains("is-ready"), true);
+	assert.match(elements.get("roundStatus").textContent, /Press See results or Enter\./);
+	assert.equal(elements.get("roundStatus").dataset.tone, "ready");
+	assert.equal(elements.get("outcomeTitle").textContent, "Bad choice logged");
+	assert.equal(elements.get("outcomeMood").textContent, "Mood impact −15");
+	assert.equal(elements.get("outcomeFeedback").classList.contains("is-badness"), true);
+	assert.equal(selectedButton.disabled, true);
 	assert.equal(selectedButton.attributes["aria-pressed"], "true");
+	assert.equal(selectedButton.attributes["aria-label"], "Bad response Selected response");
 	assert.deepEqual(state.runHistory, [{
 		questionNumber: 1,
 		modeId: "classic",
@@ -375,6 +384,8 @@ async function main() {
 	))), { skipCurrentSequence: true, skipTypingNow: true });
 
 	vm.runInContext(`interactionState = INTERACTION_STATES.CHOOSING; skipCurrentSequence = false; skipTypingNow = false; locked = false; typing = false;`, context);
+	selectedButton.disabled = false;
+	selectedButton.setAttribute("aria-disabled", "false");
 	assert.equal(pressKey({ key: "1", code: "Digit1" }), false);
 	await new Promise((resolve) => setTimeout(resolve, 0));
 	assert.equal(vm.runInContext("runHistory.length", context), 1, "number hotkeys must pick the matching answer");

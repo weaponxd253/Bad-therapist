@@ -41,7 +41,9 @@ const el = {
 	therapistBubble: document.getElementById("therapistBubble"),
 	reactionBubble: document.getElementById("reactionBubble"),
 	choices: document.getElementById("choices"),
+	roundStatus: document.getElementById("roundStatus"),
 	outcomeFeedback: document.getElementById("outcomeFeedback"),
+	outcomeTitle: document.getElementById("outcomeTitle"),
 	outcomeBadness: document.getElementById("outcomeBadness"),
 	outcomeMood: document.getElementById("outcomeMood"),
 	outcomeViolation: document.getElementById("outcomeViolation"),
@@ -88,6 +90,32 @@ let activeMode = getMode("classic");
 let endedEarly = false;
 let soundEnabled = true;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const COPY_LINES = Object.freeze({
+	ready: Object.freeze([
+		"The clipboard is trembling. Enter works too.",
+		"Damage assessed. Advance when emotionally inconvenient.",
+		"That landed poorly. Next question is ready.",
+		"The room has processed this. Mostly."
+	]),
+	selected: Object.freeze([
+		"Response selected — watch the fallout.",
+		"Choice locked. The vibes are entering evidence.",
+		"You said it. Now we all live with it.",
+		"Selection logged. Client reaction incoming."
+	]),
+	result: Object.freeze([
+		"Result ready. Copy it and flex privately.",
+		"Session notes compiled with suspicious confidence.",
+		"The paperwork has feelings now.",
+		"Final score ready for questionable bragging rights."
+	]),
+	earlyEnd: Object.freeze([
+		"Client left the session. Honestly, fair.",
+		"Session terminated by surviving instinct.",
+		"Client trust has exited the chat.",
+		"The therapeutic alliance packed a tiny suitcase."
+	])
+});
 
 function announce(message) {
 	el.announcer.textContent = "";
@@ -179,9 +207,38 @@ function moodEmoji(v) {
 
 function showToast(msg, ms = 1200) {
 	el.toast.textContent = msg;
+	el.toast.classList.remove("show");
+	void el.toast.offsetWidth;
 	el.toast.classList.add("show");
 	window.clearTimeout(showToast._t);
 	showToast._t = window.setTimeout(() => el.toast.classList.remove("show"), ms);
+}
+
+function pickLine(group) {
+	const lines = COPY_LINES[group] || [];
+	if (lines.length === 0) return "";
+	pickLine._index = pickLine._index || {};
+	const index = pickLine._index[group] || 0;
+	pickLine._index[group] = index + 1;
+	return lines[index % lines.length];
+}
+
+function pulseElement(element, className = "is-bumped", ms = 520) {
+	if (!element || reducedMotion.matches) return;
+	element.classList.remove(className);
+	void element.offsetWidth;
+	element.classList.add(className);
+	window.clearTimeout(pulseElement._timers?.get(element));
+	pulseElement._timers = pulseElement._timers || new WeakMap();
+	const timer = window.setTimeout(() => element.classList.remove(className), ms);
+	pulseElement._timers.set(element, timer);
+}
+
+function markOutcomeRevealed() {
+	if (reducedMotion.matches) return;
+	el.outcomeFeedback.classList.remove("is-revealed");
+	void el.outcomeFeedback.offsetWidth;
+	el.outcomeFeedback.classList.add("is-revealed");
 }
 
 function playBeep(type) {
@@ -191,37 +248,40 @@ function playBeep(type) {
 	if (!AudioCtx) return;
 
 	const ctx = playBeep._ctx || (playBeep._ctx = new AudioCtx());
-	const o = ctx.createOscillator();
-	const g = ctx.createGain();
-	o.connect(g);
-	g.connect(ctx.destination);
-
 	const now = ctx.currentTime;
-	const base = type === "violation" ? 220 : 440;
+	const cues = {
+		pick: [{ frequency: 430, offset: 0, duration: 0.14, gain: 0.11, type: "triangle" }],
+		ready: [{ frequency: 660, offset: 0, duration: 0.11, gain: 0.07, type: "sine" }],
+		violation: [
+			{ frequency: 220, offset: 0, duration: 0.18, gain: 0.15, type: "square" },
+			{ frequency: 260, offset: 0.12, duration: 0.16, gain: 0.12, type: "square" }
+		],
+		collapse: [
+			{ frequency: 180, offset: 0, duration: 0.2, gain: 0.14, type: "sawtooth" },
+			{ frequency: 120, offset: 0.16, duration: 0.26, gain: 0.1, type: "sawtooth" }
+		],
+		achievement: [
+			{ frequency: 523, offset: 0, duration: 0.12, gain: 0.09, type: "triangle" },
+			{ frequency: 659, offset: 0.1, duration: 0.12, gain: 0.09, type: "triangle" },
+			{ frequency: 784, offset: 0.2, duration: 0.18, gain: 0.08, type: "triangle" }
+		]
+	};
 
-	o.type = "square";
-	o.frequency.setValueAtTime(base, now);
-	g.gain.setValueAtTime(0.0001, now);
-	g.gain.exponentialRampToValueAtTime(0.15, now + 0.01);
-	g.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
-
-	o.start(now);
-	o.stop(now + 0.2);
-
-	if (type === "violation") {
-		// quick 2nd chirp
-		const o2 = ctx.createOscillator();
-		const g2 = ctx.createGain();
-		o2.connect(g2);
-		g2.connect(ctx.destination);
-		o2.type = "square";
-		o2.frequency.setValueAtTime(260, now + 0.12);
-		g2.gain.setValueAtTime(0.0001, now + 0.12);
-		g2.gain.exponentialRampToValueAtTime(0.12, now + 0.13);
-		g2.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-		o2.start(now + 0.12);
-		o2.stop(now + 0.28);
-	}
+	(cues[type] || cues.pick).forEach((cue) => {
+		const oscillator = ctx.createOscillator();
+		const gain = ctx.createGain();
+		const start = now + cue.offset;
+		const end = start + cue.duration;
+		oscillator.connect(gain);
+		gain.connect(ctx.destination);
+		oscillator.type = cue.type;
+		oscillator.frequency.setValueAtTime(cue.frequency, start);
+		gain.gain.setValueAtTime(0.0001, start);
+		gain.gain.exponentialRampToValueAtTime(cue.gain, start + 0.012);
+		gain.gain.exponentialRampToValueAtTime(0.0001, end);
+		oscillator.start(start);
+		oscillator.stop(end + 0.02);
+	});
 }
 
 function beginMessageSequence() {
@@ -290,21 +350,48 @@ function updateHUD() {
 	el.progressFill.style.width = `${Math.round((idx / questions.length) * 100)}%`;
 }
 
+function isFinalQuestion() {
+	return idx >= questions.length - 1;
+}
+
+function setRoundStatus(message, tone = "") {
+	el.roundStatus.textContent = message;
+	el.roundStatus.dataset.tone = tone;
+}
+
+function setNextReady(ready) {
+	el.nextBtn.disabled = !ready;
+	el.nextBtn.classList.toggle("is-ready", ready);
+	el.nextBtn.textContent = ready
+		? (isFinalQuestion() ? "See results" : "Next question")
+		: "Next";
+	el.nextBtn.setAttribute(
+		"aria-label",
+		ready
+			? (isFinalQuestion() ? "See results" : "Go to next question")
+			: "Next question unavailable until the response is complete"
+	);
+}
+
 function resetRoundUI() {
 	el.therapistBubble.style.display = "none";
 	el.reactionBubble.style.display = "none";
 	el.outcomeFeedback.hidden = true;
+	el.outcomeFeedback.classList.remove("is-helpful", "is-badness", "is-violation", "is-collapse", "is-revealed");
+	el.outcomeTitle.textContent = "Choice outcome";
 	el.outcomeBadness.textContent = "";
 	el.outcomeMood.textContent = "";
 	el.outcomeViolation.textContent = "";
 	el.outcomeViolation.hidden = true;
 	el.outcomeExplanation.textContent = "";
-	el.nextBtn.disabled = true;
+	setRoundStatus("Listen to the client, then choose the worst response.", "presenting");
+	setNextReady(false);
 	locked = true;
 }
 
 function lockChoices() {
 	[...el.choices.querySelectorAll("button")].forEach((button) => {
+		button.disabled = true;
 		button.setAttribute("aria-disabled", "true");
 	});
 	locked = true;
@@ -319,17 +406,37 @@ function outcomeExplanation(outcome, feedback) {
 
 function showOutcome(outcome, feedback) {
 	const explanation = outcomeExplanation(outcome, feedback);
-	el.outcomeBadness.textContent = `Badness +${outcome.badnessGained}`;
-	el.outcomeMood.textContent = `Mood −${outcome.moodLost}`;
+	const severity = outcome.sessionWillEnd
+		? "collapse"
+		: outcome.violation
+			? "violation"
+			: outcome.badnessGained === 0
+				? "helpful"
+				: "badness";
+	const titles = {
+		helpful: "Accidentally helpful",
+		badness: "Bad choice logged",
+		violation: "Ethics violation",
+		collapse: "Session collapse"
+	};
+
+	el.outcomeFeedback.classList.remove("is-helpful", "is-badness", "is-violation", "is-collapse", "is-revealed");
+	el.outcomeFeedback.classList.add(`is-${severity}`);
+	el.outcomeTitle.textContent = titles[severity];
+	el.outcomeBadness.textContent = outcome.badnessGained === 0
+		? "Badness +0"
+		: `Badness +${outcome.badnessGained}`;
+	el.outcomeMood.textContent = `Mood impact −${outcome.moodLost}`;
 	el.outcomeViolation.hidden = !outcome.violation;
 	el.outcomeViolation.textContent = outcome.violation
-		? `Violation +1 · ${outcome.violation.label}`
+		? `Ethics violation · ${outcome.violation.label}`
 		: "";
 	el.outcomeExplanation.textContent = explanation;
 	el.outcomeFeedback.hidden = false;
+	markOutcomeRevealed();
 
 	announce(
-		`Choice outcome. Badness increased by ${outcome.badnessGained}. ` +
+		`${titles[severity]}. Badness increased by ${outcome.badnessGained}. ` +
 		`Client mood decreased by ${outcome.moodLost}. ` +
 		`${outcome.violation ? `One ${outcome.violation.label} violation added. ` : ""}` +
 		explanation
@@ -381,6 +488,7 @@ async function renderQuestion() {
 		btn.className = "choiceBtn";
 		btn.type = "button";
 		btn.dataset.choiceIndex = String(i);
+		btn.dataset.choiceText = c.text;
 		btn.setAttribute("aria-pressed", "false");
 		btn.setAttribute("aria-disabled", "false");
 		btn.textContent = c.text;
@@ -401,6 +509,8 @@ async function renderQuestion() {
 	await animateChoicesIn(buttons);
 	locked = false;
 	interactionState = INTERACTION_STATES.CHOOSING;
+	setRoundStatus("Choose the worst response. Buttons 1–4 also work.", "choosing");
+	pulseElement(el.roundStatus, "is-bumped", 420);
 }
 
 function ethicsAlarm(violation) {
@@ -416,11 +526,15 @@ function ethicsAlarm(violation) {
 
 async function onPick(choiceIndex) {
 	if (interactionState !== INTERACTION_STATES.CHOOSING || locked || typing) return;
-	interactionState = INTERACTION_STATES.RESPONDING;
-	beginMessageSequence();
 
 	const q = questions[idx];
-	const chosen = q.choices[choiceIndex];
+	const chosen = q?.choices?.[choiceIndex];
+	if (!chosen) return;
+
+	interactionState = INTERACTION_STATES.RESPONDING;
+	beginMessageSequence();
+	setNextReady(false);
+
 	const buttons = [...el.choices.querySelectorAll("button")];
 	const selectedButton = buttons.find(
 		(button) => Number(button.dataset.choiceIndex) === choiceIndex
@@ -428,11 +542,13 @@ async function onPick(choiceIndex) {
 
 	buttons.forEach((button) => {
 		const selected = button === selectedButton;
+		const label = button.dataset.choiceText || button.textContent.trim();
 		button.classList.toggle("is-selected", selected);
 		button.classList.toggle("is-unselected", !selected);
 		button.setAttribute("aria-pressed", String(selected));
+		button.setAttribute("aria-label", selected ? `${label} Selected response` : `${label} Not selected`);
 	});
-	selectedButton?.setAttribute("aria-label", `${chosen.text} Selected response`);
+	pulseElement(selectedButton, "is-popping", 420);
 	lockChoices();
 
 	const outcome = calculateChoiceOutcome({
@@ -444,6 +560,10 @@ async function onPick(choiceIndex) {
 	recordChoiceOutcome(q, chosen, outcome);
 	updateHUD();
 	showOutcome(outcome, chosen.feedback);
+	pulseElement(el.scorePill);
+	pulseElement(el.moodPill);
+	if (outcome.violation) pulseElement(el.violPill, "is-alerted", 620);
+	setRoundStatus(pickLine("selected"), outcome.sessionWillEnd ? "collapse" : outcome.violation ? "violation" : "selected");
 
 	const earlyEndReason = outcome.violation
 		? `${outcome.violation.label} violation and client trust collapsed`
@@ -462,6 +582,8 @@ async function onPick(choiceIndex) {
 	}
 
 	if (outcome.sessionWillEnd) {
+		setRoundStatus("Client trust collapsed — preparing results.", "collapse");
+		playBeep("collapse");
 		announce(`The client is ending the session. ${earlyEndReason}.`);
 		await pacingDelay(900);
 		endSessionEarly(earlyEndReason);
@@ -469,7 +591,10 @@ async function onPick(choiceIndex) {
 	}
 
 	interactionState = INTERACTION_STATES.ROUND_COMPLETE;
-	el.nextBtn.disabled = false;
+	setNextReady(true);
+	setRoundStatus(isFinalQuestion() ? `${pickLine("ready")} Press See results or Enter.` : `${pickLine("ready")} Press Next question or Enter.`, "ready");
+	pulseElement(el.nextBtn, "is-nudged", 620);
+	playBeep("ready");
 	announce("Response complete. Next question is available.");
 }
 
@@ -651,6 +776,8 @@ function showResults(summary) {
 	showScreen("result");
 	updateFinalScorePills(finalSummary);
 	el.resultBox.innerHTML = resultMessage(finalSummary);
+	pulseElement(el.resultBox, "is-revealed", 700);
+	if (finalSummary.newAchievements.length) playBeep("achievement");
 	el.progressBar.setAttribute("aria-valuenow", String(finalSummary.questionsAnswered));
 	el.progressBar.setAttribute(
 		"aria-valuetext",
@@ -676,7 +803,7 @@ function finishGame() {
 	endedEarly = false;
 	const summary = summarizeRun({ completed: true });
 	showResults(summary);
-	showToast("Result ready. Copy it and flex privately.", 1400);
+	showToast(pickLine("result"), 1400);
 }
 
 async function startGame() {
@@ -771,10 +898,10 @@ function endSessionEarly(reason) {
 	interactionState = INTERACTION_STATES.RESULTS;
 	endedEarly = true;
 	lockChoices();
-	el.nextBtn.disabled = true;
+	setNextReady(false);
 	const summary = summarizeRun({ completed: false, reason });
 	showResults(summary);
-	showToast("Client left the session.", 1600);
+	showToast(pickLine("earlyEnd"), 1600);
 }
 el.startBtn.addEventListener("click", startGame);
 el.nextBtn.addEventListener("click", next);

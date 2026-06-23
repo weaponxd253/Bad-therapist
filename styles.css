@@ -340,6 +340,28 @@ button#start {
 	pointer-events: none;
 }
 
+.roundStatus {
+	margin: 10px 0 0;
+	padding: 8px 10px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.06);
+	color: #2c2c39;
+	font-size: 0.9rem;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.roundStatus[data-tone="ready"] {
+	background: rgba(25, 118, 72, 0.13);
+	color: #145034;
+}
+
+.roundStatus[data-tone="violation"],
+.roundStatus[data-tone="collapse"] {
+	background: rgba(124, 24, 32, 0.12);
+	color: #571017;
+}
+
 .choiceBtn {
 	width: 100%;
 	min-height: 48px;
@@ -348,8 +370,10 @@ button#start {
 	text-align: left;
 	line-height: 1.25;
 	padding: 12px 14px;
+	border: 2px solid transparent;
 	border-radius: 12px;
-	transition: transform 120ms ease, opacity 120ms ease;
+	box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+	transition: transform 120ms ease, opacity 120ms ease, border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 	user-select: none;
 }
 .choiceBtn:hover {
@@ -368,8 +392,11 @@ button#start {
 .choiceBtn.is-selected,
 .choiceBtn[aria-pressed="true"] {
 	opacity: 1;
+	background: #08080d;
+	border-color: #ffdf3f;
 	outline: 4px solid #4b49eb;
 	outline-offset: 2px;
+	box-shadow: 0 0 0 7px rgba(75, 73, 235, 0.16), 0 10px 22px rgba(0, 0, 0, 0.18);
 }
 
 .choiceBtn.is-selected::after {
@@ -378,22 +405,45 @@ button#start {
 	margin-left: 10px;
 	padding: 2px 8px;
 	border-radius: 999px;
-	background: #fffdf7;
+	background: #ffdf3f;
 	color: #111;
 	font-size: 0.78em;
-	font-weight: 700;
+	font-weight: 800;
+	letter-spacing: 0.02em;
 }
 
 .choiceBtn.is-unselected {
-	opacity: 0.32;
+	opacity: 0.42;
+	filter: grayscale(0.35);
 }
 
 .outcomeFeedback {
 	margin-top: 14px;
 	padding: 12px 14px;
 	border: 2px solid rgba(75, 73, 235, 0.28);
+	border-left-width: 6px;
 	border-radius: 14px;
 	background: rgba(75, 73, 235, 0.08);
+}
+
+.outcomeFeedback.is-helpful {
+	border-color: rgba(25, 118, 72, 0.45);
+	background: rgba(25, 118, 72, 0.08);
+}
+
+.outcomeFeedback.is-badness {
+	border-color: rgba(75, 73, 235, 0.48);
+	background: rgba(75, 73, 235, 0.09);
+}
+
+.outcomeFeedback.is-violation {
+	border-color: rgba(124, 24, 32, 0.68);
+	background: rgba(124, 24, 32, 0.1);
+}
+
+.outcomeFeedback.is-collapse {
+	border-color: #7c1820;
+	background: linear-gradient(135deg, rgba(124, 24, 32, 0.14), rgba(75, 73, 235, 0.08));
 }
 
 .outcomeFeedback h3,
@@ -402,7 +452,8 @@ button#start {
 }
 
 .outcomeFeedback h3 {
-	font-size: 1rem;
+	font-size: 1.05rem;
+	letter-spacing: 0.01em;
 }
 
 .outcomeFeedback p {
@@ -468,6 +519,15 @@ button#start {
 .nextBtn:disabled {
 	opacity: 0.55;
 	cursor: not-allowed;
+}
+.nextBtn.is-ready {
+	border-color: #4b49eb;
+	background: #111;
+	color: #fffdf7;
+	box-shadow: 0 0 0 4px rgba(75, 73, 235, 0.14);
+}
+.nextBtn.is-ready::after {
+	content: " →";
 }
 
 .resultBox {
@@ -595,6 +655,107 @@ button#start {
 	opacity: 0.8;
 }
 
+.choiceBtn.is-popping {
+	animation: selectedPop 320ms ease-out;
+}
+
+.roundStatus.is-bumped,
+.pill.is-bumped {
+	animation: softBump 420ms ease-out;
+}
+
+.pill.is-alerted {
+	animation: alertBump 560ms ease-out;
+}
+
+.outcomeFeedback.is-revealed,
+.resultBox.is-revealed {
+	animation: panelReveal 260ms ease-out;
+}
+
+.nextBtn.is-nudged {
+	animation: nextNudge 520ms ease-out;
+}
+
+.achievementUnlocks li {
+	animation: achievementGlow 680ms ease-out;
+}
+
+@keyframes selectedPop {
+	0% {
+		transform: scale(0.985);
+	}
+	45% {
+		transform: scale(1.012);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+@keyframes softBump {
+	0% {
+		transform: scale(1);
+	}
+	45% {
+		transform: scale(1.045);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+@keyframes alertBump {
+	0% {
+		transform: scale(1);
+		box-shadow: 0 0 0 0 rgba(124, 24, 32, 0);
+	}
+	45% {
+		transform: scale(1.055);
+		box-shadow: 0 0 0 5px rgba(124, 24, 32, 0.18);
+	}
+	100% {
+		transform: scale(1);
+		box-shadow: 0 0 0 0 rgba(124, 24, 32, 0);
+	}
+}
+
+@keyframes panelReveal {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes nextNudge {
+	0% {
+		transform: translateX(0);
+	}
+	38% {
+		transform: translateX(4px);
+	}
+	100% {
+		transform: translateX(0);
+	}
+}
+
+@keyframes achievementGlow {
+	0% {
+		box-shadow: 0 0 0 0 rgba(75, 73, 235, 0);
+		transform: translateY(4px);
+	}
+	45% {
+		box-shadow: 0 0 0 5px rgba(75, 73, 235, 0.16);
+		transform: translateY(0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(75, 73, 235, 0);
+	}
+}
 .toast {
 	position: absolute;
 	left: 14px;
@@ -811,6 +972,7 @@ button#start {
 	.card,
 	.bubble,
 	.pill,
+	.roundStatus,
 	.resultBox,
 	.choiceBtn,
 	.nextBtn,
