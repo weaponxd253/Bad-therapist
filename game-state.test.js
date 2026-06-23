@@ -9,6 +9,7 @@ const contentSchema = require("./content-schema.js");
 const questionSelector = require("./question-selector.js");
 const questionHistory = require("./question-history.js");
 const gameModes = require("./game-modes.js");
+const achievements = require("./achievements.js");
 
 function makeElement() {
 	const attributes = {};
@@ -59,6 +60,7 @@ async function main() {
 		},
 		window: {
 			BadTherapistModes: gameModes,
+			BadTherapistAchievements: achievements,
 			BadTherapistScoring: scoring,
 			BadTherapistPersistence: persistence,
 			BadTherapistQuestions: questionsContent,
@@ -167,6 +169,29 @@ async function main() {
 	assert.equal(saved.recordsByMode.classic.bestCompleted.weighted, summary.weighted);
 	assert.match(elements.get("bestPill").textContent, /Highest Chaos/);
 	assert.match(elements.get("bestPill").textContent, /Best Completed/);
+
+	const achievementSummary = {
+		...summary,
+		completed: false,
+		modeId: "classic",
+		modeLabel: "Classic",
+		questionsAnswered: 4,
+		questionsTotal: 10,
+		violationCountsByType: {},
+		helpfulCount: 0,
+		badnessThreeCount: 0
+	};
+	vm.runInContext(`showResults(${JSON.stringify(achievementSummary)})`, context);
+	await new Promise((resolve) => setTimeout(resolve, 30));
+	const achievementState = achievements.load(localStorage);
+	assert.ok(achievementState.unlocked.walkoutSpeedrun);
+	assert.match(elements.get("resultBox").innerHTML, /Walkout Speedrun/);
+	assert.match(elements.get("achievementProgress").textContent, /1 \/ 8 unlocked/);
+	assert.match(elements.get("announcer").textContent, /Achievement unlocked: Walkout Speedrun/);
+	const achievementShare = vm.runInContext("formatShareText(latestResultSummary)", context);
+	assert.match(achievementShare, /Achievements: Walkout Speedrun/);
+	vm.runInContext(`showResults(${JSON.stringify(achievementSummary)})`, context);
+	assert.equal(achievements.load(localStorage).unlocked.walkoutSpeedrun.unlockedAt, achievementState.unlocked.walkoutSpeedrun.unlockedAt);
 
 	assert.equal(elements.get("start").disabled, false);
 	vm.runInContext(`contentErrors.push({ path: "questions", message: "Broken" }); initializeContent();`, context);

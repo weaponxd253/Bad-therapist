@@ -202,6 +202,66 @@ button#start {
 	opacity: 0.65;
 }
 
+.achievementCollection {
+	max-width: 720px;
+	margin: 14px auto;
+	padding: 10px 12px;
+	border: 2px solid rgba(0, 0, 0, 0.12);
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.52);
+	text-align: left;
+}
+
+.achievementCollection summary {
+	cursor: pointer;
+	font-weight: 750;
+}
+
+.achievementCollection summary span {
+	float: right;
+	font-size: 0.88rem;
+	font-weight: 600;
+	opacity: 0.75;
+}
+
+.achievementCollection ul,
+.achievementUnlocks {
+	display: grid;
+	gap: 8px;
+	margin: 10px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.achievementItem,
+.achievementUnlocks li {
+	display: grid;
+	gap: 2px;
+	padding: 9px 10px;
+	border-radius: 10px;
+	background: rgba(0, 0, 0, 0.06);
+}
+
+.achievementItem.isLocked {
+	opacity: 0.58;
+}
+
+.achievementItem.isUnlocked,
+.achievementUnlocks li {
+	border-left: 4px solid #4b49eb;
+	background: rgba(75, 73, 235, 0.1);
+}
+
+.achievementItem small,
+.achievementUnlocks small {
+	line-height: 1.35;
+}
+
+.achievementUnlockedAt {
+	font-size: 0.78rem;
+	opacity: 0.72;
+}
+
 .contentError {
 	margin: 12px auto;
 	padding: 10px 12px;
@@ -757,7 +817,10 @@ button#start {
 	.restartBtn,
 	.shareBtn,
 	.soundBtn,
-	.modeOption span {
+	.modeOption span,
+	.achievementCollection,
+	.achievementItem,
+	.achievementUnlocks li {
 		border: 2px solid ButtonText;
 	}
 

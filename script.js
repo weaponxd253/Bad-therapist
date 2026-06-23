@@ -1,5 +1,10 @@
 const { getMode } = window.BadTherapistModes;
 const {
+	ACHIEVEMENTS,
+	load: loadAchievements,
+	evaluateRun: evaluateAchievements
+} = window.BadTherapistAchievements;
+const {
 	SCORING,
 	VIOLATION_TYPES,
 	calculateChoiceOutcome
@@ -25,6 +30,8 @@ const el = {
 	progressFill: document.getElementById("progressFill"),
 	startHeading: document.getElementById("startHeading"),
 	modePicker: document.getElementById("modePicker"),
+	achievementProgress: document.getElementById("achievementProgress"),
+	achievementList: document.getElementById("achievementList"),
 	contentError: document.getElementById("contentError"),
 	gameHeading: document.getElementById("gameHeading"),
 	resultHeading: document.getElementById("resultHeading"),
@@ -485,15 +492,22 @@ function resultLabel(totalBadness, totalViolations) {
 
 function summarizeRun({ completed, reason = "" } = {}) {
 	const violationCounts = new Map();
+	const violationCountsByType = {};
 	let totalBadness = 0;
 	let totalMoodLost = 0;
+	let helpfulCount = 0;
+	let badnessThreeCount = 0;
 	let worstResponse = null;
 
 	runHistory.forEach((entry) => {
 		totalBadness += entry.badness;
 		totalMoodLost += entry.moodLost;
+		if (entry.badness === 0) helpfulCount += 1;
+		if (entry.badness === 3) badnessThreeCount += 1;
 
 		if (entry.violation) {
+			violationCountsByType[entry.violation.type] =
+				(violationCountsByType[entry.violation.type] || 0) + 1;
 			violationCounts.set(
 				entry.violation.label,
 				(violationCounts.get(entry.violation.label) || 0) + 1
@@ -525,6 +539,11 @@ function summarizeRun({ completed, reason = "" } = {}) {
 		totalViolations,
 		totalMoodLost,
 		moodRemaining,
+		helpfulCount,
+		badnessThreeCount,
+		minimumBadness: runHistory.length ? Math.min(...runHistory.map((entry) => entry.badness)) : null,
+		maximumBadness: runHistory.length ? Math.max(...runHistory.map((entry) => entry.badness)) : null,
+		violationCountsByType,
 		questionsAnswered: runHistory.length,
 		questionsTotal: questions.length,
 		weighted: weightedScore(totalBadness, totalViolations),
@@ -540,6 +559,18 @@ function escapeHTML(value) {
 		.replaceAll(">", "&gt;")
 		.replaceAll('"', "&quot;")
 		.replaceAll("'", "&#039;");
+}
+
+function achievementUnlockMarkup(summary) {
+	if (!summary.newAchievements?.length) return "";
+	return `
+		<section class="resultSection">
+			<h4>Achievement${summary.newAchievements.length === 1 ? "" : "s"} unlocked</h4>
+			<ul class="achievementUnlocks">${summary.newAchievements.map((achievement) => `
+				<li><b>${escapeHTML(achievement.label)}</b><small>${escapeHTML(achievement.description)}</small></li>
+			`).join("")}</ul>
+		</section>
+	`;
 }
 
 function resultMessage(summary) {
@@ -591,6 +622,7 @@ function resultMessage(summary) {
 			<h4>Worst selected response</h4>
 			${worstMarkup}
 		</section>
+		${achievementUnlockMarkup(summary)}
 	`;
 }
 function formatSavedRecord(label, record) {
@@ -612,24 +644,30 @@ function updateFinalScorePills(summary) {
 }
 
 function showResults(summary) {
-	latestResultSummary = summary;
+	const achievementResult = evaluateAchievements(window.localStorage, summary);
+	const finalSummary = { ...summary, newAchievements: achievementResult.newUnlocks };
+	latestResultSummary = finalSummary;
+	renderAchievementCollection(achievementResult.state);
 	showScreen("result");
-	updateFinalScorePills(summary);
-	el.resultBox.innerHTML = resultMessage(summary);
-	el.progressBar.setAttribute("aria-valuenow", String(summary.questionsAnswered));
+	updateFinalScorePills(finalSummary);
+	el.resultBox.innerHTML = resultMessage(finalSummary);
+	el.progressBar.setAttribute("aria-valuenow", String(finalSummary.questionsAnswered));
 	el.progressBar.setAttribute(
 		"aria-valuetext",
-		summary.completed
-			? `${summary.questionsTotal} of ${summary.questionsTotal} questions completed`
-			: `Session ended after ${summary.questionsAnswered} questions`
+		finalSummary.completed
+			? `${finalSummary.questionsTotal} of ${finalSummary.questionsTotal} questions completed`
+			: `Session ended after ${finalSummary.questionsAnswered} questions`
 	);
 	el.progressFill.style.width = "100%";
 	el.resultHeading.focus();
 	announce(
-		`${summary.modeLabel} mode. ${summary.statusLabel}. ${summary.grade}. ` +
-		`Badness ${summary.totalBadness}. Violations ${summary.totalViolations}. ` +
-		`Mood remaining ${summary.moodRemaining}. ` +
-		`${summary.questionsAnswered} of ${summary.questionsTotal} questions survived.`
+		`${finalSummary.modeLabel} mode. ${finalSummary.statusLabel}. ${finalSummary.grade}. ` +
+		`Badness ${finalSummary.totalBadness}. Violations ${finalSummary.totalViolations}. ` +
+		`Mood remaining ${finalSummary.moodRemaining}. ` +
+		`${finalSummary.questionsAnswered} of ${finalSummary.questionsTotal} questions survived.` +
+		(finalSummary.newAchievements.length
+			? ` Achievement${finalSummary.newAchievements.length === 1 ? "" : "s"} unlocked: ${finalSummary.newAchievements.map((item) => item.label).join(", ")}.`
+			: "")
 	);
 }
 
@@ -709,7 +747,10 @@ function formatShareText(summary) {
 		`Violations: ${summary.totalViolations} (${breakdown})`,
 		`Mood Remaining: ${summary.moodRemaining}`,
 		`Questions Survived: ${summary.questionsAnswered}/${summary.questionsTotal}`,
-		`Worst Response: ${worst}`
+		`Worst Response: ${worst}`,
+		summary.newAchievements?.length
+			? `Achievements: ${summary.newAchievements.map((item) => item.label).join(", ")}`
+			: null
 	].filter(Boolean).join("\n") + "\n";
 }
 
@@ -739,11 +780,31 @@ el.startBtn.addEventListener("click", startGame);
 el.nextBtn.addEventListener("click", next);
 el.restartBtn.addEventListener("click", restart);
 el.shareBtn.addEventListener("click", copyResult);
+function formatUnlockDate(value) {
+	if (!value) return "Unlocked";
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? "Unlocked" : `Unlocked ${date.toLocaleDateString()}`;
+}
+
+function renderAchievementCollection(state = loadAchievements(window.localStorage)) {
+	const unlockedCount = Object.keys(state.unlocked).length;
+	el.achievementProgress.textContent = `${unlockedCount} / ${ACHIEVEMENTS.length} unlocked`;
+	el.achievementList.innerHTML = ACHIEVEMENTS.map((achievement) => {
+		const unlock = state.unlocked[achievement.id];
+		return `<li class="achievementItem ${unlock ? "isUnlocked" : "isLocked"}">
+			<b>${escapeHTML(achievement.label)}</b>
+			<small>${escapeHTML(achievement.description)}</small>
+			${unlock ? `<span class="achievementUnlockedAt">${escapeHTML(formatUnlockDate(unlock.unlockedAt))} · ${escapeHTML(getMode(unlock.modeId).label)}</span>` : ""}
+		</li>`;
+	}).join("");
+}
+
 function initializeContent() {
 	if (contentErrors.length === 0) {
 		el.contentError.hidden = true;
 		el.startBtn.disabled = false;
 		updateTopMeta();
+		renderAchievementCollection();
 		return;
 	}
 
