@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const questions = require("./questions.js");
 const { VIOLATION_TYPES } = require("./scoring.js");
-const { validateQuestions } = require("./content-schema.js");
+const { RESPONSE_ARCHETYPES, validateQuestions } = require("./content-schema.js");
 
 assert.deepEqual(validateQuestions(questions, VIOLATION_TYPES), []);
 assert.ok(questions.length >= 24 && questions.length <= 30);
@@ -14,6 +14,18 @@ const representedViolations = new Set(
 	questions.flatMap((question) => question.choices.map((choice) => choice.violation).filter(Boolean))
 );
 assert.deepEqual([...representedViolations].sort(), Object.keys(VIOLATION_TYPES).sort());
+const representedArchetypes = new Set(
+	questions.flatMap((question) => question.choices.map((choice) => choice.archetype))
+);
+assert.ok(representedArchetypes.has("helpful"));
+assert.ok(representedArchetypes.size >= 6);
+for (const archetype of representedArchetypes) {
+	assert.ok(RESPONSE_ARCHETYPES.includes(archetype), `Unexpected archetype: ${archetype}`);
+}
+questions.forEach((question) => question.choices.forEach((choice) => {
+	assert.equal(typeof choice.clientRead, "string");
+	assert.equal(typeof choice.ethicsNote, "string");
+}));
 const snapshot = JSON.stringify(questions);
 validateQuestions(questions, VIOLATION_TYPES);
 assert.equal(JSON.stringify(questions), snapshot, "validation must not mutate content");
@@ -47,6 +59,16 @@ for (const badness of [-1, 1.5, 4]) {
 invalid = clone();
 invalid[0].choices[0].violation = "unknown";
 assert.ok(validateQuestions(invalid, VIOLATION_TYPES).some((error) => error.path.endsWith("violation")));
+
+invalid = clone();
+invalid[0].choices[0].archetype = "unknown";
+assert.ok(validateQuestions(invalid, VIOLATION_TYPES).some((error) => error.path.endsWith("archetype")));
+
+for (const field of ["clientRead", "ethicsNote"]) {
+	invalid = clone();
+	invalid[0].choices[0][field] = "";
+	assert.ok(validateQuestions(invalid, VIOLATION_TYPES).some((error) => error.path.endsWith(field)));
+}
 
 for (const field of ["reaction", "feedback", "text"]) {
 	invalid = clone();

@@ -16,11 +16,24 @@
 		"conflict",
 		"identity"
 	]);
+	const RESPONSE_ARCHETYPES = Object.freeze([
+		"helpful",
+		"dismissive",
+		"boundaryCross",
+		"confidentialityBreach",
+		"chaosAdvice",
+		"fakeDeep",
+		"corporateGoblin",
+		"influencerBrain",
+		"coerciveFixer",
+		"overshare"
+	]);
 
 	function validateQuestions(questions, violationTypes = {}) {
 		const errors = [];
 		const questionIds = new Set();
 		const allowedTopics = new Set(TOPICS);
+		const allowedArchetypes = new Set(RESPONSE_ARCHETYPES);
 		const allowedViolations = new Set(Object.keys(violationTypes));
 		const add = (path, message) => errors.push({ path, message });
 		const nonEmpty = (value) => typeof value === "string" && value.trim().length > 0;
@@ -75,6 +88,14 @@
 						add(`${choicePath}.${field}`, `Expected a non-empty ${field}.`);
 					}
 				});
+				if (!allowedArchetypes.has(choice.archetype)) {
+					add(`${choicePath}.archetype`, `Unsupported response archetype: ${choice.archetype}.`);
+				}
+				["clientRead", "ethicsNote"].forEach((field) => {
+					if (choice[field] !== undefined && !nonEmpty(choice[field])) {
+						add(`${choicePath}.${field}`, `Expected a non-empty ${field} when provided.`);
+					}
+				});
 				if (!Number.isInteger(choice.badness) || choice.badness < 0 || choice.badness > 3) {
 					add(`${choicePath}.badness`, "Expected an integer from 0 to 3.");
 				} else if (choice.badness === 0) {
@@ -99,5 +120,5 @@
 		return errors;
 	}
 
-	return Object.freeze({ TOPICS, validateQuestions });
+	return Object.freeze({ TOPICS, RESPONSE_ARCHETYPES, validateQuestions });
 });

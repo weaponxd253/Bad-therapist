@@ -137,7 +137,7 @@ async function main() {
 		return defaultPrevented;
 	}
 	vm.runInContext(
-		`questions = [{ id: "test-question", topic: "work", client: "Client question", choices: [{ id: "bad-response", badness: 3, text: "Bad response", reaction: "Client reaction", feedback: "Authored feedback." }] }];` +
+		`questions = [{ id: "test-question", topic: "work", client: "Client question", choices: [{ id: "bad-response", badness: 3, text: "Bad response", reaction: "Client reaction", feedback: "Authored feedback.", archetype: "dismissive", clientRead: "They feel dismissed.", ethicsNote: "Dismissal damages safety." }] }];` +
 		`idx = 0; interactionState = INTERACTION_STATES.CHOOSING; locked = false;`,
 		context
 	);
@@ -162,6 +162,10 @@ async function main() {
 	assert.equal(elements.get("roundStatus").dataset.tone, "ready");
 	assert.equal(elements.get("outcomeTitle").textContent, "Bad choice logged");
 	assert.equal(elements.get("outcomeMood").textContent, "Mood impact −15");
+	assert.equal(elements.get("outcomeClientRead").hidden, false);
+	assert.equal(elements.get("outcomeClientRead").textContent, "Client read: They feel dismissed.");
+	assert.equal(elements.get("outcomeEthicsNote").hidden, false);
+	assert.equal(elements.get("outcomeEthicsNote").textContent, "Ethics note: Dismissal damages safety.");
 	assert.equal(elements.get("outcomeFeedback").classList.contains("is-badness"), true);
 	assert.equal(selectedButton.disabled, true);
 	assert.equal(selectedButton.attributes["aria-pressed"], "true");
@@ -177,6 +181,9 @@ async function main() {
 		topic: "work",
 		reaction: "Client reaction",
 		feedback: "Authored feedback.",
+		clientRead: "They feel dismissed.",
+		ethicsNote: "Dismissal damages safety.",
+		archetype: "dismissive",
 		badness: 3,
 		moodLost: 15,
 		moodRemaining: 85,

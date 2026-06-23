@@ -461,6 +461,17 @@ button#start {
 	line-height: 1.4;
 }
 
+.outcomeDetail {
+	padding: 8px 10px;
+	border-radius: 10px;
+	background: rgba(255, 255, 255, 0.5);
+	font-size: 0.92rem;
+}
+
+.outcomeDetail + .outcomeDetail {
+	margin-top: 7px;
+}
+
 .outcomeStats {
 	display: flex;
 	flex-wrap: wrap;

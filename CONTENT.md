@@ -6,6 +6,8 @@ New questions must follow the schema in `questions.js` and pass `content-schema.
 - Use one supported topic and exactly four choices.
 - Include exactly one helpful choice with `badness: 0`.
 - Write concise client reactions and specific player-facing feedback.
+- Give every choice a response `archetype`: `helpful`, `dismissive`, `boundaryCross`, `confidentialityBreach`, `chaosAdvice`, `fakeDeep`, `corporateGoblin`, `influencerBrain`, `coerciveFixer`, or `overshare`.
+- Add `clientRead` for how the client interprets the response and `ethicsNote` for the ethical/therapeutic principle behind the feedback.
 - Match ethics violations to the configured category: confidentiality, boundaries, judgment, coercion, or harmful advice.
 - Avoid crisis, self-harm, diagnosis, medication, and emergency scenarios.
 - Do not make parody responses resemble genuine clinical instructions.

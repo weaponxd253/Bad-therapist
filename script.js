@@ -48,6 +48,8 @@ const el = {
 	outcomeMood: document.getElementById("outcomeMood"),
 	outcomeViolation: document.getElementById("outcomeViolation"),
 	outcomeExplanation: document.getElementById("outcomeExplanation"),
+	outcomeClientRead: document.getElementById("outcomeClientRead"),
+	outcomeEthicsNote: document.getElementById("outcomeEthicsNote"),
 	progressPill: document.getElementById("progressPill"),
 	scorePill: document.getElementById("scorePill"),
 	violPill: document.getElementById("violPill"),
@@ -184,6 +186,9 @@ function recordChoiceOutcome(question, choice, outcome) {
 		topic: question.topic,
 		reaction: choice.reaction,
 		feedback: choice.feedback,
+		clientRead: choice.clientRead || "",
+		ethicsNote: choice.ethicsNote || "",
+		archetype: choice.archetype || "",
 		badness: outcome.badnessGained,
 		moodLost: outcome.moodLost,
 		moodRemaining: outcome.moodRemaining,
@@ -384,6 +389,10 @@ function resetRoundUI() {
 	el.outcomeViolation.textContent = "";
 	el.outcomeViolation.hidden = true;
 	el.outcomeExplanation.textContent = "";
+	el.outcomeClientRead.textContent = "";
+	el.outcomeClientRead.hidden = true;
+	el.outcomeEthicsNote.textContent = "";
+	el.outcomeEthicsNote.hidden = true;
 	setRoundStatus("Listen to the client, then choose the worst response.", "presenting");
 	setNextReady(false);
 	locked = true;
@@ -404,8 +413,13 @@ function outcomeExplanation(outcome, feedback) {
 	return feedback;
 }
 
-function showOutcome(outcome, feedback) {
-	const explanation = outcomeExplanation(outcome, feedback);
+function setOutcomeDetail(element, label, value) {
+	element.hidden = !value;
+	element.textContent = value ? `${label}: ${value}` : "";
+}
+
+function showOutcome(outcome, choice) {
+	const explanation = outcomeExplanation(outcome, choice.feedback);
 	const severity = outcome.sessionWillEnd
 		? "collapse"
 		: outcome.violation
@@ -432,6 +446,8 @@ function showOutcome(outcome, feedback) {
 		? `Ethics violation · ${outcome.violation.label}`
 		: "";
 	el.outcomeExplanation.textContent = explanation;
+	setOutcomeDetail(el.outcomeClientRead, "Client read", choice.clientRead);
+	setOutcomeDetail(el.outcomeEthicsNote, "Ethics note", choice.ethicsNote);
 	el.outcomeFeedback.hidden = false;
 	markOutcomeRevealed();
 
@@ -439,7 +455,9 @@ function showOutcome(outcome, feedback) {
 		`${titles[severity]}. Badness increased by ${outcome.badnessGained}. ` +
 		`Client mood decreased by ${outcome.moodLost}. ` +
 		`${outcome.violation ? `One ${outcome.violation.label} violation added. ` : ""}` +
-		explanation
+		explanation +
+		`${choice.clientRead ? ` Client read: ${choice.clientRead}.` : ""}` +
+		`${choice.ethicsNote ? ` Ethics note: ${choice.ethicsNote}.` : ""}`
 	);
 }
 
@@ -559,7 +577,7 @@ async function onPick(choiceIndex) {
 	applyChoiceOutcome(outcome);
 	recordChoiceOutcome(q, chosen, outcome);
 	updateHUD();
-	showOutcome(outcome, chosen.feedback);
+	showOutcome(outcome, chosen);
 	pulseElement(el.scorePill);
 	pulseElement(el.moodPill);
 	if (outcome.violation) pulseElement(el.violPill, "is-alerted", 620);
