@@ -8,7 +8,7 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 
 ## Features
 
-- Ten balanced questions per session selected from a 28-question pool
+- Ten balanced questions per session selected from a 33-question pool
 - Replay-aware selection favors unseen and least-recent questions
 - Classic, Speed Session, and Ethics Minefield modes
 - Eight persistent, non-blocking achievements

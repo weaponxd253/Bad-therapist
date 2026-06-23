@@ -12,6 +12,7 @@ New questions must follow the schema in `questions.js` and pass `content-schema.
 - Avoid crisis, self-harm, diagnosis, medication, and emergency scenarios.
 - Do not make parody responses resemble genuine clinical instructions.
 - Avoid jokes targeting protected traits or vulnerable identities.
+- Structure most response sets around four distinct roles: ethical/helpful, silly bad, emotionally harmful, and ethics disaster.
 - Vary answer length and tone so the helpful response is not mechanically obvious.
 - Use `moodModifier` only for exceptional balance needs and keep it between -10 and 10.
 

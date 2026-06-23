@@ -4,7 +4,7 @@ const { VIOLATION_TYPES } = require("./scoring.js");
 const { RESPONSE_ARCHETYPES, validateQuestions } = require("./content-schema.js");
 
 assert.deepEqual(validateQuestions(questions, VIOLATION_TYPES), []);
-assert.ok(questions.length >= 24 && questions.length <= 30);
+assert.ok(questions.length >= 32 && questions.length <= 35);
 const representedTopics = new Set(questions.map((question) => question.topic));
 assert.deepEqual([...representedTopics].sort(), [
 	"anxiety", "conflict", "family", "identity", "loneliness",
@@ -17,8 +17,7 @@ assert.deepEqual([...representedViolations].sort(), Object.keys(VIOLATION_TYPES)
 const representedArchetypes = new Set(
 	questions.flatMap((question) => question.choices.map((choice) => choice.archetype))
 );
-assert.ok(representedArchetypes.has("helpful"));
-assert.ok(representedArchetypes.size >= 6);
+assert.deepEqual([...representedArchetypes].sort(), RESPONSE_ARCHETYPES.slice().sort());
 for (const archetype of representedArchetypes) {
 	assert.ok(RESPONSE_ARCHETYPES.includes(archetype), `Unexpected archetype: ${archetype}`);
 }
