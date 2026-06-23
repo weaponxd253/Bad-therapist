@@ -642,6 +642,112 @@ button#start {
 	opacity: 0.75;
 }
 
+.therapistStyleCard {
+	margin: 0;
+	padding: 12px 14px;
+	border-left: 4px solid #111;
+	border-radius: 12px;
+	background: linear-gradient(135deg, rgba(75, 73, 235, 0.1), rgba(255, 255, 255, 0.58));
+}
+
+.therapistStyleCard h4,
+.therapistStyleCard p,
+.therapistStyleCard small {
+	margin: 0;
+}
+
+.therapistStyleCard h4 {
+	font-size: 1.18rem;
+}
+
+.therapistStyleCard > p:not(.styleEyebrow) {
+	margin-top: 6px;
+}
+
+.therapistStyleCard small {
+	display: inline-flex;
+	margin-top: 9px;
+	font-weight: 800;
+	opacity: 0.78;
+}
+
+.styleEyebrow {
+	margin-bottom: 4px;
+	font-size: 0.76rem;
+	font-weight: 900;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	opacity: 0.72;
+}
+
+.styleNudge {
+	margin-top: 10px !important;
+	padding-top: 9px;
+	border-top: 1px solid rgba(0, 0, 0, 0.12);
+	font-size: 0.92rem;
+	font-weight: 700;
+}
+
+.styleMix {
+	margin-top: 10px;
+	padding: 12px;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.46);
+}
+
+.styleMix h4,
+.styleMix ul,
+.styleMix li,
+.styleMixRow span,
+.styleMixRow small {
+	margin: 0;
+}
+
+.styleMix ul {
+	display: grid;
+	gap: 9px;
+	padding: 0;
+	list-style: none;
+}
+
+.styleMixRow {
+	display: flex;
+	align-items: start;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.styleMixRow span {
+	display: grid;
+	gap: 2px;
+}
+
+.styleMixRow small {
+	font-size: 0.78rem;
+	opacity: 0.76;
+}
+
+.styleMixRow em {
+	font-style: normal;
+	font-weight: 900;
+}
+
+.styleMixBar {
+	display: block;
+	height: 7px;
+	margin-top: 6px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.1);
+}
+
+.styleMixBar span {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: #4b49eb;
+}
+
 .worstResponse {
 	margin: 0;
 	padding: 10px 12px;
@@ -1003,7 +1109,9 @@ button#start {
 
 
 	.outcomeFeedback,
-	.outcomeStat {
+	.outcomeStat,
+	.therapistStyleCard,
+	.styleMix {
 		border: 2px solid CanvasText;
 	}
 	.choiceBtn[aria-pressed="true"] {

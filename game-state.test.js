@@ -215,12 +215,22 @@ async function main() {
 	await vm.runInContext("onPick(0)", context);
 	assert.equal(vm.runInContext("runHistory.length", context), 0, "typing choices must not record answers");
 
+	vm.runInContext(`
+		streakState = emptyStreakState();
+		updateStreaks({ badness: 3, moodLost: 15, violation: null, archetype: "chaosAdvice" });
+		updateStreaks({ badness: 3, moodLost: 15, violation: null, archetype: "chaosAdvice" });
+		updateStreaks({ badness: 3, moodLost: 15, violation: null, archetype: "chaosAdvice" });
+	`, context);
+	assert.match(elements.get("toast").textContent, /Chaos Coach streak/);
+	assert.match(elements.get("roundStatus").textContent, /Chaos Coach streak/);
+	assert.equal(elements.get("roundStatus").dataset.tone, "selected");
+
 	const summary = JSON.parse(JSON.stringify(vm.runInContext(`
 		questions = [{}, {}, {}];
 		runHistory = [
-			{ questionNumber: 1, response: "Mild", badness: 1, moodLost: 5, moodRemaining: 95, violation: null },
-			{ questionNumber: 2, response: "Shared secret", badness: 3, moodLost: 27, moodRemaining: 68, violation: { type: "confidentiality", label: "Confidentiality", penalty: 12 } },
-			{ questionNumber: 3, response: "Called employer", badness: 3, moodLost: 25, moodRemaining: 43, violation: { type: "boundaries", label: "Professional Boundaries", penalty: 10 } }
+			{ questionNumber: 1, response: "Mild", archetype: "boundaryCross", badness: 1, moodLost: 5, moodRemaining: 95, violation: null },
+			{ questionNumber: 2, response: "Shared secret", archetype: "confidentialityBreach", badness: 3, moodLost: 27, moodRemaining: 68, violation: { type: "confidentiality", label: "Confidentiality", penalty: 12 } },
+			{ questionNumber: 3, response: "Called employer", archetype: "boundaryCross", badness: 3, moodLost: 25, moodRemaining: 43, violation: { type: "boundaries", label: "Professional Boundaries", penalty: 10 } }
 		];
 		summarizeRun({ completed: false, reason: "Trust collapsed" });
 	`, context)));
@@ -235,8 +245,20 @@ async function main() {
 		{ label: "Confidentiality", count: 1 },
 		{ label: "Professional Boundaries", count: 1 }
 	]);
+	assert.equal(summary.dominantStyle.label, "Boundary Blender");
+	assert.equal(summary.dominantStyle.count, 2);
+	assert.deepEqual(summary.archetypeBreakdown.map((item) => ({ label: item.label, count: item.count })), [
+		{ label: "Boundary Blender", count: 2 },
+		{ label: "Confidentiality Goblin", count: 1 }
+	]);
 	const markup = vm.runInContext(`resultMessage(${JSON.stringify(summary)})`, context);
 	assert.match(markup, /Questions survived/);
+	assert.match(markup, /Dominant therapist style/);
+	assert.match(markup, /Boundary Blender/);
+	assert.match(markup, /Style mix/);
+	assert.match(markup, /Replay nudge: try dodging Boundary Blender picks/);
+	assert.match(markup, /Confidentiality Goblin/);
+	assert.match(markup, /67%/);
 	assert.match(markup, /Worst selected response/);
 	assert.match(markup, /Confidentiality/);
 
@@ -244,6 +266,8 @@ async function main() {
 	assert.match(shareText, /Mode: Classic/);
 	assert.match(shareText, /Status: Session ended early/);
 	assert.match(shareText, /Reason: Trust collapsed/);
+	assert.match(shareText, /Therapist Style: Boundary Blender \(2 responses\)/);
+	assert.match(shareText, /Style Mix: Boundary Blender: 2, Confidentiality Goblin: 1/);
 	assert.match(shareText, /Violations: 2 \(Confidentiality: 1, Professional Boundaries: 1\)/);
 	assert.match(shareText, /Worst Response: Shared secret .*Confidentiality/);
 

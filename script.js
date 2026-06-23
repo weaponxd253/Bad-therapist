@@ -74,6 +74,7 @@ let violations = 0;
 let mood = 100;
 let runHistory = [];
 let latestResultSummary = null;
+let streakState = emptyStreakState();
 const INTERACTION_STATES = Object.freeze({
 	IDLE: "idle",
 	PRESENTING: "presenting",
@@ -118,6 +119,98 @@ const COPY_LINES = Object.freeze({
 		"The therapeutic alliance packed a tiny suitcase."
 	])
 });
+const THERAPIST_STYLES = Object.freeze({
+	helpful: Object.freeze({
+		label: "Accidentally Ethical",
+		description: "You kept choosing the response with consent, pacing, and actual care. Suspiciously professional.",
+		streak: "Careful. Three helpful choices in a row is dangerously close to therapy."
+	}),
+	dismissive: Object.freeze({
+		label: "Dismissive Gremlin",
+		description: "Your signature move is shrinking the client's pain until it fits inside a bad punchline.",
+		streak: "The validation has left the building."
+	}),
+	boundaryCross: Object.freeze({
+		label: "Boundary Blender",
+		description: "You hear a boundary and immediately look for a door marked 'absolutely not'.",
+		streak: "The professional frame is now confetti."
+	}),
+	confidentialityBreach: Object.freeze({
+		label: "Confidentiality Goblin",
+		description: "Private disclosure keeps becoming public material. The clipboard is screaming softly.",
+		streak: "Three privacy crimes in a trench coat."
+	}),
+	chaosAdvice: Object.freeze({
+		label: "Chaos Coach",
+		description: "Your treatment plan is mostly escalation, fireworks, and consequences for Future Everyone.",
+		streak: "The advice has a fuse and no adult supervision."
+	}),
+	fakeDeep: Object.freeze({
+		label: "Fake-Deep Oracle",
+		description: "You turn real distress into a slogan that sounds wise if nobody thinks about it.",
+		streak: "The room is filling with decorative insight."
+	}),
+	corporateGoblin: Object.freeze({
+		label: "Corporate Goblin",
+		description: "Every feeling becomes productivity language. Somewhere, a spreadsheet feels seen.",
+		streak: "The client has been converted into quarterly goals."
+	}),
+	influencerBrain: Object.freeze({
+		label: "Influencer Brain",
+		description: "You keep mistaking vulnerability for content strategy. The ring light is the problem.",
+		streak: "The algorithm is clapping. The client is not."
+	}),
+	coerciveFixer: Object.freeze({
+		label: "Coercive Fixer",
+		description: "You grab the steering wheel and call it support. Agency is somewhere in the trunk.",
+		streak: "Three forced fixes. Consent is filing a complaint."
+	}),
+	overshare: Object.freeze({
+		label: "Main Character Therapist",
+		description: "The client brought a problem and you brought your autobiography.",
+		streak: "The session is now about you. Again."
+	})
+});
+const STREAK_LINES = Object.freeze({
+	helpful: "Helpful streak: you are accidentally building trust. Weird choice for this game.",
+	violation: "Violation streak: the ethics board has opened a group chat.",
+	maxBadness: "Max-badness streak: a clipboard just spontaneously combusted."
+});
+
+function emptyStreakState() {
+	return {
+		helpful: 0,
+		violations: 0,
+		maxBadness: 0,
+		archetype: "",
+		archetypeCount: 0,
+		announced: new Set()
+	};
+}
+
+function styleForArchetype(archetype) {
+	return THERAPIST_STYLES[archetype] || {
+		label: "Unclassifiable Menace",
+		description: "Your therapeutic style has escaped taxonomy and possibly the building.",
+		streak: "The pattern is becoming evidence."
+	};
+}
+
+function dominantStyleFromCounts(archetypeCounts, archetypeImpacts) {
+	const ranked = [...archetypeCounts.entries()]
+		.map(([archetype, count]) => {
+			const style = styleForArchetype(archetype);
+			return {
+				archetype,
+				label: style.label,
+				description: style.description,
+				count,
+				impact: archetypeImpacts.get(archetype) || 0
+			};
+		})
+		.sort((a, b) => b.count - a.count || b.impact - a.impact || a.label.localeCompare(b.label));
+	return ranked[0] || null;
+}
 
 function announce(message) {
 	el.announcer.textContent = "";
@@ -175,7 +268,7 @@ function applyChoiceOutcome(outcome) {
 }
 
 function recordChoiceOutcome(question, choice, outcome) {
-	runHistory.push({
+	const entry = {
 		questionNumber: idx + 1,
 		modeId: activeMode.id,
 		modeLabel: activeMode.label,
@@ -199,7 +292,9 @@ function recordChoiceOutcome(question, choice, outcome) {
 				penalty: outcome.violationPenalty
 			}
 			: null
-	});
+	};
+	runHistory.push(entry);
+	return entry;
 }
 
 function moodEmoji(v) {
@@ -237,6 +332,54 @@ function pulseElement(element, className = "is-bumped", ms = 520) {
 	pulseElement._timers = pulseElement._timers || new WeakMap();
 	const timer = window.setTimeout(() => element.classList.remove(className), ms);
 	pulseElement._timers.set(element, timer);
+}
+
+function showStreakFeedback(key, message, tone = "selected") {
+	if (streakState.announced.has(key)) return;
+	streakState.announced.add(key);
+	setRoundStatus(message, tone);
+	showToast(message, 1700);
+	pulseElement(el.roundStatus, "is-bumped", 520);
+	announce(message);
+}
+
+function updateStreaks(entry) {
+	if (!entry) return;
+
+	streakState.helpful = entry.badness === 0 ? streakState.helpful + 1 : 0;
+	streakState.violations = entry.violation ? streakState.violations + 1 : 0;
+	streakState.maxBadness = entry.badness === 3 ? streakState.maxBadness + 1 : 0;
+
+	if (entry.archetype && entry.archetype === streakState.archetype) {
+		streakState.archetypeCount += 1;
+	} else {
+		streakState.archetype = entry.archetype || "";
+		streakState.archetypeCount = entry.archetype ? 1 : 0;
+	}
+
+	const streaks = [];
+	if (streakState.helpful === 3) {
+		streaks.push({ key: "helpful:3", message: STREAK_LINES.helpful, tone: "ready" });
+	}
+	if (streakState.violations === 3) {
+		streaks.push({ key: "violations:3", message: STREAK_LINES.violation, tone: "violation" });
+	}
+	if (streakState.maxBadness === 3) {
+		streaks.push({ key: "maxBadness:3", message: STREAK_LINES.maxBadness, tone: entry.violation ? "violation" : "selected" });
+	}
+	if (streakState.archetypeCount === 3 && entry.archetype) {
+		const style = styleForArchetype(entry.archetype);
+		streaks.push({
+			key: `archetype:${entry.archetype}:3`,
+			message: `${style.label} streak: ${style.streak}`,
+			tone: entry.violation ? "violation" : entry.badness === 0 ? "ready" : "selected"
+		});
+	}
+
+	if (streaks.length) {
+		const latest = streaks[streaks.length - 1];
+		showStreakFeedback(latest.key, latest.message, latest.tone);
+	}
 }
 
 function markOutcomeRevealed() {
@@ -575,7 +718,7 @@ async function onPick(choiceIndex) {
 		modifiers: activeMode.scoringModifiers
 	});
 	applyChoiceOutcome(outcome);
-	recordChoiceOutcome(q, chosen, outcome);
+	const historyEntry = recordChoiceOutcome(q, chosen, outcome);
 	updateHUD();
 	showOutcome(outcome, chosen);
 	pulseElement(el.scorePill);
@@ -598,6 +741,7 @@ async function onPick(choiceIndex) {
 	} else {
 		playBeep("pick");
 	}
+	updateStreaks(historyEntry);
 
 	if (outcome.sessionWillEnd) {
 		setRoundStatus("Client trust collapsed — preparing results.", "collapse");
@@ -636,6 +780,8 @@ function resultLabel(totalBadness, totalViolations) {
 function summarizeRun({ completed, reason = "" } = {}) {
 	const violationCounts = new Map();
 	const violationCountsByType = {};
+	const archetypeCounts = new Map();
+	const archetypeImpacts = new Map();
 	let totalBadness = 0;
 	let totalMoodLost = 0;
 	let helpfulCount = 0;
@@ -647,6 +793,10 @@ function summarizeRun({ completed, reason = "" } = {}) {
 		totalMoodLost += entry.moodLost;
 		if (entry.badness === 0) helpfulCount += 1;
 		if (entry.badness === 3) badnessThreeCount += 1;
+		if (entry.archetype) {
+			archetypeCounts.set(entry.archetype, (archetypeCounts.get(entry.archetype) || 0) + 1);
+			archetypeImpacts.set(entry.archetype, (archetypeImpacts.get(entry.archetype) || 0) + entry.moodLost);
+		}
 
 		if (entry.violation) {
 			violationCountsByType[entry.violation.type] =
@@ -667,6 +817,18 @@ function summarizeRun({ completed, reason = "" } = {}) {
 		.map(([label, count]) => ({ label, count }))
 		.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 	const totalViolations = violationBreakdown.reduce((sum, item) => sum + item.count, 0);
+	const archetypeBreakdown = [...archetypeCounts.entries()]
+		.map(([archetype, count]) => {
+			const style = styleForArchetype(archetype);
+			return {
+				archetype,
+				label: style.label,
+				count,
+				impact: archetypeImpacts.get(archetype) || 0
+			};
+		})
+		.sort((a, b) => b.count - a.count || b.impact - a.impact || a.label.localeCompare(b.label));
+	const dominantStyle = dominantStyleFromCounts(archetypeCounts, archetypeImpacts);
 	const moodRemaining = runHistory.length
 		? runHistory[runHistory.length - 1].moodRemaining
 		: 100;
@@ -691,6 +853,8 @@ function summarizeRun({ completed, reason = "" } = {}) {
 		questionsTotal: questions.length,
 		weighted: weightedScore(totalBadness, totalViolations),
 		violationBreakdown,
+		archetypeBreakdown,
+		dominantStyle,
 		worstResponse
 	};
 }
@@ -713,6 +877,42 @@ function achievementUnlockMarkup(summary) {
 				<li><b>${escapeHTML(achievement.label)}</b><small>${escapeHTML(achievement.description)}</small></li>
 			`).join("")}</ul>
 		</section>
+	`;
+}
+
+function styleMixSummary(summary, limit = 3) {
+	const items = summary.archetypeBreakdown || [];
+	if (!items.length) return "None";
+	return items
+		.slice(0, limit)
+		.map((item) => `${item.label}: ${item.count}`)
+		.join(", ");
+}
+
+function styleReplayNudge(summary) {
+	if (!summary.dominantStyle) return "";
+	if (summary.dominantStyle.archetype === "helpful") {
+		return "Replay nudge: you found the ethical route; chase a more cursed pattern next run.";
+	}
+	return `Replay nudge: try dodging ${summary.dominantStyle.label} picks next run and see what new disaster emerges.`;
+}
+
+function styleMixMarkup(summary) {
+	const items = (summary.archetypeBreakdown || []).slice(0, 3);
+	if (!items.length) return "";
+	const total = summary.questionsAnswered || items.reduce((sum, item) => sum + item.count, 0) || 1;
+
+	return `
+		<div class="styleMix" aria-label="Top therapist style mix">
+			<h4>Style mix</h4>
+			<ul>${items.map((item) => {
+				const percent = clamp(Math.round((item.count / total) * 100), 0, 100);
+				return `<li>
+					<div class="styleMixRow"><span><b>${escapeHTML(item.label)}</b><small>${item.count} response${item.count === 1 ? "" : "s"} · mood impact ${item.impact}</small></span><em>${percent}%</em></div>
+					<span class="styleMixBar" aria-hidden="true"><span style="width: ${percent}%"></span></span>
+				</li>`;
+			}).join("")}</ul>
+		</div>
 	`;
 }
 
@@ -742,6 +942,16 @@ function resultMessage(summary) {
 			}</footer>
 		</blockquote>`
 		: '<p class="resultEmpty">No responses recorded.</p>';
+	const replayNudge = styleReplayNudge(summary);
+	const styleMarkup = summary.dominantStyle
+		? `<article class="therapistStyleCard">
+			<p class="styleEyebrow">Dominant therapist style</p>
+			<h4>${escapeHTML(summary.dominantStyle.label)}</h4>
+			<p>${escapeHTML(summary.dominantStyle.description)}</p>
+			<small>${summary.dominantStyle.count} matching response${summary.dominantStyle.count === 1 ? "" : "s"}</small>
+			${replayNudge ? `<p class="styleNudge">${escapeHTML(replayNudge)}</p>` : ""}
+		</article>${styleMixMarkup(summary)}`
+		: '<p class="resultEmpty">No dominant style detected yet.</p>';
 
 	return `
 		<header class="resultHeader">
@@ -757,6 +967,9 @@ function resultMessage(summary) {
 			<div><span>Mood remaining</span><b>${summary.moodRemaining}</b></div>
 			<div><span>Questions survived</span><b>${summary.questionsAnswered} / ${summary.questionsTotal}</b></div>
 		</div>
+		<section class="resultSection">
+			${styleMarkup}
+		</section>
 		<section class="resultSection">
 			<h4>Violation breakdown</h4>
 			${violationsMarkup}
@@ -809,6 +1022,7 @@ function showResults(summary) {
 		`${finalSummary.modeLabel} mode. ${finalSummary.statusLabel}. ${finalSummary.grade}. ` +
 		`Badness ${finalSummary.totalBadness}. Violations ${finalSummary.totalViolations}. ` +
 		`Mood remaining ${finalSummary.moodRemaining}. ` +
+		(finalSummary.dominantStyle ? `Dominant therapist style: ${finalSummary.dominantStyle.label}. ` : "") +
 		`${finalSummary.questionsAnswered} of ${finalSummary.questionsTotal} questions survived.` +
 		(finalSummary.newAchievements.length
 			? ` Achievement${finalSummary.newAchievements.length === 1 ? "" : "s"} unlocked: ${finalSummary.newAchievements.map((item) => item.label).join(", ")}.`
@@ -837,6 +1051,7 @@ async function startGame() {
 	mood = 100;
 	runHistory = [];
 	latestResultSummary = null;
+	streakState = emptyStreakState();
 	questions = buildQuestionsForRun();
 	recordQuestionRun(window.localStorage, questions.map((question) => question.id));
 	endedEarly = false;
@@ -875,6 +1090,10 @@ function formatShareText(summary) {
 	const breakdown = summary.violationBreakdown.length
 		? summary.violationBreakdown.map((item) => `${item.label}: ${item.count}`).join(", ")
 		: "None";
+	const therapistStyle = summary.dominantStyle
+		? `${summary.dominantStyle.label} (${summary.dominantStyle.count} response${summary.dominantStyle.count === 1 ? "" : "s"})`
+		: "None";
+	const styleMix = styleMixSummary(summary);
 	const worst = summary.worstResponse
 		? `${summary.worstResponse.response} (Badness +${summary.worstResponse.badness}, Mood −${summary.worstResponse.moodLost}${
 			summary.worstResponse.violation
@@ -888,6 +1107,8 @@ function formatShareText(summary) {
 		`Mode: ${summary.modeLabel}`,
 		`Status: ${summary.statusLabel}`,
 		summary.reason ? `Reason: ${summary.reason}` : null,
+		`Therapist Style: ${therapistStyle}`,
+		`Style Mix: ${styleMix}`,
 		`Badness: ${summary.totalBadness}/${summary.questionsTotal * 3}`,
 		`Violations: ${summary.totalViolations} (${breakdown})`,
 		`Mood Remaining: ${summary.moodRemaining}`,
