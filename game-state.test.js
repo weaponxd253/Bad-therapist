@@ -13,22 +13,57 @@ const achievements = require("./achievements.js");
 
 function makeElement() {
 	const attributes = {};
-	return {
+	const listeners = {};
+	const classNames = new Set();
+	const children = [];
+	let html = "";
+	const element = {
 		attributes,
-		classList: { add() {}, remove() {}, toggle() {} },
+		children,
+		dataset: {},
+		className: "",
+		classList: {
+			add(...names) { names.forEach((name) => classNames.add(name)); },
+			remove(...names) { names.forEach((name) => classNames.delete(name)); },
+			toggle(name, force) {
+				const shouldAdd = force === undefined ? !classNames.has(name) : Boolean(force);
+				if (shouldAdd) classNames.add(name);
+				else classNames.delete(name);
+				return shouldAdd;
+			},
+			contains(name) { return classNames.has(name); }
+		},
 		style: {},
 		setAttribute(name, value) { attributes[name] = String(value); },
-		addEventListener() {},
-		querySelectorAll() { return []; },
-		querySelector() { return null; },
-		focus() {},
-		appendChild() {},
+		addEventListener(type, handler) { listeners[type] = handler; },
+		click() {
+			if (listeners.click) listeners.click({ preventDefault() {} });
+		},
+		querySelectorAll(selector) {
+			if (selector === "button") return children.filter((child) => child.type === "button");
+			return [];
+		},
+		querySelector(selector) {
+			if (selector.startsWith("button[data-choice-index=")) {
+				const match = selector.match(/"(\d+)"/);
+				return children.find((child) => child.type === "button" && child.dataset.choiceIndex === match?.[1]) || null;
+			}
+			return null;
+		},
+		focus() { element.focused = true; },
+		appendChild(child) { children.push(child); return child; },
 		textContent: "",
 		hidden: false,
 		disabled: false,
-		innerHTML: "",
-		offsetWidth: 0
+		get innerHTML() { return html; },
+		set innerHTML(value) {
+			html = String(value);
+			if (html === "") children.length = 0;
+		},
+		offsetWidth: 0,
+		focused: false
 	};
+	return element;
 }
 
 async function main() {
@@ -46,6 +81,7 @@ async function main() {
 		setItem(key, value) { storageValues.set(key, value); }
 	};
 	let clipboardText = "";
+	const documentListeners = {};
 
 	const mediaPreference = { matches: true };
 	const context = {
@@ -55,7 +91,7 @@ async function main() {
 				if (!elements.has(id)) elements.set(id, makeElement());
 				return elements.get(id);
 			},
-			addEventListener() {},
+			addEventListener(type, handler) { documentListeners[type] = handler; },
 			createElement: makeElement
 		},
 		window: {
@@ -89,6 +125,17 @@ async function main() {
 	vm.createContext(context);
 	const gameSource = fs.readFileSync(path.join(__dirname, "script.js"), "utf8");
 	vm.runInContext(gameSource, context);
+
+	function pressKey(event) {
+		let defaultPrevented = false;
+		documentListeners.keydown({
+			code: "",
+			key: "",
+			...event,
+			preventDefault() { defaultPrevented = true; }
+		});
+		return defaultPrevented;
+	}
 	vm.runInContext(
 		`questions = [{ id: "test-question", topic: "work", client: "Client question", choices: [{ id: "bad-response", badness: 3, text: "Bad response", reaction: "Client reaction", feedback: "Authored feedback." }] }];` +
 		`idx = 0; interactionState = INTERACTION_STATES.CHOOSING; locked = false;`,
@@ -126,6 +173,31 @@ async function main() {
 		moodRemaining: 85,
 		violation: null
 	}]);
+
+	await vm.runInContext("onPick(0)", context);
+	const duplicateGuard = JSON.parse(JSON.stringify(vm.runInContext(
+		`({ score, mood, runHistoryLength: runHistory.length, interactionState })`,
+		context
+	)));
+	assert.deepEqual(duplicateGuard, {
+		score: 3,
+		mood: 85,
+		runHistoryLength: 1,
+		interactionState: "round-complete"
+	}, "completed rounds must ignore duplicate answer input");
+
+	vm.runInContext(
+		`score = 0; mood = 100; violations = 0; runHistory = []; idx = 0;` +
+		`questions = [{ id: "locked-question", topic: "work", client: "Locked", choices: [{ id: "locked-choice", badness: 3, text: "Locked bad", reaction: "Nope", feedback: "Should not apply." }] }];` +
+		`interactionState = INTERACTION_STATES.CHOOSING; locked = true; typing = false;`,
+		context
+	);
+	await vm.runInContext("onPick(0)", context);
+	assert.equal(vm.runInContext("runHistory.length", context), 0, "locked choices must not record answers");
+
+	vm.runInContext(`locked = false; typing = true; interactionState = INTERACTION_STATES.CHOOSING;`, context);
+	await vm.runInContext("onPick(0)", context);
+	assert.equal(vm.runInContext("runHistory.length", context), 0, "typing choices must not record answers");
 
 	const summary = JSON.parse(JSON.stringify(vm.runInContext(`
 		questions = [{}, {}, {}];
@@ -192,6 +264,126 @@ async function main() {
 	assert.match(achievementShare, /Achievements: Walkout Speedrun/);
 	vm.runInContext(`showResults(${JSON.stringify(achievementSummary)})`, context);
 	assert.equal(achievements.load(localStorage).unlocked.walkoutSpeedrun.unlockedAt, achievementState.unlocked.walkoutSpeedrun.unlockedAt);
+
+	vm.runInContext(`score = 42; interactionState = INTERACTION_STATES.CHOOSING;`, context);
+	await vm.runInContext("startGame()", context);
+	assert.equal(vm.runInContext("score", context), 42, "startGame must ignore attempts while a round is active");
+
+	elements.get("modePicker").querySelector = () => ({ value: "speed" });
+	vm.runInContext(`interactionState = INTERACTION_STATES.RESULTS; latestResultSummary = { stale: true };`, context);
+	await vm.runInContext("startGame()", context);
+	const startedSpeedRun = JSON.parse(JSON.stringify(vm.runInContext(
+		`({
+			modeId: activeMode.id,
+			questionCount: questions.length,
+			idx,
+			score,
+			violations,
+			mood,
+			runHistoryLength: runHistory.length,
+			latestResultSummary,
+			interactionState,
+			modePickerDisabled: el.modePicker.disabled
+		})`,
+		context
+	)));
+	assert.deepEqual(startedSpeedRun, {
+		modeId: "speed",
+		questionCount: gameModes.GAME_MODES.speed.questionCount,
+		idx: 0,
+		score: 0,
+		violations: 0,
+		mood: 100,
+		runHistoryLength: 0,
+		latestResultSummary: null,
+		interactionState: "choosing",
+		modePickerDisabled: true
+	}, "starting a run must reset gameplay state and lock mode changes");
+
+	vm.runInContext(
+		`activeMode = getMode("classic"); score = 0; violations = 0; mood = 9; idx = 0; runHistory = []; latestResultSummary = null; endedEarly = false; typing = false; locked = false;` +
+		`questions = [{ id: "collapse-question", topic: "work", client: "I am barely here.", choices: [{ id: "collapse-choice", badness: 3, violation: "confidentiality", text: "I am posting this whole session.", reaction: "I am leaving.", feedback: "A catastrophic breach." }] }];` +
+		`interactionState = INTERACTION_STATES.CHOOSING;`,
+		context
+	);
+	await vm.runInContext("onPick(0)", context);
+	const earlyEndState = JSON.parse(JSON.stringify(vm.runInContext(
+		`({
+			interactionState,
+			endedEarly,
+			nextDisabled: el.nextBtn.disabled,
+			resultVisible: el.resultScreen.classList.contains("active") && !el.resultScreen.hidden,
+			latestCompleted: latestResultSummary.completed,
+			questionsAnswered: latestResultSummary.questionsAnswered,
+			moodRemaining: latestResultSummary.moodRemaining,
+			reason: latestResultSummary.reason
+		})`,
+		context
+	)));
+	assert.deepEqual(earlyEndState, {
+		interactionState: "results",
+		endedEarly: true,
+		nextDisabled: true,
+		resultVisible: true,
+		latestCompleted: false,
+		questionsAnswered: 1,
+		moodRemaining: 0,
+		reason: "Confidentiality violation and client trust collapsed"
+	}, "early-ending sequences must land on locked results, not a dead round screen");
+	await vm.runInContext("next()", context);
+	assert.equal(vm.runInContext("interactionState", context), "results", "next must be ignored after early ending");
+
+	vm.runInContext("restart()", context);
+	const restarted = JSON.parse(JSON.stringify(vm.runInContext(
+		`({
+			interactionState,
+			modePickerDisabled: el.modePicker.disabled,
+			startVisible: el.startScreen.classList.contains("active") && !el.startScreen.hidden,
+			gameHidden: el.gameScreen.hidden,
+			resultHidden: el.resultScreen.hidden,
+			progressNow: el.progressBar.attributes["aria-valuenow"],
+			progressText: el.progressBar.attributes["aria-valuetext"],
+			progressWidth: el.progressFill.style.width
+		})`,
+		context
+	)));
+	assert.deepEqual(restarted, {
+		interactionState: "idle",
+		modePickerDisabled: false,
+		startVisible: true,
+		gameHidden: true,
+		resultHidden: true,
+		progressNow: "0",
+		progressText: "0 of 10 questions completed",
+		progressWidth: "0%"
+	}, "restart must return to a clean start screen");
+
+	selectedButton.addEventListener("click", () => { vm.runInContext("onPick(0)", context); });
+	choices.querySelector = () => selectedButton;
+	elements.get("gameScreen").classList.add("active");
+	elements.get("gameScreen").hidden = false;
+	vm.runInContext(
+		`activeMode = getMode("classic"); score = 0; violations = 0; mood = 100; idx = 0; runHistory = []; typing = false; locked = false;` +
+		`questions = [{ id: "keyboard-question", topic: "work", client: "Keyboard", choices: [{ id: "keyboard-choice", badness: 3, text: "Keyboard bad", reaction: "Keyboard reaction", feedback: "Keyboard feedback." }] }];` +
+		`interactionState = INTERACTION_STATES.PRESENTING; skipCurrentSequence = false; skipTypingNow = false;`,
+		context
+	);
+	assert.equal(pressKey({ code: "Space", key: " " }), true, "space should prevent scrolling while skipping message pacing");
+	assert.deepEqual(JSON.parse(JSON.stringify(vm.runInContext(
+		`({ skipCurrentSequence, skipTypingNow })`,
+		context
+	))), { skipCurrentSequence: true, skipTypingNow: true });
+
+	vm.runInContext(`interactionState = INTERACTION_STATES.CHOOSING; skipCurrentSequence = false; skipTypingNow = false; locked = false; typing = false;`, context);
+	assert.equal(pressKey({ key: "1", code: "Digit1" }), false);
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	assert.equal(vm.runInContext("runHistory.length", context), 1, "number hotkeys must pick the matching answer");
+	assert.equal(vm.runInContext("interactionState", context), "round-complete");
+
+	assert.equal(pressKey({ key: "Enter", code: "Enter" }), true, "enter should activate Next after a completed round");
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	assert.equal(vm.runInContext("interactionState", context), "results");
+	assert.equal(vm.runInContext("latestResultSummary.completed", context), true);
 
 	assert.equal(elements.get("start").disabled, false);
 	vm.runInContext(`contentErrors.push({ path: "questions", message: "Broken" }); initializeContent();`, context);
