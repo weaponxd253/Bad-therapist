@@ -33,7 +33,7 @@ const migratedLegacy = persistence.load(legacyStorage);
 assert.equal(migratedLegacy.recordsByMode.classic.highestChaos.weighted, 19);
 assert.equal(migratedLegacy.recordsByMode.classic.bestCompleted, null);
 
-const summary = (modeId, weighted, completed = true) => ({
+const summary = (modeId, weighted, completed = true, style = null) => ({
 	modeId,
 	modeLabel: modeId === "speed" ? "Speed Session" : modeId === "minefield" ? "Ethics Minefield" : "Classic",
 	weighted,
@@ -42,10 +42,12 @@ const summary = (modeId, weighted, completed = true) => ({
 	completed,
 	questionsAnswered: completed ? 10 : 6,
 	moodRemaining: completed ? 20 : 8,
-	grade: "Questionable Vibes"
+	grade: "Questionable Vibes",
+	dominantStyle: style,
+	archetypeBreakdown: style ? [{ archetype: style.archetype, label: style.label, count: style.count }] : []
 });
 const storage = memoryStorage();
-persistence.update(storage, summary("classic", 24));
+persistence.update(storage, summary("classic", 24, true, { archetype: "boundaryCross", label: "Boundary Blender", count: 4 }));
 persistence.update(storage, summary("speed", 30));
 persistence.update(storage, summary("minefield", 35, false));
 const separated = persistence.load(storage);
@@ -53,6 +55,9 @@ assert.equal(separated.recordsByMode.classic.highestChaos.weighted, 24);
 assert.equal(separated.recordsByMode.speed.highestChaos.weighted, 30);
 assert.equal(separated.recordsByMode.minefield.highestChaos.weighted, 35);
 assert.equal(separated.recordsByMode.minefield.bestCompleted, null);
+assert.equal(separated.lastStyleSummary.dominantArchetype, "boundaryCross");
+assert.equal(separated.lastStyleSummary.dominantLabel, "Boundary Blender");
+assert.equal(separated.lastStyleSummary.dominantCount, 4);
 
 const malformed = persistence.load(memoryStorage({ [persistence.STORAGE_KEY]: "not json" }));
 assert.deepEqual(malformed, persistence.emptyRecords());

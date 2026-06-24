@@ -9,7 +9,10 @@ const {
 	VIOLATION_TYPES,
 	calculateChoiceOutcome
 } = window.BadTherapistScoring;
-const { update: updateSavedRecords } = window.BadTherapistPersistence;
+const {
+	load: loadSavedRecords,
+	update: updateSavedRecords
+} = window.BadTherapistPersistence;
 const { validateQuestions } = window.BadTherapistContentSchema;
 const { selectQuestionsForRun } = window.BadTherapistQuestionSelector;
 const {
@@ -32,6 +35,8 @@ const el = {
 	modePicker: document.getElementById("modePicker"),
 	achievementProgress: document.getElementById("achievementProgress"),
 	achievementList: document.getElementById("achievementList"),
+	caseNoteStart: document.getElementById("caseNoteStart"),
+	caseNoteGame: document.getElementById("caseNoteGame"),
 	contentError: document.getElementById("contentError"),
 	gameHeading: document.getElementById("gameHeading"),
 	resultHeading: document.getElementById("resultHeading"),
@@ -75,6 +80,8 @@ let mood = 100;
 let runHistory = [];
 let latestResultSummary = null;
 let streakState = emptyStreakState();
+let upcomingCaseNote = null;
+let activeCaseNote = null;
 const INTERACTION_STATES = Object.freeze({
 	IDLE: "idle",
 	PRESENTING: "presenting",
@@ -210,6 +217,67 @@ function dominantStyleFromCounts(archetypeCounts, archetypeImpacts) {
 		})
 		.sort((a, b) => b.count - a.count || b.impact - a.impact || a.label.localeCompare(b.label));
 	return ranked[0] || null;
+}
+
+function generateCaseNote(lastStyleSummary) {
+	if (!lastStyleSummary?.dominantArchetype) return null;
+	const style = styleForArchetype(lastStyleSummary.dominantArchetype);
+	const label = lastStyleSummary.dominantLabel || style.label;
+	return {
+		id: `avoid:${lastStyleSummary.dominantArchetype}`,
+		type: "avoidArchetype",
+		archetype: lastStyleSummary.dominantArchetype,
+		label,
+		shareLabel: `Avoid ${label}`,
+		prompt: `Optional case note: avoid ${label} responses this session.`,
+		source: `Based on your last run's dominant style in ${lastStyleSummary.modeLabel || "Classic"} mode.`
+	};
+}
+
+function countArchetype(summary, archetype) {
+	return (summary.archetypeBreakdown || []).find((item) => item.archetype === archetype)?.count || 0;
+}
+
+function evaluateCaseNote(caseNote, summary) {
+	if (!caseNote) return null;
+	const count = countArchetype(summary, caseNote.archetype);
+	const completed = count === 0;
+	return {
+		id: caseNote.id,
+		type: caseNote.type,
+		archetype: caseNote.archetype,
+		label: caseNote.label,
+		shareLabel: caseNote.shareLabel,
+		prompt: caseNote.prompt,
+		completed,
+		count,
+		statusLabel: completed ? "Case note completed" : "Case note missed",
+		message: completed
+			? `Case note completed: ${caseNote.label} stayed off the chart. Disturbingly controlled.`
+			: `Case note missed: ${caseNote.label} still got ${count} pick${count === 1 ? "" : "s"}. The pattern has receipts.`
+	};
+}
+
+function renderCaseNote(element, caseNote, compact = false) {
+	if (!element) return;
+	if (!caseNote) {
+		element.hidden = true;
+		element.innerHTML = "";
+		return;
+	}
+	element.hidden = false;
+	element.innerHTML = `
+		<p class="caseNoteEyebrow">Optional case note</p>
+		<p><b>${escapeHTML(caseNote.shareLabel)}</b></p>
+		${compact ? "" : `<small>${escapeHTML(caseNote.source)}</small>`}
+	`;
+}
+
+function refreshUpcomingCaseNote() {
+	const saved = loadSavedRecords(window.localStorage);
+	upcomingCaseNote = generateCaseNote(saved.lastStyleSummary);
+	renderCaseNote(el.caseNoteStart, upcomingCaseNote);
+	return upcomingCaseNote;
 }
 
 function announce(message) {
@@ -832,6 +900,7 @@ function summarizeRun({ completed, reason = "" } = {}) {
 	const moodRemaining = runHistory.length
 		? runHistory[runHistory.length - 1].moodRemaining
 		: 100;
+	const caseNote = evaluateCaseNote(activeCaseNote, { archetypeBreakdown });
 
 	return {
 		completed,
@@ -855,6 +924,7 @@ function summarizeRun({ completed, reason = "" } = {}) {
 		violationBreakdown,
 		archetypeBreakdown,
 		dominantStyle,
+		caseNote,
 		worstResponse
 	};
 }
@@ -916,6 +986,19 @@ function styleMixMarkup(summary) {
 	`;
 }
 
+function caseNoteResultMarkup(caseNote) {
+	if (!caseNote) return "";
+	return `
+		<section class="resultSection">
+			<article class="caseNoteResult ${caseNote.completed ? "is-complete" : "is-missed"}">
+				<p class="caseNoteEyebrow">Optional case note</p>
+				<h4>${escapeHTML(caseNote.statusLabel)}</h4>
+				<p>${escapeHTML(caseNote.message)}</p>
+			</article>
+		</section>
+	`;
+}
+
 function resultMessage(summary) {
 	const notes = {
 		"Accidentally Competent":
@@ -967,6 +1050,7 @@ function resultMessage(summary) {
 			<div><span>Mood remaining</span><b>${summary.moodRemaining}</b></div>
 			<div><span>Questions survived</span><b>${summary.questionsAnswered} / ${summary.questionsTotal}</b></div>
 		</div>
+		${caseNoteResultMarkup(summary.caseNote)}
 		<section class="resultSection">
 			${styleMarkup}
 		</section>
@@ -1005,6 +1089,7 @@ function showResults(summary) {
 	latestResultSummary = finalSummary;
 	renderAchievementCollection(achievementResult.state);
 	showScreen("result");
+	renderCaseNote(el.caseNoteGame, null);
 	updateFinalScorePills(finalSummary);
 	el.resultBox.innerHTML = resultMessage(finalSummary);
 	pulseElement(el.resultBox, "is-revealed", 700);
@@ -1023,6 +1108,7 @@ function showResults(summary) {
 		`Badness ${finalSummary.totalBadness}. Violations ${finalSummary.totalViolations}. ` +
 		`Mood remaining ${finalSummary.moodRemaining}. ` +
 		(finalSummary.dominantStyle ? `Dominant therapist style: ${finalSummary.dominantStyle.label}. ` : "") +
+		(finalSummary.caseNote ? `${finalSummary.caseNote.statusLabel}. ` : "") +
 		`${finalSummary.questionsAnswered} of ${finalSummary.questionsTotal} questions survived.` +
 		(finalSummary.newAchievements.length
 			? ` Achievement${finalSummary.newAchievements.length === 1 ? "" : "s"} unlocked: ${finalSummary.newAchievements.map((item) => item.label).join(", ")}.`
@@ -1043,6 +1129,7 @@ async function startGame() {
 	if (interactionState !== INTERACTION_STATES.IDLE && interactionState !== INTERACTION_STATES.RESULTS) return;
 	const selectedMode = el.modePicker?.querySelector('input[name="gameMode"]:checked')?.value;
 	activeMode = getMode(selectedMode);
+	activeCaseNote = upcomingCaseNote || refreshUpcomingCaseNote();
 	el.modePicker.disabled = true;
 	interactionState = INTERACTION_STATES.PRESENTING;
 	idx = 0;
@@ -1058,6 +1145,7 @@ async function startGame() {
 
 	updateTopMeta();
 	showScreen("game");
+	renderCaseNote(el.caseNoteGame, activeCaseNote, true);
 	el.progressFill.style.width = "0%";
 	updateHUD();
 	await renderQuestion();
@@ -1078,6 +1166,8 @@ async function next() {
 function restart() {
 	interactionState = INTERACTION_STATES.IDLE;
 	el.modePicker.disabled = false;
+	activeCaseNote = null;
+	refreshUpcomingCaseNote();
 	showScreen("start");
 	el.meta.textContent = "";
 	el.progressBar.setAttribute("aria-valuenow", "0");
@@ -1094,6 +1184,9 @@ function formatShareText(summary) {
 		? `${summary.dominantStyle.label} (${summary.dominantStyle.count} response${summary.dominantStyle.count === 1 ? "" : "s"})`
 		: "None";
 	const styleMix = styleMixSummary(summary);
+	const caseNote = summary.caseNote
+		? `${summary.caseNote.shareLabel} — ${summary.caseNote.completed ? "Completed" : "Missed"}`
+		: "None";
 	const worst = summary.worstResponse
 		? `${summary.worstResponse.response} (Badness +${summary.worstResponse.badness}, Mood −${summary.worstResponse.moodLost}${
 			summary.worstResponse.violation
@@ -1109,6 +1202,7 @@ function formatShareText(summary) {
 		summary.reason ? `Reason: ${summary.reason}` : null,
 		`Therapist Style: ${therapistStyle}`,
 		`Style Mix: ${styleMix}`,
+		`Case Note: ${caseNote}`,
 		`Badness: ${summary.totalBadness}/${summary.questionsTotal * 3}`,
 		`Violations: ${summary.totalViolations} (${breakdown})`,
 		`Mood Remaining: ${summary.moodRemaining}`,
@@ -1171,6 +1265,7 @@ function initializeContent() {
 		el.startBtn.disabled = false;
 		updateTopMeta();
 		renderAchievementCollection();
+		refreshUpcomingCaseNote();
 		return;
 	}
 

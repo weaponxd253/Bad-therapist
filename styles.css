@@ -224,6 +224,68 @@ button#start {
 	opacity: 0.75;
 }
 
+.caseNote,
+.caseNoteResult {
+	max-width: 720px;
+	margin: 12px auto;
+	padding: 11px 13px;
+	border: 2px solid rgba(75, 73, 235, 0.22);
+	border-left-width: 6px;
+	border-radius: 14px;
+	background: linear-gradient(135deg, rgba(75, 73, 235, 0.1), rgba(255, 255, 255, 0.56));
+	text-align: left;
+}
+
+.caseNoteGame {
+	max-width: none;
+	margin: 12px 0;
+}
+
+.caseNote p,
+.caseNote small,
+.caseNoteResult h4,
+.caseNoteResult p {
+	margin: 0;
+}
+
+.caseNote p + small {
+	display: block;
+	margin-top: 5px;
+	opacity: 0.76;
+}
+
+.caseNoteEyebrow {
+	margin-bottom: 3px !important;
+	font-size: 0.73rem;
+	font-weight: 900;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	opacity: 0.74;
+}
+
+.caseNoteResult {
+	max-width: none;
+	margin: 0;
+}
+
+.caseNoteResult h4 {
+	font-size: 1.05rem;
+}
+
+.caseNoteResult p:not(.caseNoteEyebrow) {
+	margin-top: 5px;
+}
+
+.caseNoteResult.is-complete {
+	border-color: rgba(25, 118, 72, 0.42);
+	background: rgba(25, 118, 72, 0.09);
+}
+
+.caseNoteResult.is-missed {
+	border-color: rgba(124, 24, 32, 0.38);
+	background: rgba(124, 24, 32, 0.08);
+}
+
 .achievementCollection ul,
 .achievementUnlocks {
 	display: grid;
@@ -1099,7 +1161,9 @@ button#start {
 	.modeOption span,
 	.achievementCollection,
 	.achievementItem,
-	.achievementUnlocks li {
+	.achievementUnlocks li,
+	.caseNote,
+	.caseNoteResult {
 		border: 2px solid ButtonText;
 	}
 

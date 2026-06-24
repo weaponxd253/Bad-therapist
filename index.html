@@ -49,6 +49,7 @@
 				<summary>Achievements <span id="achievementProgress">0 / 8 unlocked</span></summary>
 				<ul id="achievementList"></ul>
 			</details>
+			<aside class="caseNote" id="caseNoteStart" hidden></aside>
 			<button id="start">start</button>
 			<p class="contentError" id="contentError" role="alert" hidden>
 				Game content could not be loaded. Please refresh or try again later.
@@ -70,7 +71,8 @@
 				(Press <b>Space</b> to reveal this exchange immediately)
 			</p>
 
-			<div class="choices" id="choices" role="group" aria-label="Choose a response" aria-describedby="clientBubble roundStatus"></div>
+			<aside class="caseNote caseNoteGame" id="caseNoteGame" hidden></aside>
+			<div class="choices" id="choices" role="group" aria-label="Choose a response" aria-describedby="clientBubble roundStatus caseNoteGame"></div>
 			<p class="roundStatus" id="roundStatus" role="status" aria-live="polite">Choose the worst response.</p>
 
 			<section class="outcomeFeedback" id="outcomeFeedback" aria-labelledby="outcomeTitle" hidden>

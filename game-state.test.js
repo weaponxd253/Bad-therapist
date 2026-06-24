@@ -225,7 +225,14 @@ async function main() {
 	assert.match(elements.get("roundStatus").textContent, /Chaos Coach streak/);
 	assert.equal(elements.get("roundStatus").dataset.tone, "selected");
 
+	const generatedCaseNote = JSON.parse(JSON.stringify(vm.runInContext(`
+		generateCaseNote({ dominantArchetype: "boundaryCross", dominantLabel: "Boundary Blender", modeLabel: "Classic" })
+	`, context)));
+	assert.equal(generatedCaseNote.shareLabel, "Avoid Boundary Blender");
+	assert.match(generatedCaseNote.prompt, /avoid Boundary Blender/);
+
 	const summary = JSON.parse(JSON.stringify(vm.runInContext(`
+		activeCaseNote = generateCaseNote({ dominantArchetype: "boundaryCross", dominantLabel: "Boundary Blender", modeLabel: "Classic" });
 		questions = [{}, {}, {}];
 		runHistory = [
 			{ questionNumber: 1, response: "Mild", archetype: "boundaryCross", badness: 1, moodLost: 5, moodRemaining: 95, violation: null },
@@ -251,11 +258,16 @@ async function main() {
 		{ label: "Boundary Blender", count: 2 },
 		{ label: "Confidentiality Goblin", count: 1 }
 	]);
+	assert.equal(summary.caseNote.statusLabel, "Case note missed");
+	assert.equal(summary.caseNote.completed, false);
+	assert.equal(summary.caseNote.count, 2);
 	const markup = vm.runInContext(`resultMessage(${JSON.stringify(summary)})`, context);
 	assert.match(markup, /Questions survived/);
 	assert.match(markup, /Dominant therapist style/);
 	assert.match(markup, /Boundary Blender/);
 	assert.match(markup, /Style mix/);
+	assert.match(markup, /Case note missed/);
+	assert.match(markup, /Boundary Blender still got 2 picks/);
 	assert.match(markup, /Replay nudge: try dodging Boundary Blender picks/);
 	assert.match(markup, /Confidentiality Goblin/);
 	assert.match(markup, /67%/);
@@ -268,6 +280,7 @@ async function main() {
 	assert.match(shareText, /Reason: Trust collapsed/);
 	assert.match(shareText, /Therapist Style: Boundary Blender \(2 responses\)/);
 	assert.match(shareText, /Style Mix: Boundary Blender: 2, Confidentiality Goblin: 1/);
+	assert.match(shareText, /Case Note: Avoid Boundary Blender — Missed/);
 	assert.match(shareText, /Violations: 2 \(Confidentiality: 1, Professional Boundaries: 1\)/);
 	assert.match(shareText, /Worst Response: Shared secret .*Confidentiality/);
 
@@ -279,6 +292,7 @@ async function main() {
 	const saved = persistence.load(localStorage);
 	assert.equal(saved.recordsByMode.classic.highestChaos.weighted, summary.weighted);
 	assert.equal(saved.recordsByMode.classic.bestCompleted.weighted, summary.weighted);
+	assert.equal(saved.lastStyleSummary.dominantArchetype, "boundaryCross");
 	assert.match(elements.get("bestPill").textContent, /Highest Chaos/);
 	assert.match(elements.get("bestPill").textContent, /Best Completed/);
 

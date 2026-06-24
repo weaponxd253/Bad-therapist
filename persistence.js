@@ -18,7 +18,8 @@
 	function emptyRecords() {
 		return {
 			version: VERSION,
-			recordsByMode: Object.fromEntries(MODE_IDS.map((id) => [id, emptyModeRecords()]))
+			recordsByMode: Object.fromEntries(MODE_IDS.map((id) => [id, emptyModeRecords()])),
+			lastStyleSummary: null
 		};
 	}
 
@@ -46,12 +47,40 @@
 		};
 	}
 
+	function normalizeStyleMix(value) {
+		if (!Array.isArray(value)) return [];
+		return value
+			.filter((item) => item && typeof item === "object" && typeof item.archetype === "string")
+			.map((item) => ({
+				archetype: item.archetype,
+				label: typeof item.label === "string" ? item.label : item.archetype,
+				count: Number.isFinite(item.count) ? item.count : 0
+			}))
+			.slice(0, 5);
+	}
+
+	function normalizeStyleSummary(value) {
+		if (!value || typeof value !== "object" || typeof value.dominantArchetype !== "string") return null;
+		return {
+			modeId: MODE_IDS.includes(value.modeId) ? value.modeId : "classic",
+			modeLabel: typeof value.modeLabel === "string" ? value.modeLabel : "Classic",
+			completed: value.completed === true,
+			questionsAnswered: Number.isFinite(value.questionsAnswered) ? value.questionsAnswered : 0,
+			dominantArchetype: value.dominantArchetype,
+			dominantLabel: typeof value.dominantLabel === "string" ? value.dominantLabel : value.dominantArchetype,
+			dominantCount: Number.isFinite(value.dominantCount) ? value.dominantCount : 0,
+			styleMix: normalizeStyleMix(value.styleMix),
+			at: typeof value.at === "string" ? value.at : ""
+		};
+	}
+
 	function normalizeStore(value) {
 		if (!value || value.version !== VERSION || !value.recordsByMode) return null;
 		const normalized = emptyRecords();
 		MODE_IDS.forEach((id) => {
 			normalized.recordsByMode[id] = normalizeModeRecords(value.recordsByMode[id]);
 		});
+		normalized.lastStyleSummary = normalizeStyleSummary(value.lastStyleSummary);
 		return normalized;
 	}
 
@@ -116,6 +145,21 @@
 		};
 	}
 
+	function styleSummaryFromRun(summary) {
+		if (!summary?.dominantStyle?.archetype) return null;
+		return {
+			modeId: MODE_IDS.includes(summary.modeId) ? summary.modeId : "classic",
+			modeLabel: summary.modeLabel || "Classic",
+			completed: summary.completed === true,
+			questionsAnswered: Number.isFinite(summary.questionsAnswered) ? summary.questionsAnswered : 0,
+			dominantArchetype: summary.dominantStyle.archetype,
+			dominantLabel: summary.dominantStyle.label || summary.dominantStyle.archetype,
+			dominantCount: Number.isFinite(summary.dominantStyle.count) ? summary.dominantStyle.count : 0,
+			styleMix: normalizeStyleMix(summary.archetypeBreakdown),
+			at: new Date().toISOString()
+		};
+	}
+
 	function isBetter(candidate, existing) {
 		if (!existing) return true;
 		if (candidate.weighted !== existing.weighted) return candidate.weighted > existing.weighted;
@@ -133,6 +177,7 @@
 		if (candidate.completed && isBetter(candidate, modeRecords.bestCompleted)) {
 			modeRecords.bestCompleted = candidate;
 		}
+		data.lastStyleSummary = styleSummaryFromRun(summary) || data.lastStyleSummary;
 		save(storage, data);
 		return data;
 	}
