@@ -4,7 +4,7 @@ const { VIOLATION_TYPES } = require("./scoring.js");
 const { RESPONSE_ARCHETYPES, validateQuestions } = require("./content-schema.js");
 
 assert.deepEqual(validateQuestions(questions, VIOLATION_TYPES), []);
-assert.ok(questions.length >= 32 && questions.length <= 35);
+assert.ok(questions.length >= 40 && questions.length <= 45);
 const representedTopics = new Set(questions.map((question) => question.topic));
 assert.deepEqual([...representedTopics].sort(), [
 	"anxiety", "conflict", "family", "identity", "loneliness",
