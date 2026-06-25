@@ -24,6 +24,10 @@ body {
 	overflow-x: hidden;
 }
 
+[hidden] {
+	display: none !important;
+}
+
 button {
 	min-height: 44px;
 	font: inherit;
@@ -101,13 +105,20 @@ button#start {
 }
 
 .title h1 {
+	flex: 0 0 auto;
 	margin: 0;
 	font-size: clamp(1.15rem, 1rem + 1vw, 1.5rem);
 	letter-spacing: 0.2px;
+	white-space: nowrap;
 }
 .meta {
+	flex: 1 1 auto;
+	min-width: 0;
 	font-size: 0.9rem;
 	opacity: 0.8;
+	overflow: hidden;
+	text-align: center;
+	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
@@ -154,6 +165,16 @@ button#start {
 	margin-bottom: 8px;
 	font-weight: 750;
 	text-align: center;
+}
+
+.packPicker {
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	max-width: 980px;
+	margin-top: 8px;
+}
+
+.packPicker .modeOption span {
+	min-height: 112px;
 }
 
 .modeOption {
@@ -1125,11 +1146,13 @@ button#start {
 		padding: 12px 2px;
 	}
 
-	.modePicker {
+	.modePicker,
+	.packPicker {
 		grid-template-columns: 1fr;
 	}
 
-	.modeOption span {
+	.modeOption span,
+	.packPicker .modeOption span {
 		min-height: 0;
 	}
 

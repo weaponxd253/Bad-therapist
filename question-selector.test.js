@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const questions = require("./questions.js");
+const sessionPacks = require("./session-packs.js");
 const { selectQuestionsForRun } = require("./question-selector.js");
 
 function seededRandom(seed) {
@@ -107,6 +108,33 @@ const minefieldCategories = new Set(
 );
 assert.ok(minefieldCategories.size >= 4);
 assert.ok(["judgment", "coercion", "harmfulAdvice"].every((category) => minefieldCategories.has(category)));
+
+const workplacePack = sessionPacks.getPack("workplace");
+const workplaceRun = selectQuestionsForRun(
+	questions,
+	{
+		count: 10,
+		minimumTopics: 6,
+		maximumPerTopic: 2,
+		minimumViolationCategories: 3,
+		preferredTopics: workplacePack.preferredTopics,
+		requiredTopics: workplacePack.requiredTopics
+	},
+	seededRandom(2024)
+);
+const workplaceMetrics = runMetrics(workplaceRun);
+assert.ok(workplaceMetrics.topics.has("work"), "workplace pack must include its required work topic");
+assert.ok(
+	workplaceRun.filter((question) => workplacePack.preferredTopics.includes(question.topic)).length >= 3,
+	"workplace pack should lean into its preferred topics"
+);
+
+const impossibleRequiredRun = selectQuestionsForRun(
+	questions,
+	{ count: 10, requiredTopics: ["not-a-real-topic"], preferredTopics: ["also-fake"] },
+	seededRandom(2025)
+);
+assert.equal(impossibleRequiredRun.length, 10, "unknown pack topics should be ignored instead of blocking selection");
 
 const smallPool = questions.slice(0, 4);
 const smallRun = selectQuestionsForRun(smallPool, { count: 10 }, seededRandom(7));

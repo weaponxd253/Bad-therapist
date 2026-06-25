@@ -1,4 +1,5 @@
 const { getMode } = window.BadTherapistModes;
+const { getPack } = window.BadTherapistSessionPacks;
 const {
 	ACHIEVEMENTS,
 	load: loadAchievements,
@@ -33,6 +34,7 @@ const el = {
 	progressFill: document.getElementById("progressFill"),
 	startHeading: document.getElementById("startHeading"),
 	modePicker: document.getElementById("modePicker"),
+	packPicker: document.getElementById("packPicker"),
 	achievementProgress: document.getElementById("achievementProgress"),
 	achievementList: document.getElementById("achievementList"),
 	caseNoteStart: document.getElementById("caseNoteStart"),
@@ -97,6 +99,7 @@ let skipTypingNow = false;
 let skipCurrentSequence = false;
 let interactionState = INTERACTION_STATES.IDLE;
 let activeMode = getMode("classic");
+let activePack = getPack("chaos");
 let endedEarly = false;
 let soundEnabled = true;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -549,8 +552,18 @@ async function typeInto(elm, text, speed = 12) {
 	announce(text);
 }
 
+function selectedRadioValue(fieldset, name) {
+	return fieldset?.querySelector(`input[name="${name}"]:checked`)?.value;
+}
+
+function syncStartSelections() {
+	activeMode = getMode(selectedRadioValue(el.modePicker, "gameMode"));
+	activePack = getPack(selectedRadioValue(el.packPicker, "sessionPack"));
+	updateTopMeta();
+}
+
 function updateTopMeta() {
-	el.meta.textContent = "10 confidential questions • choose the worst replies";
+	el.meta.textContent = `${activePack.label} • ${activePack.intro} • ${activeMode.label}`;
 }
 
 function updateHUD() {
@@ -682,6 +695,8 @@ function buildQuestionsForRun() {
 			maximumPerTopic: 2,
 			minimumViolationCategories: activeMode.minimumViolationCategories,
 			preferredViolationCategories: activeMode.preferredViolationCategories,
+			preferredTopics: activePack.preferredTopics,
+			requiredTopics: activePack.requiredTopics,
 			recentQuestionWeights: getRecentQuestionWeights(recentHistory)
 		},
 		Math.random
@@ -906,6 +921,9 @@ function summarizeRun({ completed, reason = "" } = {}) {
 		completed,
 		modeId: activeMode.id,
 		modeLabel: activeMode.label,
+		packId: activePack.id,
+		packLabel: activePack.label,
+		packOutro: activePack.outro,
 		statusLabel: completed ? "Session completed" : "Session ended early",
 		reason,
 		grade: resultLabel(totalBadness, totalViolations),
@@ -1117,8 +1135,10 @@ function resultMessage(summary) {
 		<header class="resultHeader">
 			<p class="resultStatus">${escapeHTML(summary.statusLabel)}</p>
 			<p class="resultMode">Mode: <b>${escapeHTML(summary.modeLabel)}</b></p>
+			<p class="resultMode">Pack: <b>${escapeHTML(summary.packLabel)}</b></p>
 			<h3>Result: ${escapeHTML(summary.grade)}</h3>
 			<p>${escapeHTML(notes[summary.grade])}</p>
+			${summary.packOutro ? `<p>${escapeHTML(summary.packOutro)}</p>` : ""}
 			${summary.reason ? `<p class="resultReason"><b>Reason:</b> ${escapeHTML(summary.reason)}</p>` : ""}
 		</header>
 		<div class="resultMetrics">
@@ -1183,7 +1203,7 @@ function showResults(summary) {
 	el.resultHeading.focus();
 	const boardVerdict = ethicsBoardVerdict(finalSummary);
 	announce(
-		`${finalSummary.modeLabel} mode. ${finalSummary.statusLabel}. ${finalSummary.grade}. ` +
+		`${finalSummary.modeLabel} mode. ${finalSummary.packLabel} pack. ${finalSummary.statusLabel}. ${finalSummary.grade}. ` +
 		`Badness ${finalSummary.totalBadness}. Violations ${finalSummary.totalViolations}. ` +
 		`Mood remaining ${finalSummary.moodRemaining}. ` +
 		(finalSummary.dominantStyle ? `Dominant therapist style: ${finalSummary.dominantStyle.label}. ` : "") +
@@ -1207,10 +1227,10 @@ function finishGame() {
 async function startGame() {
 	if (contentErrors.length > 0) return;
 	if (interactionState !== INTERACTION_STATES.IDLE && interactionState !== INTERACTION_STATES.RESULTS) return;
-	const selectedMode = el.modePicker?.querySelector('input[name="gameMode"]:checked')?.value;
-	activeMode = getMode(selectedMode);
+	syncStartSelections();
 	activeCaseNote = upcomingCaseNote || refreshUpcomingCaseNote();
 	el.modePicker.disabled = true;
+	el.packPicker.disabled = true;
 	interactionState = INTERACTION_STATES.PRESENTING;
 	idx = 0;
 	score = 0;
@@ -1246,10 +1266,11 @@ async function next() {
 function restart() {
 	interactionState = INTERACTION_STATES.IDLE;
 	el.modePicker.disabled = false;
+	el.packPicker.disabled = false;
 	activeCaseNote = null;
 	refreshUpcomingCaseNote();
 	showScreen("start");
-	el.meta.textContent = "";
+	syncStartSelections();
 	el.progressBar.setAttribute("aria-valuenow", "0");
 	el.progressBar.setAttribute("aria-valuetext", "0 of 10 questions completed");
 	el.progressFill.style.width = "0%";
@@ -1279,6 +1300,7 @@ function formatShareText(summary) {
 	return [
 		`Bad Therapist Result: ${summary.grade}`,
 		`Mode: ${summary.modeLabel}`,
+		`Pack: ${summary.packLabel}`,
 		`Status: ${summary.statusLabel}`,
 		summary.reason ? `Reason: ${summary.reason}` : null,
 		`Therapist Style: ${therapistStyle}`,
@@ -1319,6 +1341,8 @@ function endSessionEarly(reason) {
 	showToast(pickLine("earlyEnd"), 1600);
 }
 el.startBtn.addEventListener("click", startGame);
+el.modePicker.addEventListener("change", syncStartSelections);
+el.packPicker.addEventListener("change", syncStartSelections);
 el.nextBtn.addEventListener("click", next);
 el.restartBtn.addEventListener("click", restart);
 el.shareBtn.addEventListener("click", copyResult);
@@ -1345,7 +1369,7 @@ function initializeContent() {
 	if (contentErrors.length === 0) {
 		el.contentError.hidden = true;
 		el.startBtn.disabled = false;
-		updateTopMeta();
+		syncStartSelections();
 		renderAchievementCollection();
 		refreshUpcomingCaseNote();
 		return;

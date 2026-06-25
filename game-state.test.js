@@ -9,6 +9,7 @@ const contentSchema = require("./content-schema.js");
 const questionSelector = require("./question-selector.js");
 const questionHistory = require("./question-history.js");
 const gameModes = require("./game-modes.js");
+const sessionPacks = require("./session-packs.js");
 const achievements = require("./achievements.js");
 
 function makeElement() {
@@ -96,6 +97,7 @@ async function main() {
 		},
 		window: {
 			BadTherapistModes: gameModes,
+			BadTherapistSessionPacks: sessionPacks,
 			BadTherapistAchievements: achievements,
 			BadTherapistScoring: scoring,
 			BadTherapistPersistence: persistence,
@@ -255,6 +257,7 @@ async function main() {
 	`, context)));
 
 	assert.equal(summary.statusLabel, "Session ended early");
+	assert.equal(summary.packLabel, "Chaos Sampler");
 	assert.equal(summary.totalBadness, 7);
 	assert.equal(summary.totalViolations, 2);
 	assert.equal(summary.moodRemaining, 43);
@@ -278,6 +281,7 @@ async function main() {
 	assert.match(summaryVerdict.body, /early ending/);
 	const markup = vm.runInContext(`resultMessage(${JSON.stringify(summary)})`, context);
 	assert.match(markup, /Questions survived/);
+	assert.match(markup, /Pack: <b>Chaos Sampler<\/b>/);
 	assert.match(markup, /Dominant therapist style/);
 	assert.match(markup, /Boundary Blender/);
 	assert.match(markup, /Style mix/);
@@ -294,6 +298,7 @@ async function main() {
 
 	const shareText = vm.runInContext(`formatShareText(${JSON.stringify(summary)})`, context);
 	assert.match(shareText, /Mode: Classic/);
+	assert.match(shareText, /Pack: Chaos Sampler/);
 	assert.match(shareText, /Status: Session ended early/);
 	assert.match(shareText, /Reason: Trust collapsed/);
 	assert.match(shareText, /Therapist Style: Boundary Blender \(2 responses\)/);
@@ -343,11 +348,13 @@ async function main() {
 	assert.equal(vm.runInContext("score", context), 42, "startGame must ignore attempts while a round is active");
 
 	elements.get("modePicker").querySelector = () => ({ value: "speed" });
+	elements.get("packPicker").querySelector = () => ({ value: "workplace" });
 	vm.runInContext(`interactionState = INTERACTION_STATES.RESULTS; latestResultSummary = { stale: true };`, context);
 	await vm.runInContext("startGame()", context);
 	const startedSpeedRun = JSON.parse(JSON.stringify(vm.runInContext(
 		`({
 			modeId: activeMode.id,
+			packId: activePack.id,
 			questionCount: questions.length,
 			idx,
 			score,
@@ -356,12 +363,14 @@ async function main() {
 			runHistoryLength: runHistory.length,
 			latestResultSummary,
 			interactionState,
-			modePickerDisabled: el.modePicker.disabled
+			modePickerDisabled: el.modePicker.disabled,
+			packPickerDisabled: el.packPicker.disabled
 		})`,
 		context
 	)));
 	assert.deepEqual(startedSpeedRun, {
 		modeId: "speed",
+		packId: "workplace",
 		questionCount: gameModes.GAME_MODES.speed.questionCount,
 		idx: 0,
 		score: 0,
@@ -370,8 +379,9 @@ async function main() {
 		runHistoryLength: 0,
 		latestResultSummary: null,
 		interactionState: "choosing",
-		modePickerDisabled: true
-	}, "starting a run must reset gameplay state and lock mode changes");
+		modePickerDisabled: true,
+		packPickerDisabled: true
+	}, "starting a run must reset gameplay state and lock mode and pack changes");
 
 	vm.runInContext(
 		`activeMode = getMode("classic"); score = 0; violations = 0; mood = 9; idx = 0; runHistory = []; latestResultSummary = null; endedEarly = false; typing = false; locked = false;` +
@@ -411,6 +421,7 @@ async function main() {
 		`({
 			interactionState,
 			modePickerDisabled: el.modePicker.disabled,
+			packPickerDisabled: el.packPicker.disabled,
 			startVisible: el.startScreen.classList.contains("active") && !el.startScreen.hidden,
 			gameHidden: el.gameScreen.hidden,
 			resultHidden: el.resultScreen.hidden,
@@ -423,6 +434,7 @@ async function main() {
 	assert.deepEqual(restarted, {
 		interactionState: "idle",
 		modePickerDisabled: false,
+		packPickerDisabled: false,
 		startVisible: true,
 		gameHidden: true,
 		resultHidden: true,

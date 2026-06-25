@@ -45,6 +45,29 @@
 					<span><b>Ethics Minefield</b><small>Subtler traps and harsher violation penalties.</small></span>
 				</label>
 			</fieldset>
+			<fieldset class="modePicker packPicker" id="packPicker">
+				<legend>Choose a session pack</legend>
+				<label class="modeOption">
+					<input type="radio" name="sessionPack" value="chaos" checked>
+					<span><b>Chaos Sampler</b><small>The full mixed case file: every topic, every therapeutic crime.</small></span>
+				</label>
+				<label class="modeOption">
+					<input type="radio" name="sessionPack" value="workplace">
+					<span><b>Workplace Damage</b><small>Burnout, boss texts, productivity shame, and professional coping crimes.</small></span>
+				</label>
+				<label class="modeOption">
+					<input type="radio" name="sessionPack" value="relationships">
+					<span><b>Relationship Crimes</b><small>Dating ambiguity, jealousy, reciprocity, and conflict misfires.</small></span>
+				</label>
+				<label class="modeOption">
+					<input type="radio" name="sessionPack" value="family">
+					<span><b>Family Systems Error</b><small>Expectations, guilt, comparison, and emotional tech debt.</small></span>
+				</label>
+				<label class="modeOption">
+					<input type="radio" name="sessionPack" value="internet">
+					<span><b>Internet Brainrot</b><small>Comparison, posting, labels, spirals, and algorithm-flavored self-worth.</small></span>
+				</label>
+			</fieldset>
 			<details class="achievementCollection" id="achievementCollection">
 				<summary>Achievements <span id="achievementProgress">0 / 8 unlocked</span></summary>
 				<ul id="achievementList"></ul>
@@ -116,6 +139,7 @@
 	</section>
 </main>
 <script src="game-modes.js"></script>
+<script src="session-packs.js"></script>
 <script src="achievements.js"></script>
 <script src="scoring.js"></script>
 <script src="persistence.js"></script>

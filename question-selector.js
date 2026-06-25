@@ -43,6 +43,20 @@
 		return [...violationCategories(question)].filter((category) => preferred.has(category)).length;
 	}
 
+	function preferredTopicScore(question, options) {
+		return options.preferredTopics.includes(question.topic) ? 1 : 0;
+	}
+
+	function requiredTopicScore(question, selectedMetrics, options) {
+		return options.requiredTopics.includes(question.topic) && !selectedMetrics.topics.has(question.topic)
+			? 1
+			: 0;
+	}
+
+	function requiredTopicsCovered(selectedMetrics, options) {
+		return options.requiredTopics.every((topic) => selectedMetrics.topics.has(topic));
+	}
+
 	function quality(selected, options) {
 		const run = metrics(selected);
 		const overflow = [...run.topicCounts.values()]
@@ -55,10 +69,18 @@
 			(sum, question) => sum + preferredCategoryCount(question, options),
 			0
 		);
+		const preferredTopicCoverage = selected.reduce(
+			(sum, question) => sum + preferredTopicScore(question, options),
+			0
+		);
+		const requiredTopicCoverage = options.requiredTopics
+			.filter((topic) => run.topics.has(topic)).length;
 		return (
 			selected.length * 1000 +
 			Math.min(run.topics.size, options.minimumTopics) * 100 +
 			Math.min(run.categories.size, options.minimumViolationCategories) * 40 +
+			requiredTopicCoverage * 120 +
+			preferredTopicCoverage * 30 +
 			preferredCoverage * 25 -
 			overflow * 500 -
 			recencyPenalty * 10
@@ -83,6 +105,8 @@
 				const newCategories = [...violationCategories(question)]
 					.filter((category) => !run.categories.has(category)).length;
 				const score =
+					requiredTopicScore(question, run, options) * 170 +
+					preferredTopicScore(question, options) * 45 +
 					(newTopic && run.topics.size < options.minimumTopics ? 100 : newTopic ? 18 : 0) +
 					(newCategories > 0 && run.categories.size < options.minimumViolationCategories
 						? newCategories * 35
@@ -105,6 +129,7 @@
 
 	function selectQuestionsForRun(pool, requestedOptions = {}, random = Math.random) {
 		if (!Array.isArray(pool)) return [];
+		const availableTopics = new Set(pool.map((question) => question.topic));
 		const options = {
 			count: Math.max(0, requestedOptions.count ?? 10),
 			minimumTopics: Math.max(0, requestedOptions.minimumTopics ?? 6),
@@ -120,6 +145,12 @@
 					: {},
 			preferredViolationCategories: Array.isArray(requestedOptions.preferredViolationCategories)
 				? [...requestedOptions.preferredViolationCategories]
+				: [],
+			preferredTopics: Array.isArray(requestedOptions.preferredTopics)
+				? [...requestedOptions.preferredTopics].filter((topic) => availableTopics.has(topic))
+				: [],
+			requiredTopics: Array.isArray(requestedOptions.requiredTopics)
+				? [...requestedOptions.requiredTopics].filter((topic) => availableTopics.has(topic))
 				: [],
 			attempts: Math.max(1, requestedOptions.attempts ?? 48)
 		};
@@ -142,6 +173,7 @@
 				candidate.length === targetCount &&
 				candidateMetrics.topics.size >= Math.min(effectiveOptions.minimumTopics, targetCount) &&
 				candidateMetrics.categories.size >= effectiveOptions.minimumViolationCategories &&
+				requiredTopicsCovered(candidateMetrics, effectiveOptions) &&
 				withinCap
 			) {
 				best = candidate;

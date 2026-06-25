@@ -11,6 +11,7 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Ten balanced questions per session selected from a 41-question pool
 - Replay-aware selection favors unseen and least-recent questions
 - Classic, Speed Session, and Ethics Minefield modes
+- Themed session packs for workplace, relationship, family, and internet-brainrot runs
 - Eight persistent, non-blocking achievements
 - Four shuffled responses for every question
 - Badness, ethics-violation, and client-mood scoring
@@ -57,6 +58,7 @@ content-schema.js      Runtime content validation
 question-selector.js   Balanced, replay-aware run selection
 question-history.js    Versioned recent-run history
 game-modes.js          Declarative game mode configuration
+session-packs.js       Declarative themed session pack configuration
 achievements.js        Achievement evaluation and progress
 scoring.js             Scoring and violation rules
 persistence.js         Versioned local records
