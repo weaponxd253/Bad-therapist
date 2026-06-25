@@ -14,6 +14,7 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Eight persistent, non-blocking achievements
 - Four shuffled responses for every question
 - Badness, ethics-violation, and client-mood scoring
+- Ethics Board finale verdicts for post-run comedy payoff
 - Dominant therapist-style summaries, style-mix debriefs, and optional replay case notes
 - Lightweight in-run streak feedback for spicy patterns
 - Early endings when the client's mood gets too low

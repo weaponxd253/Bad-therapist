@@ -704,6 +704,74 @@ button#start {
 	opacity: 0.75;
 }
 
+.ethicsBoardFinale {
+	position: relative;
+	margin: 0;
+	padding: 14px;
+	border: 2px solid rgba(17, 17, 17, 0.16);
+	border-left: 6px solid #111;
+	border-radius: 14px;
+	background: linear-gradient(135deg, rgba(17, 17, 17, 0.08), rgba(75, 73, 235, 0.08));
+}
+
+.ethicsBoardFinale[data-level="0"] {
+	border-left-color: #197648;
+	background: rgba(25, 118, 72, 0.08);
+}
+
+.ethicsBoardFinale[data-level="2"],
+.ethicsBoardFinale[data-level="3"],
+.ethicsBoardFinale[data-level="4"] {
+	border-left-color: #7c1820;
+	background: linear-gradient(135deg, rgba(124, 24, 32, 0.11), rgba(75, 73, 235, 0.07));
+}
+
+.ethicsBoardFinale p,
+.ethicsBoardFinale h4 {
+	margin: 0;
+}
+
+.boardEyebrow {
+	margin-bottom: 5px !important;
+	font-size: 0.76rem;
+	font-weight: 900;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	opacity: 0.74;
+}
+
+.boardHeader {
+	display: flex;
+	align-items: start;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 8px;
+}
+
+.boardHeader h4 {
+	font-size: 1.13rem;
+}
+
+.boardHeader span {
+	flex: 0 0 auto;
+	max-width: 44%;
+	padding: 4px 8px;
+	border: 2px solid currentColor;
+	border-radius: 999px;
+	font-size: 0.7rem;
+	font-weight: 900;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	transform: rotate(2deg);
+	opacity: 0.78;
+}
+
+.boardAction {
+	margin-top: 9px !important;
+	padding-top: 9px;
+	border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
 .therapistStyleCard {
 	margin: 0;
 	padding: 12px 14px;
@@ -1163,7 +1231,8 @@ button#start {
 	.achievementItem,
 	.achievementUnlocks li,
 	.caseNote,
-	.caseNoteResult {
+	.caseNoteResult,
+	.ethicsBoardFinale {
 		border: 2px solid ButtonText;
 	}
 
@@ -1175,6 +1244,7 @@ button#start {
 	.outcomeFeedback,
 	.outcomeStat,
 	.therapistStyleCard,
+	.ethicsBoardFinale,
 	.styleMix {
 		border: 2px solid CanvasText;
 	}

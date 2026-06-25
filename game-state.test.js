@@ -231,6 +231,18 @@ async function main() {
 	assert.equal(generatedCaseNote.shareLabel, "Avoid Boundary Blender");
 	assert.match(generatedCaseNote.prompt, /avoid Boundary Blender/);
 
+	const cleanVerdict = JSON.parse(JSON.stringify(vm.runInContext(`
+		ethicsBoardVerdict({ completed: true, totalViolations: 0, violationBreakdown: [], questionsAnswered: 3, dominantStyle: { archetype: "helpful", label: "Accidentally Ethical" } })
+	`, context)));
+	assert.equal(cleanVerdict.title, "Suspiciously Clean");
+	assert.match(cleanVerdict.body, /no formal ethics violations/i);
+
+	const maximumVerdict = JSON.parse(JSON.stringify(vm.runInContext(`
+		ethicsBoardVerdict({ completed: false, totalViolations: 5, violationBreakdown: [{ label: "Confidentiality", count: 3 }], questionsAnswered: 5, dominantStyle: { archetype: "confidentialityBreach", label: "Confidentiality Goblin" } })
+	`, context)));
+	assert.equal(maximumVerdict.title, "License Launched Into the Sea");
+	assert.match(maximumVerdict.body, /Confidentiality has been asked/);
+
 	const summary = JSON.parse(JSON.stringify(vm.runInContext(`
 		activeCaseNote = generateCaseNote({ dominantArchetype: "boundaryCross", dominantLabel: "Boundary Blender", modeLabel: "Classic" });
 		questions = [{}, {}, {}];
@@ -261,11 +273,17 @@ async function main() {
 	assert.equal(summary.caseNote.statusLabel, "Case note missed");
 	assert.equal(summary.caseNote.completed, false);
 	assert.equal(summary.caseNote.count, 2);
+	const summaryVerdict = JSON.parse(JSON.stringify(vm.runInContext(`ethicsBoardVerdict(${JSON.stringify(summary)})`, context)));
+	assert.equal(summaryVerdict.title, "Clipboard Probation");
+	assert.match(summaryVerdict.body, /early ending/);
 	const markup = vm.runInContext(`resultMessage(${JSON.stringify(summary)})`, context);
 	assert.match(markup, /Questions survived/);
 	assert.match(markup, /Dominant therapist style/);
 	assert.match(markup, /Boundary Blender/);
 	assert.match(markup, /Style mix/);
+	assert.match(markup, /Ethics Board finale/);
+	assert.match(markup, /Verdict: Clipboard Probation/);
+	assert.match(markup, /No, You Cannot Text the Client’s Boss/);
 	assert.match(markup, /Case note missed/);
 	assert.match(markup, /Boundary Blender still got 2 picks/);
 	assert.match(markup, /Replay nudge: try dodging Boundary Blender picks/);
@@ -281,6 +299,7 @@ async function main() {
 	assert.match(shareText, /Therapist Style: Boundary Blender \(2 responses\)/);
 	assert.match(shareText, /Style Mix: Boundary Blender: 2, Confidentiality Goblin: 1/);
 	assert.match(shareText, /Case Note: Avoid Boundary Blender — Missed/);
+	assert.match(shareText, /Ethics Board: Clipboard Probation — Attend one seminar titled/);
 	assert.match(shareText, /Violations: 2 \(Confidentiality: 1, Professional Boundaries: 1\)/);
 	assert.match(shareText, /Worst Response: Shared secret .*Confidentiality/);
 

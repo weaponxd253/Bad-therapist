@@ -999,6 +999,83 @@ function caseNoteResultMarkup(caseNote) {
 	`;
 }
 
+function ethicsBoardVerdict(summary) {
+	const totalViolations = summary.totalViolations || 0;
+	const earlyEnding = summary.completed === false;
+	const dominantStyle = summary.dominantStyle;
+	const levels = Object.freeze([
+		{
+			title: "Suspiciously Clean",
+			action: "No sanctions. The board will continue pretending not to be impressed.",
+			stampLabel: "Filed: Weirdly Fine"
+		},
+		{
+			title: "Formal Warning",
+			action: "Complete one worksheet titled ‘Maybe Do Not Say That Out Loud.’",
+			stampLabel: "Warning"
+		},
+		{
+			title: "Clipboard Probation",
+			action: "Attend one seminar titled ‘No, You Cannot Text the Client’s Boss.’",
+			stampLabel: "Probation"
+		},
+		{
+			title: "Emergency Hearing",
+			action: "Appear before the board with three references and a very apologetic chair.",
+			stampLabel: "Hearing"
+		},
+		{
+			title: "License Launched Into the Sea",
+			action: "Practice restricted to houseplants until further notice.",
+			stampLabel: "Maximum Chaos"
+		}
+	]);
+	let level = totalViolations === 0 ? 0 : totalViolations <= 2 ? 1 : totalViolations <= 4 ? 2 : 3;
+	if (earlyEnding) level = Math.min(level + 1, levels.length - 1);
+	const verdict = levels[level];
+	const topViolation = summary.violationBreakdown?.[0];
+	const styleNotes = {
+		boundaryCross: "Boundary concerns appear to be the house style.",
+		confidentialityBreach: "Confidentiality has been asked to sit down and breathe into a paper bag.",
+		coerciveFixer: "The board detected an unusual amount of steering-wheel grabbing.",
+		chaosAdvice: "Several recommendations arrived with visible fuses attached.",
+		influencerBrain: "The ring light has been confiscated pending review.",
+		overshare: "The board gently notes that the client did not request your autobiography."
+	};
+	const parts = totalViolations === 0
+		? ["The board found no formal ethics violations, which is either growth or suspiciously competent paperwork."]
+		: [`The board notes ${totalViolations} documented violation${totalViolations === 1 ? "" : "s"}${topViolation ? `, led by ${topViolation.label}` : ""}.`];
+	if (dominantStyle) {
+		parts.push(`Dominant style entered into evidence: ${dominantStyle.label}.`);
+		if (styleNotes[dominantStyle.archetype]) parts.push(styleNotes[dominantStyle.archetype]);
+	}
+	if (earlyEnding) parts.push("The early ending has been marked with three underlines and one dramatic sigh.");
+	if (summary.caseNote && !summary.caseNote.completed) parts.push("The missed case note did not help your case.");
+
+	return {
+		...verdict,
+		level,
+		body: parts.join(" ")
+	};
+}
+
+function ethicsBoardMarkup(summary) {
+	const verdict = ethicsBoardVerdict(summary);
+	return `
+		<section class="resultSection">
+			<article class="ethicsBoardFinale" data-level="${verdict.level}">
+				<p class="boardEyebrow">Ethics Board finale</p>
+				<div class="boardHeader">
+					<h4>Verdict: ${escapeHTML(verdict.title)}</h4>
+					<span aria-hidden="true">${escapeHTML(verdict.stampLabel)}</span>
+				</div>
+				<p>${escapeHTML(verdict.body)}</p>
+				<p class="boardAction"><b>Action:</b> ${escapeHTML(verdict.action)}</p>
+			</article>
+		</section>
+	`;
+}
+
 function resultMessage(summary) {
 	const notes = {
 		"Accidentally Competent":
@@ -1050,6 +1127,7 @@ function resultMessage(summary) {
 			<div><span>Mood remaining</span><b>${summary.moodRemaining}</b></div>
 			<div><span>Questions survived</span><b>${summary.questionsAnswered} / ${summary.questionsTotal}</b></div>
 		</div>
+		${ethicsBoardMarkup(summary)}
 		${caseNoteResultMarkup(summary.caseNote)}
 		<section class="resultSection">
 			${styleMarkup}
@@ -1103,11 +1181,13 @@ function showResults(summary) {
 	);
 	el.progressFill.style.width = "100%";
 	el.resultHeading.focus();
+	const boardVerdict = ethicsBoardVerdict(finalSummary);
 	announce(
 		`${finalSummary.modeLabel} mode. ${finalSummary.statusLabel}. ${finalSummary.grade}. ` +
 		`Badness ${finalSummary.totalBadness}. Violations ${finalSummary.totalViolations}. ` +
 		`Mood remaining ${finalSummary.moodRemaining}. ` +
 		(finalSummary.dominantStyle ? `Dominant therapist style: ${finalSummary.dominantStyle.label}. ` : "") +
+		`Ethics Board verdict: ${boardVerdict.title}. ` +
 		(finalSummary.caseNote ? `${finalSummary.caseNote.statusLabel}. ` : "") +
 		`${finalSummary.questionsAnswered} of ${finalSummary.questionsTotal} questions survived.` +
 		(finalSummary.newAchievements.length
@@ -1187,6 +1267,7 @@ function formatShareText(summary) {
 	const caseNote = summary.caseNote
 		? `${summary.caseNote.shareLabel} — ${summary.caseNote.completed ? "Completed" : "Missed"}`
 		: "None";
+	const boardVerdict = ethicsBoardVerdict(summary);
 	const worst = summary.worstResponse
 		? `${summary.worstResponse.response} (Badness +${summary.worstResponse.badness}, Mood −${summary.worstResponse.moodLost}${
 			summary.worstResponse.violation
@@ -1203,6 +1284,7 @@ function formatShareText(summary) {
 		`Therapist Style: ${therapistStyle}`,
 		`Style Mix: ${styleMix}`,
 		`Case Note: ${caseNote}`,
+		`Ethics Board: ${boardVerdict.title} — ${boardVerdict.action}`,
 		`Badness: ${summary.totalBadness}/${summary.questionsTotal * 3}`,
 		`Violations: ${summary.totalViolations} (${breakdown})`,
 		`Mood Remaining: ${summary.moodRemaining}`,
