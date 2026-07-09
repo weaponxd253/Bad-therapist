@@ -286,6 +286,8 @@ async function main() {
 	assert.match(markup, /Boundary Blender/);
 	assert.match(markup, /Style mix/);
 	assert.match(markup, /Ethics Board finale/);
+	assert.match(markup, /Case file closing note/);
+	assert.match(markup, /Case File: Broad-Spectrum Chaos/);
 	assert.match(markup, /Verdict: Clipboard Probation/);
 	assert.match(markup, /No, You Cannot Text the Client’s Boss/);
 	assert.match(markup, /Case note missed/);
@@ -299,6 +301,7 @@ async function main() {
 	const shareText = vm.runInContext(`formatShareText(${JSON.stringify(summary)})`, context);
 	assert.match(shareText, /Mode: Classic/);
 	assert.match(shareText, /Pack: Chaos Sampler/);
+	assert.match(shareText, /Case File: Broad-Spectrum Chaos/);
 	assert.match(shareText, /Status: Session ended early/);
 	assert.match(shareText, /Reason: Trust collapsed/);
 	assert.match(shareText, /Therapist Style: Boundary Blender \(2 responses\)/);
@@ -476,6 +479,7 @@ async function main() {
 	vm.runInContext(`contentErrors.push({ path: "questions", message: "Broken" }); initializeContent();`, context);
 	assert.equal(elements.get("start").disabled, true);
 	assert.equal(elements.get("contentError").hidden, false);
+	assert.match(elements.get("packPreview").innerHTML, /Selected case file|Case File:/);
 
 	mediaPreference.matches = false;
 	const speedTarget = makeElement();

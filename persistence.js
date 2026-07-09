@@ -5,9 +5,10 @@
 	}
 	root.BadTherapistPersistence = persistence;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-	const VERSION = 3;
-	const STORAGE_KEY = "bad-therapist-records-v3";
-	const PREVIOUS_KEY = "bad-therapist-records-v2";
+	const VERSION = 4;
+	const STORAGE_KEY = "bad-therapist-records-v4";
+	const PREVIOUS_KEY = "bad-therapist-records-v3";
+	const V2_KEY = "bad-therapist-records-v2";
 	const LEGACY_KEY = "bad-therapist-best";
 	const MODE_IDS = Object.freeze(["classic", "speed", "minefield"]);
 
@@ -15,10 +16,15 @@
 		return { highestChaos: null, bestCompleted: null };
 	}
 
+	function emptyPackRecords() {
+		return { highestChaos: null, bestCompleted: null, completedAt: "" };
+	}
+
 	function emptyRecords() {
 		return {
 			version: VERSION,
 			recordsByMode: Object.fromEntries(MODE_IDS.map((id) => [id, emptyModeRecords()])),
+			recordsByPack: {},
 			lastStyleSummary: null
 		};
 	}
@@ -36,6 +42,8 @@
 			grade: typeof value.grade === "string" ? value.grade : "",
 			modeId: MODE_IDS.includes(value.modeId) ? value.modeId : "classic",
 			modeLabel: typeof value.modeLabel === "string" ? value.modeLabel : "Classic",
+			packId: typeof value.packId === "string" ? value.packId : "",
+			packLabel: typeof value.packLabel === "string" ? value.packLabel : "",
 			at: typeof value.at === "string" ? value.at : ""
 		};
 	}
@@ -45,6 +53,25 @@
 			highestChaos: normalizeRecord(value?.highestChaos),
 			bestCompleted: normalizeRecord(value?.bestCompleted)
 		};
+	}
+
+	function normalizePackRecords(value) {
+		const records = {
+			highestChaos: normalizeRecord(value?.highestChaos),
+			bestCompleted: normalizeRecord(value?.bestCompleted),
+			completedAt: typeof value?.completedAt === "string" ? value.completedAt : ""
+		};
+		if (!records.completedAt && records.bestCompleted?.at) records.completedAt = records.bestCompleted.at;
+		return records;
+	}
+
+	function normalizeRecordsByPack(value) {
+		if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+		return Object.fromEntries(
+			Object.entries(value)
+				.filter(([id]) => typeof id === "string" && id.length > 0)
+				.map(([id, records]) => [id, normalizePackRecords(records)])
+		);
 	}
 
 	function normalizeStyleMix(value) {
@@ -80,6 +107,7 @@
 		MODE_IDS.forEach((id) => {
 			normalized.recordsByMode[id] = normalizeModeRecords(value.recordsByMode[id]);
 		});
+		normalized.recordsByPack = normalizeRecordsByPack(value.recordsByPack);
 		normalized.lastStyleSummary = normalizeStyleSummary(value.lastStyleSummary);
 		return normalized;
 	}
@@ -98,6 +126,16 @@
 		}
 	}
 
+	function migrateV3(value) {
+		if (!value || value.version !== 3 || !value.recordsByMode) return null;
+		const migrated = emptyRecords();
+		MODE_IDS.forEach((id) => {
+			migrated.recordsByMode[id] = normalizeModeRecords(value.recordsByMode[id]);
+		});
+		migrated.lastStyleSummary = normalizeStyleSummary(value.lastStyleSummary);
+		return migrated;
+	}
+
 	function migrateV2(value) {
 		if (!value || value.version !== 2 || !value.records) return null;
 		const migrated = emptyRecords();
@@ -110,10 +148,16 @@
 			const current = normalizeStore(parse(storage?.getItem(STORAGE_KEY)));
 			if (current) return current;
 
-			const previous = migrateV2(parse(storage?.getItem(PREVIOUS_KEY)));
+			const previous = migrateV3(parse(storage?.getItem(PREVIOUS_KEY)));
 			if (previous) {
 				save(storage, previous);
 				return previous;
+			}
+
+			const v2 = migrateV2(parse(storage?.getItem(V2_KEY)));
+			if (v2) {
+				save(storage, v2);
+				return v2;
 			}
 
 			const legacy = normalizeRecord(parse(storage?.getItem(LEGACY_KEY)));
@@ -141,6 +185,8 @@
 			grade: summary.grade,
 			modeId,
 			modeLabel: summary.modeLabel || "Classic",
+			packId: typeof summary.packId === "string" ? summary.packId : "",
+			packLabel: typeof summary.packLabel === "string" ? summary.packLabel : "",
 			at: new Date().toISOString()
 		};
 	}
@@ -177,13 +223,22 @@
 		if (candidate.completed && isBetter(candidate, modeRecords.bestCompleted)) {
 			modeRecords.bestCompleted = candidate;
 		}
+		if (candidate.packId) {
+			const packRecords = data.recordsByPack[candidate.packId] || emptyPackRecords();
+			if (isBetter(candidate, packRecords.highestChaos)) packRecords.highestChaos = candidate;
+			if (candidate.completed && isBetter(candidate, packRecords.bestCompleted)) {
+				packRecords.bestCompleted = candidate;
+				packRecords.completedAt = packRecords.completedAt || candidate.at;
+			}
+			data.recordsByPack[candidate.packId] = packRecords;
+		}
 		data.lastStyleSummary = styleSummaryFromRun(summary) || data.lastStyleSummary;
 		save(storage, data);
 		return data;
 	}
 
 	return Object.freeze({
-		VERSION, STORAGE_KEY, PREVIOUS_KEY, LEGACY_KEY, MODE_IDS,
+		VERSION, STORAGE_KEY, PREVIOUS_KEY, V2_KEY, LEGACY_KEY, MODE_IDS,
 		emptyRecords, load, save, update
 	});
 });

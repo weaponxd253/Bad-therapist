@@ -177,6 +177,91 @@ button#start {
 	min-height: 112px;
 }
 
+[data-accent="indigo"] { --pack-accent: #4b49eb; --pack-bg: rgba(75, 73, 235, 0.1); }
+[data-accent="green"] { --pack-accent: #17845a; --pack-bg: rgba(23, 132, 90, 0.1); }
+[data-accent="rose"] { --pack-accent: #a43b5b; --pack-bg: rgba(164, 59, 91, 0.1); }
+[data-accent="violet"] { --pack-accent: #7550d8; --pack-bg: rgba(117, 80, 216, 0.11); }
+[data-accent="cyan"] { --pack-accent: #087a8f; --pack-bg: rgba(8, 122, 143, 0.1); }
+
+.packPreview,
+.caseFileCard,
+.caseFileCloseout {
+	--pack-accent: #4b49eb;
+	--pack-bg: rgba(75, 73, 235, 0.1);
+	border: 2px solid color-mix(in srgb, var(--pack-accent) 42%, transparent);
+	border-left-width: 6px;
+	border-radius: 14px;
+	background: linear-gradient(135deg, var(--pack-bg), rgba(255, 255, 255, 0.56));
+}
+
+.packPreview {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	max-width: 720px;
+	margin: 12px auto 14px;
+	padding: 14px 16px;
+	text-align: left;
+}
+
+.packPreview h3,
+.caseFileCard h3,
+.caseFileCloseout h4 {
+	margin: 2px 0 4px;
+}
+
+.packPreview p,
+.caseFileCard p,
+.caseFileCloseout p {
+	margin: 0;
+}
+
+.packPreview small,
+.caseFileCard p,
+.caseFileCloseout small {
+	line-height: 1.35;
+	opacity: 0.78;
+}
+
+.packPreviewEyebrow,
+.caseFileEyebrow {
+	margin: 0;
+	font-size: 0.74rem;
+	font-weight: 850;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	opacity: 0.76;
+}
+
+.packProgressBadge {
+	flex: 0 0 auto;
+	padding: 7px 10px;
+	border-radius: 999px;
+	background: var(--pack-accent);
+	color: #fff;
+	font-size: 0.82rem;
+	font-weight: 850;
+	white-space: nowrap;
+}
+
+.caseFileCard {
+	margin: 0 0 12px;
+	padding: 12px 14px;
+	text-align: left;
+}
+
+.caseFileCloseout {
+	padding: 14px 16px;
+}
+
+.caseFileCloseout small {
+	display: block;
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
 .modeOption {
 	position: relative;
 	display: flex;
@@ -1154,6 +1239,15 @@ button#start {
 	.modeOption span,
 	.packPicker .modeOption span {
 		min-height: 0;
+	}
+
+	.packPreview {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.packProgressBadge {
+		white-space: normal;
 	}
 
 	.bubble {

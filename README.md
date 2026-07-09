@@ -11,7 +11,7 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Ten balanced questions per session selected from a 41-question pool
 - Replay-aware selection favors unseen and least-recent questions
 - Classic, Speed Session, and Ethics Minefield modes
-- Themed session packs for workplace, relationship, family, and internet-brainrot runs
+- Themed session packs with authored case-file previews, in-run context, and closing notes
 - Eight persistent, non-blocking achievements
 - Four shuffled responses for every question
 - Badness, ethics-violation, and client-mood scoring
@@ -19,7 +19,7 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Dominant therapist-style summaries, style-mix debriefs, and optional replay case notes
 - Lightweight in-run streak feedback for spicy patterns
 - Early endings when the client's mood gets too low
-- Separate persistent records for highest chaos and completed sessions
+- Separate persistent records for highest chaos, completed sessions, and completed packs
 - Keyboard controls and skippable typing animation
 - Responsive layout for phones, tablets, and desktop
 - No build process or runtime dependencies

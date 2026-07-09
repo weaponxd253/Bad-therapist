@@ -68,6 +68,7 @@
 					<span><b>Internet Brainrot</b><small>Comparison, posting, labels, spirals, and algorithm-flavored self-worth.</small></span>
 				</label>
 			</fieldset>
+			<aside class="packPreview" id="packPreview" aria-live="polite"></aside>
 			<details class="achievementCollection" id="achievementCollection">
 				<summary>Achievements <span id="achievementProgress">0 / 8 unlocked</span></summary>
 				<ul id="achievementList"></ul>
@@ -85,6 +86,7 @@
 
 		<div id="gameScreen" class="screen" hidden>
 			<h2 class="srOnly" id="gameHeading" tabindex="-1">Question 1 of 10</h2>
+			<aside class="caseFileCard" id="caseFileGame"></aside>
 			<div class="chat">
 				<div class="bubble client" id="clientBubble"></div>
 				<div class="bubble therapist" id="therapistBubble" style="display:none;"></div>
@@ -95,7 +97,7 @@
 			</p>
 
 			<aside class="caseNote caseNoteGame" id="caseNoteGame" hidden></aside>
-			<div class="choices" id="choices" role="group" aria-label="Choose a response" aria-describedby="clientBubble roundStatus caseNoteGame"></div>
+			<div class="choices" id="choices" role="group" aria-label="Choose a response" aria-describedby="clientBubble roundStatus caseFileGame caseNoteGame"></div>
 			<p class="roundStatus" id="roundStatus" role="status" aria-live="polite">Choose the worst response.</p>
 
 			<section class="outcomeFeedback" id="outcomeFeedback" aria-labelledby="outcomeTitle" hidden>

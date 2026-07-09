@@ -35,10 +35,12 @@ const el = {
 	startHeading: document.getElementById("startHeading"),
 	modePicker: document.getElementById("modePicker"),
 	packPicker: document.getElementById("packPicker"),
+	packPreview: document.getElementById("packPreview"),
 	achievementProgress: document.getElementById("achievementProgress"),
 	achievementList: document.getElementById("achievementList"),
 	caseNoteStart: document.getElementById("caseNoteStart"),
 	caseNoteGame: document.getElementById("caseNoteGame"),
+	caseFileGame: document.getElementById("caseFileGame"),
 	contentError: document.getElementById("contentError"),
 	gameHeading: document.getElementById("gameHeading"),
 	resultHeading: document.getElementById("resultHeading"),
@@ -556,14 +558,56 @@ function selectedRadioValue(fieldset, name) {
 	return fieldset?.querySelector(`input[name="${name}"]:checked`)?.value;
 }
 
+function packRecordLabel(record) {
+	if (!record?.highestChaos && !record?.bestCompleted) return "Not completed yet";
+	if (record.bestCompleted) {
+		return `Completed • best ${record.bestCompleted.weighted} chaos`;
+	}
+	return `Started • highest chaos ${record.highestChaos.weighted}`;
+}
+
+function renderPackPreview() {
+	if (!el.packPreview) return;
+	const saved = loadSavedRecords(window.localStorage);
+	const packRecord = saved.recordsByPack?.[activePack.id];
+	el.packPreview.hidden = false;
+	el.packPreview.dataset.accent = activePack.accent || "indigo";
+	el.packPreview.innerHTML = `
+		<div>
+			<p class="packPreviewEyebrow">Selected case file</p>
+			<h3>${escapeHTML(activePack.caseFileTitle)}</h3>
+			<p>${escapeHTML(activePack.description)}</p>
+			<small>Favors: ${escapeHTML(activePack.topicsLabel)}</small>
+		</div>
+		<span class="packProgressBadge">${escapeHTML(packRecordLabel(packRecord))}</span>
+	`;
+}
+
+function renderCaseFile(element, pack) {
+	if (!element) return;
+	if (!pack) {
+		element.hidden = true;
+		element.innerHTML = "";
+		return;
+	}
+	element.hidden = false;
+	element.dataset.accent = pack.accent || "indigo";
+	element.innerHTML = `
+		<p class="caseFileEyebrow">Session case file</p>
+		<h3>${escapeHTML(pack.caseFileTitle)}</h3>
+		<p>${escapeHTML(pack.label)} • favors ${escapeHTML(pack.topicsLabel)}</p>
+	`;
+}
+
 function syncStartSelections() {
 	activeMode = getMode(selectedRadioValue(el.modePicker, "gameMode"));
 	activePack = getPack(selectedRadioValue(el.packPicker, "sessionPack"));
 	updateTopMeta();
+	renderPackPreview();
 }
 
 function updateTopMeta() {
-	el.meta.textContent = `${activePack.label} • ${activePack.intro} • ${activeMode.label}`;
+	el.meta.textContent = `${activePack.label} • ${activeMode.label}`;
 }
 
 function updateHUD() {
@@ -923,6 +967,11 @@ function summarizeRun({ completed, reason = "" } = {}) {
 		modeLabel: activeMode.label,
 		packId: activePack.id,
 		packLabel: activePack.label,
+		packShortLabel: activePack.shortLabel,
+		packAccent: activePack.accent,
+		packTopicsLabel: activePack.topicsLabel,
+		packCaseFileTitle: activePack.caseFileTitle,
+		packBoardNote: activePack.boardNote,
 		packOutro: activePack.outro,
 		statusLabel: completed ? "Session completed" : "Session ended early",
 		reason,
@@ -1094,6 +1143,20 @@ function ethicsBoardMarkup(summary) {
 	`;
 }
 
+function packCloseoutMarkup(summary) {
+	if (!summary.packOutro && !summary.packBoardNote) return "";
+	return `
+		<section class="resultSection">
+			<article class="caseFileCloseout" data-accent="${escapeHTML(summary.packAccent || "indigo")}">
+				<p class="caseFileEyebrow">Case file closing note</p>
+				<h4>${escapeHTML(summary.packCaseFileTitle || summary.packLabel)}</h4>
+				${summary.packOutro ? `<p>${escapeHTML(summary.packOutro)}</p>` : ""}
+				${summary.packBoardNote ? `<small>${escapeHTML(summary.packBoardNote)}</small>` : ""}
+			</article>
+		</section>
+	`;
+}
+
 function resultMessage(summary) {
 	const notes = {
 		"Accidentally Competent":
@@ -1138,7 +1201,6 @@ function resultMessage(summary) {
 			<p class="resultMode">Pack: <b>${escapeHTML(summary.packLabel)}</b></p>
 			<h3>Result: ${escapeHTML(summary.grade)}</h3>
 			<p>${escapeHTML(notes[summary.grade])}</p>
-			${summary.packOutro ? `<p>${escapeHTML(summary.packOutro)}</p>` : ""}
 			${summary.reason ? `<p class="resultReason"><b>Reason:</b> ${escapeHTML(summary.reason)}</p>` : ""}
 		</header>
 		<div class="resultMetrics">
@@ -1148,6 +1210,7 @@ function resultMessage(summary) {
 			<div><span>Questions survived</span><b>${summary.questionsAnswered} / ${summary.questionsTotal}</b></div>
 		</div>
 		${ethicsBoardMarkup(summary)}
+		${packCloseoutMarkup(summary)}
 		${caseNoteResultMarkup(summary.caseNote)}
 		<section class="resultSection">
 			${styleMarkup}
@@ -1175,9 +1238,11 @@ function updateFinalScorePills(summary) {
 
 	const saved = updateSavedRecords(window.localStorage, summary);
 	const modeRecords = saved.recordsByMode[summary.modeId];
+	const packRecords = saved.recordsByPack?.[summary.packId];
 	el.bestPill.textContent = [
 		formatSavedRecord("Highest Chaos", modeRecords.highestChaos),
-		formatSavedRecord("Best Completed", modeRecords.bestCompleted)
+		formatSavedRecord("Best Completed", modeRecords.bestCompleted),
+		packRecords?.bestCompleted ? formatSavedRecord(`${summary.packShortLabel || summary.packLabel} Best`, packRecords.bestCompleted) : `${summary.packShortLabel || summary.packLabel}: not completed`
 	].join(" · ");
 }
 
@@ -1245,6 +1310,7 @@ async function startGame() {
 
 	updateTopMeta();
 	showScreen("game");
+	renderCaseFile(el.caseFileGame, activePack);
 	renderCaseNote(el.caseNoteGame, activeCaseNote, true);
 	el.progressFill.style.width = "0%";
 	updateHUD();
@@ -1268,6 +1334,7 @@ function restart() {
 	el.modePicker.disabled = false;
 	el.packPicker.disabled = false;
 	activeCaseNote = null;
+	renderCaseFile(el.caseFileGame, null);
 	refreshUpcomingCaseNote();
 	showScreen("start");
 	syncStartSelections();
@@ -1301,6 +1368,7 @@ function formatShareText(summary) {
 		`Bad Therapist Result: ${summary.grade}`,
 		`Mode: ${summary.modeLabel}`,
 		`Pack: ${summary.packLabel}`,
+		summary.packCaseFileTitle ? `Case File: ${summary.packCaseFileTitle.replace(/^Case File:\s*/i, "")}` : null,
 		`Status: ${summary.statusLabel}`,
 		summary.reason ? `Reason: ${summary.reason}` : null,
 		`Therapist Style: ${therapistStyle}`,

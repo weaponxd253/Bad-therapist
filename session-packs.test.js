@@ -14,11 +14,17 @@ SESSION_PACKS.forEach((pack) => {
 	assert.ok(pack.id, "pack needs an id");
 	assert.ok(pack.label, `${pack.id} needs a label`);
 	assert.ok(pack.description, `${pack.id} needs a description`);
+	assert.ok(pack.shortLabel, `${pack.id} needs a short label`);
 	assert.ok(pack.intro, `${pack.id} needs intro copy`);
 	assert.ok(pack.outro, `${pack.id} needs result outro copy`);
+	assert.ok(pack.accent, `${pack.id} needs an accent token`);
+	assert.ok(pack.topicsLabel, `${pack.id} needs a topics label`);
+	assert.ok(pack.caseFileTitle, `${pack.id} needs a case file title`);
+	assert.ok(pack.boardNote, `${pack.id} needs a board note`);
 	assert.ok(Array.isArray(pack.preferredTopics), `${pack.id} preferredTopics must be an array`);
 	assert.ok(Array.isArray(pack.requiredTopics), `${pack.id} requiredTopics must be an array`);
 	assert.equal(ids.has(pack.id), false, `duplicate pack id: ${pack.id}`);
+	assert.match(pack.caseFileTitle, /^Case File:/, `${pack.id} case file title should read like authored case-file copy`);
 	ids.add(pack.id);
 
 	[...pack.preferredTopics, ...pack.requiredTopics].forEach((topic) => {
