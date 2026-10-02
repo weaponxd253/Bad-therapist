@@ -1,8 +1,10 @@
 const { getMode } = window.BadTherapistModes;
 const { getPack } = window.BadTherapistSessionPacks;
-const { getClientsForPack, pickClient } = window.BadTherapistClients;
+const { CLIENTS, getClient, getClientsForPack, pickClient } = window.BadTherapistClients;
 const { selectCallback } = window.BadTherapistCallbacks;
 const { shouldFollowUp, buildFollowUpQuestion, insertFollowUp } = window.BadTherapistFollowUps;
+const Career = window.BadTherapistCareer;
+const CAREER_ROSTER = CLIENTS.map((client) => client.id);
 const {
 	ACHIEVEMENTS,
 	load: loadAchievements,
@@ -32,6 +34,14 @@ const el = {
 	startScreen: document.getElementById("startScreen"),
 	gameScreen: document.getElementById("gameScreen"),
 	resultScreen: document.getElementById("resultScreen"),
+	careerScreen: document.getElementById("careerScreen"),
+	careerHeading: document.getElementById("careerHeading"),
+	careerStatus: document.getElementById("careerStatus"),
+	careerBody: document.getElementById("careerBody"),
+	careerBtn: document.getElementById("careerBtn"),
+	careerPanelStatus: document.getElementById("careerPanelStatus"),
+	careerRetireBtn: document.getElementById("careerRetireBtn"),
+	careerBackBtn: document.getElementById("careerBackBtn"),
 	meta: document.getElementById("meta"),
 	progressBar: document.getElementById("progressBar"),
 	progressFill: document.getElementById("progressFill"),
@@ -94,6 +104,11 @@ let activeClient = null;
 let lastClientId = "";
 let callbackLog = [];
 let followUpCount = 0;
+let careerState = null;
+// Set while a career session is being played; cleared once its result is applied.
+let careerSessionClientId = "";
+let careerReturnPending = false;
+let careerRetireArmed = false;
 const INTERACTION_STATES = Object.freeze({
 	IDLE: "idle",
 	PRESENTING: "presenting",
@@ -328,7 +343,8 @@ function showScreen(name) {
 	const screens = {
 		start: el.startScreen,
 		game: el.gameScreen,
-		result: el.resultScreen
+		result: el.resultScreen,
+		career: el.careerScreen
 	};
 
 	Object.entries(screens).forEach(([screenName, screen]) => {
@@ -635,7 +651,9 @@ function syncStartSelections() {
 }
 
 function updateTopMeta() {
-	el.meta.textContent = `${activePack.label} • ${activeMode.label}`;
+	el.meta.textContent = careerSessionClientId && careerState
+		? `Career • Week ${careerState.week} of ${Career.RULES.weeks} • ${activeMode.label}`
+		: `${activePack.label} • ${activeMode.label}`;
 }
 
 function updateHUD() {
@@ -757,12 +775,12 @@ function showOutcome(outcome, choice) {
 	);
 }
 
-function buildQuestionsForRun() {
+function buildQuestionsForRun(count = activeMode.questionCount) {
 	const recentHistory = loadQuestionHistory(window.localStorage);
 	return selectQuestionsForRun(
 		QUESTIONS_BASE,
 		{
-			count: activeMode.questionCount,
+			count,
 			minimumTopics: 6,
 			maximumPerTopic: 2,
 			minimumViolationCategories: activeMode.minimumViolationCategories,
@@ -777,7 +795,11 @@ function buildQuestionsForRun() {
 
 // Question 1 opens with the client's greeting; later questions may bring back an earlier answer.
 function leadInForQuestion() {
-	if (idx === 0) return activeClient?.opening ? { type: "opening", line: activeClient.opening } : null;
+	if (idx === 0) {
+		const returning = careerSessionClientId && careerState ? Career.returningLine(careerState, careerSessionClientId) : "";
+		if (returning) return { type: "opening", line: returning };
+		return activeClient?.opening ? { type: "opening", line: activeClient.opening } : null;
+	}
 	if (questions[idx]?.isFollowUp) return null;
 	const callback = selectCallback({
 		history: runHistory,
@@ -1031,7 +1053,7 @@ function summarizeRun({ completed, reason = "" } = {}) {
 	const dominantStyle = dominantStyleFromCounts(archetypeCounts, archetypeImpacts);
 	const moodRemaining = runHistory.length
 		? runHistory[runHistory.length - 1].moodRemaining
-		: 100;
+		: mood;
 	const caseNote = evaluateCaseNote(activeCaseNote, { archetypeBreakdown });
 
 	return {
@@ -1371,13 +1393,16 @@ function updateFinalScorePills(summary) {
 
 function showResults(summary) {
 	const achievementResult = evaluateAchievements(window.localStorage, summary);
-	const finalSummary = { ...summary, newAchievements: achievementResult.newUnlocks };
+	const career = careerSessionClientId ? recordCareerSession(summary) : null;
+	const finalSummary = { ...summary, newAchievements: achievementResult.newUnlocks, career };
 	latestResultSummary = finalSummary;
 	renderAchievementCollection(achievementResult.state);
 	showScreen("result");
 	renderCaseNote(el.caseNoteGame, null);
-	updateFinalScorePills(finalSummary);
-	el.resultBox.innerHTML = resultMessage(finalSummary);
+	if (career) updateCareerPills(finalSummary);
+	else updateFinalScorePills(finalSummary);
+	el.restartBtn.textContent = career ? (career.ended ? "See career summary" : "Back to the practice") : "Restart";
+	el.resultBox.innerHTML = careerResultMarkup(finalSummary) + resultMessage(finalSummary);
 	pulseElement(el.resultBox, "is-revealed", 700);
 	if (finalSummary.newAchievements.length) playBeep("achievement");
 	el.progressBar.setAttribute("aria-valuenow", String(finalSummary.questionsAnswered));
@@ -1397,6 +1422,9 @@ function showResults(summary) {
 		(finalSummary.client ? `${finalSummary.client.farewell} ` : "") +
 		(finalSummary.dominantStyle ? `Dominant therapist style: ${finalSummary.dominantStyle.label}. ` : "") +
 		`Ethics Board verdict: ${boardVerdict.title}. ` +
+		(finalSummary.career
+			? `Career: infamy plus ${finalSummary.career.infamyGained}, license ${finalSummary.career.license}. ${finalSummary.career.ended ? `${finalSummary.career.endingTitle}. ` : ""}`
+			: "") +
 		(finalSummary.caseNote ? `${finalSummary.caseNote.statusLabel}. ` : "") +
 		`${finalSummary.questionsAnswered} of ${finalSummary.questionsTotal} questions survived.` +
 		(finalSummary.newAchievements.length
@@ -1413,26 +1441,39 @@ function finishGame() {
 	showToast(pickLine("result"), 1400);
 }
 
-async function startGame() {
+// options.careerClientId plays a career session with that waitlist client.
+async function startGame(options = {}) {
 	if (contentErrors.length > 0) return;
 	if (interactionState !== INTERACTION_STATES.IDLE && interactionState !== INTERACTION_STATES.RESULTS) return;
+	const careerClientId = careerState?.status === "active" && careerState.waitlist.includes(options.careerClientId)
+		? options.careerClientId
+		: "";
 	syncStartSelections();
-	activeCaseNote = upcomingCaseNote || refreshUpcomingCaseNote();
+	careerSessionClientId = careerClientId;
+	careerReturnPending = false;
+	if (careerClientId) {
+		activeMode = getMode(careerState.modeId);
+		activeClient = getClient(careerClientId);
+		activePack = getPack(activeClient.packIds[0]);
+		activeCaseNote = null;
+	} else {
+		activeCaseNote = upcomingCaseNote || refreshUpcomingCaseNote();
+	}
 	el.modePicker.disabled = true;
 	el.packPicker.disabled = true;
 	interactionState = INTERACTION_STATES.PRESENTING;
 	idx = 0;
 	score = 0;
 	violations = 0;
-	mood = 100;
+	mood = careerClientId ? Career.startingMood(careerState, careerClientId) : 100;
 	runHistory = [];
 	latestResultSummary = null;
 	streakState = emptyStreakState();
-	activeClient = pickClient(activePack.id, Math.random, lastClientId);
+	if (!careerClientId) activeClient = pickClient(activePack.id, Math.random, lastClientId);
 	lastClientId = activeClient?.id || "";
 	callbackLog = [];
 	followUpCount = 0;
-	questions = buildQuestionsForRun();
+	questions = buildQuestionsForRun(careerClientId ? Career.RULES.sessionLength : activeMode.questionCount);
 	recordQuestionRun(window.localStorage, questions.map((question) => question.id));
 	endedEarly = false;
 
@@ -1459,6 +1500,20 @@ async function next() {
 
 function restart() {
 	interactionState = INTERACTION_STATES.IDLE;
+	el.restartBtn.textContent = "Restart";
+	if (careerReturnPending) {
+		careerReturnPending = false;
+		el.modePicker.disabled = false;
+		el.packPicker.disabled = false;
+		activeClient = null;
+		callbackLog = [];
+		followUpCount = 0;
+		renderCaseFile(el.caseFileGame, null);
+		el.progressFill.style.width = "0%";
+		syncStartSelections();
+		openCareer();
+		return;
+	}
 	el.modePicker.disabled = false;
 	el.packPicker.disabled = false;
 	activeCaseNote = null;
@@ -1469,6 +1524,7 @@ function restart() {
 	refreshUpcomingCaseNote();
 	showScreen("start");
 	syncStartSelections();
+	renderCareerPanel();
 	el.progressBar.setAttribute("aria-valuenow", "0");
 	el.progressBar.setAttribute("aria-valuetext", `0 of ${activeMode.questionCount} questions completed`);
 	el.progressFill.style.width = "0%";
@@ -1501,6 +1557,7 @@ function formatShareText(summary) {
 		`Pack: ${summary.packLabel}`,
 		summary.packCaseFileTitle ? `Case File: ${summary.packCaseFileTitle.replace(/^Case File:\s*/i, "")}` : null,
 		summary.client ? `Client: ${summary.client.name}` : null,
+		summary.career ? `Career: Week ${summary.career.week} · Infamy ${summary.career.infamy} · License ${summary.career.license}` : null,
 		`Status: ${summary.statusLabel}`,
 		summary.reason ? `Reason: ${summary.reason}` : null,
 		`Therapist Style: ${therapistStyle}`,
@@ -1544,12 +1601,221 @@ function endSessionEarly(reason) {
 	showResults(summary);
 	showToast(pickLine("earlyEnd"), 1600);
 }
-el.startBtn.addEventListener("click", startGame);
+el.startBtn.addEventListener("click", () => startGame());
 el.modePicker.addEventListener("change", syncStartSelections);
 el.packPicker.addEventListener("change", syncStartSelections);
 el.nextBtn.addEventListener("click", next);
 el.restartBtn.addEventListener("click", restart);
 el.shareBtn.addEventListener("click", copyResult);
+el.careerBtn.addEventListener("click", openCareer);
+el.careerRetireBtn.addEventListener("click", retireCareer);
+el.careerBackBtn.addEventListener("click", leaveCareerScreen);
+el.careerBody.addEventListener("click", onCareerBodyClick);
+function loadCareerState() {
+	careerState = Career.load(window.localStorage).current;
+	return careerState;
+}
+
+function persistCareer() {
+	return Career.saveCareer(window.localStorage, careerState);
+}
+
+// Applies the finished session to the career and returns what changed, for the results screen.
+function recordCareerSession(summary) {
+	const before = careerState;
+	const clientId = careerSessionClientId;
+	const { state, update } = Career.applySession(before, {
+		clientId,
+		completed: summary.completed,
+		totalViolations: summary.totalViolations,
+		weighted: summary.weighted,
+		moodRemaining: summary.moodRemaining
+	}, CAREER_ROSTER, Math.random);
+	careerState = state;
+	careerSessionClientId = "";
+	careerReturnPending = true;
+	persistCareer();
+	const ending = update.ended ? Career.ENDINGS[update.endReason] : null;
+	return {
+		...update,
+		week: before.week,
+		infamy: state.infamy,
+		clientName: getClient(clientId)?.name || "Client",
+		endingTitle: ending?.title || "",
+		endingText: ending?.text || ""
+	};
+}
+
+function updateCareerPills(summary) {
+	el.finalScorePill.textContent = `Session Badness: ${summary.totalBadness} / ${summary.questionsTotal * 3}`;
+	el.finalViolPill.textContent = `Session Violations: ${summary.totalViolations}`;
+	el.bestPill.textContent = `Career: Infamy ${summary.career.infamy} · License ${summary.career.license}`;
+}
+
+function careerResultMarkup(summary) {
+	const career = summary.career;
+	if (!career) return "";
+	const licenseChange = career.licenseRecovered - career.licenseLost;
+	const lines = [
+		`Infamy +${career.infamyGained} (career total ${career.infamy})`,
+		`License ${licenseChange >= 0 ? "+" : "−"}${Math.abs(licenseChange)} (now ${career.license})`,
+		career.clientLeft
+			? `${career.clientName} has left your practice for good.`
+			: `${career.clientName} will start next visit at mood ${career.trust}.`
+	];
+	return `
+		<section class="resultSection">
+			<article class="careerUpdate${career.ended ? " is-ended" : ""}">
+				<p class="careerEyebrow">Career · Week ${career.week}</p>
+				<h4>${career.ended ? escapeHTML(career.endingTitle) : "Practice update"}</h4>
+				<ul>${lines.map((line) => `<li>${escapeHTML(line)}</li>`).join("")}</ul>
+				${career.ended ? `<p>${escapeHTML(career.endingText)}</p>` : ""}
+			</article>
+		</section>
+	`;
+}
+
+function careerClientStatus(record) {
+	if (!record || record.visits === 0) return "New client";
+	const visits = `Visit ${record.visits + 1}`;
+	const walkouts = record.walkouts ? ` · ${record.walkouts} walkout${record.walkouts === 1 ? "" : "s"}` : "";
+	return `${visits} · Starts at mood ${record.trust}${walkouts}`;
+}
+
+function renderCareerPanel() {
+	if (!el.careerBtn) return;
+	const store = Career.load(window.localStorage);
+	careerState = store.current;
+	if (careerState?.status === "active") {
+		el.careerBtn.textContent = "Continue career";
+		el.careerPanelStatus.textContent =
+			`Week ${careerState.week} of ${Career.RULES.weeks} · License ${careerState.license} · Infamy ${careerState.infamy} · ${getMode(careerState.modeId).label}`;
+		return;
+	}
+	el.careerBtn.textContent = careerState ? "Start a new career" : "Start a career";
+	const best = store.best ? ` Best career: ${store.best.infamy} infamy over ${store.best.weeks} week${store.best.weeks === 1 ? "" : "s"}.` : "";
+	el.careerPanelStatus.textContent =
+		`Twelve weeks. One license. Uses your selected mode. Pick clients from your waitlist and see how bad you can be before the board shuts you down.${best}`;
+}
+
+function renderCareerStatus() {
+	const licensePercent = Math.round((careerState.license / Career.RULES.licenseStart) * 100);
+	const weekLabel = careerState.status === "active"
+		? `Week ${careerState.week} of ${Career.RULES.weeks}`
+		: `Career over after ${careerState.sessions.length} week${careerState.sessions.length === 1 ? "" : "s"}`;
+	el.meta.textContent = `Career • ${weekLabel} • ${getMode(careerState.modeId).label}`;
+	el.careerStatus.innerHTML = `
+		<p class="careerEyebrow">Your practice · ${escapeHTML(getMode(careerState.modeId).label)}</p>
+		<h3>${escapeHTML(weekLabel)}</h3>
+		<div class="careerMeters">
+			<div class="careerMeter">
+				<span>License</span>
+				<div class="careerLicenseBar" role="meter" aria-label="License standing" aria-valuemin="0" aria-valuemax="${Career.RULES.licenseStart}" aria-valuenow="${careerState.license}">
+					<div class="careerLicenseFill${licensePercent <= 30 ? " is-low" : ""}" style="width: ${licensePercent}%"></div>
+				</div>
+				<b>${careerState.license}</b>
+			</div>
+			<div class="careerMeter"><span>Infamy</span><b>${careerState.infamy}</b></div>
+		</div>
+	`;
+}
+
+function renderCareerScreen() {
+	renderCareerStatus();
+	careerRetireArmed = false;
+	el.careerRetireBtn.textContent = "Retire early";
+	el.careerRetireBtn.hidden = careerState.status !== "active";
+	if (careerState.status === "active") {
+		el.careerBody.innerHTML = `
+			<h4>Waitlist</h4>
+			<p class="careerHint">Pick who to see this week. Each session is ${Career.RULES.sessionLength} questions. Violations cost license; walkouts cost more.</p>
+			<ul class="careerWaitlist">${careerState.waitlist.map((id) => {
+				const client = getClient(id);
+				if (!client) return "";
+				return `<li>
+					<button type="button" class="careerClientBtn" data-client-id="${escapeHTML(id)}">
+						<span class="careerClientName"><span aria-hidden="true">${escapeHTML(client.avatar)}</span> ${escapeHTML(client.name)}</span>
+						<small>${escapeHTML(client.backstory)}</small>
+						<span class="careerClientStatus">${escapeHTML(careerClientStatus(careerState.clients[id]))}</span>
+					</button>
+				</li>`;
+			}).join("")}</ul>
+		`;
+		return;
+	}
+	const summary = Career.careerSummary(careerState);
+	const ending = Career.ENDINGS[careerState.endReason] || Career.ENDINGS.quit;
+	const best = Career.load(window.localStorage).best;
+	el.careerBody.innerHTML = `
+		<article class="careerEnding">
+			<p class="careerEyebrow">Career over</p>
+			<h4>${escapeHTML(ending.title)}</h4>
+			<p>${escapeHTML(ending.text)}</p>
+			<div class="resultMetrics">
+				<div><span>Infamy</span><b>${summary.infamy}</b></div>
+				<div><span>Weeks</span><b>${summary.weeks}</b></div>
+				<div><span>Walkouts</span><b>${summary.walkouts}</b></div>
+				<div><span>Clients lost</span><b>${summary.clientsLost} / ${summary.clientsSeen}</b></div>
+			</div>
+			${best ? `<p class="careerHint">Best career: ${best.infamy} infamy over ${best.weeks} week${best.weeks === 1 ? "" : "s"} (${escapeHTML((Career.ENDINGS[best.endReason] || Career.ENDINGS.quit).title)}).</p>` : ""}
+			<button type="button" class="careerBtn" data-career-action="new">Start a new career</button>
+		</article>
+	`;
+}
+
+function openCareer() {
+	if (contentErrors.length > 0) return;
+	loadCareerState();
+	if (!careerState) {
+		startNewCareer();
+		return;
+	}
+	showScreen("career");
+	renderCareerScreen();
+	el.careerHeading.focus();
+}
+
+function startNewCareer() {
+	syncStartSelections();
+	careerState = Career.newCareer({ modeId: activeMode.id, rosterIds: CAREER_ROSTER, random: Math.random });
+	persistCareer();
+	showScreen("career");
+	renderCareerScreen();
+	el.careerHeading.focus();
+	announce(`New career started in ${activeMode.label} mode. Week 1. Pick a client from your waitlist.`);
+}
+
+function retireCareer() {
+	if (careerState?.status !== "active") return;
+	if (!careerRetireArmed) {
+		careerRetireArmed = true;
+		el.careerRetireBtn.textContent = "Tap again to retire";
+		announce("Tap Retire early again to end your career.");
+		return;
+	}
+	careerState = Career.endCareer(careerState, "quit");
+	persistCareer();
+	renderCareerScreen();
+	announce(`${Career.ENDINGS.quit.title}. Career over.`);
+}
+
+function leaveCareerScreen() {
+	showScreen("start");
+	syncStartSelections();
+	renderCareerPanel();
+	el.careerBtn.focus();
+}
+
+function onCareerBodyClick(event) {
+	const target = event.target?.closest ? event.target.closest("[data-client-id], [data-career-action]") : null;
+	if (!target) return;
+	if (target.dataset.careerAction === "new") {
+		startNewCareer();
+		return;
+	}
+	if (target.dataset.clientId) startGame({ careerClientId: target.dataset.clientId });
+}
+
 function formatUnlockDate(value) {
 	if (!value) return "Unlocked";
 	const date = new Date(value);
@@ -1576,6 +1842,7 @@ function initializeContent() {
 		syncStartSelections();
 		renderAchievementCollection();
 		refreshUpcomingCaseNote();
+		renderCareerPanel();
 		return;
 	}
 

@@ -14,6 +14,7 @@ const achievements = require("./achievements.js");
 const clients = require("./clients.js");
 const callbacks = require("./callbacks.js");
 const followUps = require("./follow-ups.js");
+const career = require("./career.js");
 
 function makeElement() {
 	const attributes = {};
@@ -104,6 +105,7 @@ async function main() {
 			BadTherapistClients: clients,
 			BadTherapistCallbacks: callbacks,
 			BadTherapistFollowUps: followUps,
+			BadTherapistCareer: career,
 			BadTherapistAchievements: achievements,
 			BadTherapistScoring: scoring,
 			BadTherapistPersistence: persistence,
@@ -574,6 +576,113 @@ async function main() {
 	await new Promise((resolve) => setTimeout(resolve, 0));
 	assert.equal(vm.runInContext("interactionState", context), "results");
 	assert.equal(vm.runInContext("latestResultSummary.completed", context), true);
+
+	// Career mode: start, play a session, return to the practice, carry trust, retire.
+	async function playUntilResults(pickExpression) {
+		for (let guard = 0; guard < 30; guard += 1) {
+			const state = vm.runInContext("interactionState", context);
+			if (state === "results") return;
+			if (state === "choosing") {
+				const index = vm.runInContext(`questions[idx].choices.findIndex(${pickExpression})`, context);
+				await vm.runInContext(`onPick(${index})`, context);
+			} else if (state === "round-complete") {
+				await vm.runInContext("next()", context);
+			} else {
+				throw new Error(`unexpected state ${state}`);
+			}
+		}
+		throw new Error("session did not finish");
+	}
+	vm.runInContext(`interactionState = INTERACTION_STATES.IDLE; careerState = null; typing = false; locked = false;`, context);
+	vm.runInContext("openCareer()", context);
+	const newCareer = JSON.parse(JSON.stringify(vm.runInContext("careerState", context)));
+	assert.equal(newCareer.status, "active");
+	assert.equal(newCareer.week, 1);
+	assert.equal(newCareer.modeId, "speed", "a career locks in the selected mode");
+	assert.equal(newCareer.waitlist.length, career.RULES.waitlistSize);
+	assert.equal(elements.get("careerScreen").hidden, false);
+	const firstClient = clients.getClient(newCareer.waitlist[0]);
+	assert.match(elements.get("careerBody").innerHTML, new RegExp(firstClient.name));
+	assert.match(elements.get("careerBody").innerHTML, /New client/);
+	assert.match(elements.get("careerStatus").innerHTML, /Week 1 of 12/);
+	assert.match(elements.get("meta").textContent, /^Career • Week 1 of 12 • Speed Session$/);
+	assert.equal(career.load(localStorage).current.week, 1, "starting a career saves it");
+
+	await vm.runInContext(`startGame({ careerClientId: "${firstClient.id}" })`, context);
+	const careerSession = JSON.parse(JSON.stringify(vm.runInContext(
+		`({ length: questions.length, mood, client: activeClient.id, pack: activePack.id, mode: activeMode.id })`,
+		context
+	)));
+	assert.deepEqual(careerSession, {
+		length: career.RULES.sessionLength,
+		mood: 100,
+		client: firstClient.id,
+		pack: firstClient.packIds[0],
+		mode: "speed"
+	}, "career sessions use the chosen client, their pack, the career mode, and a shorter length");
+	assert.match(elements.get("meta").textContent, /Career • Week 1 of 12/);
+	assert.equal(elements.get("leadInBubble").textContent, `${firstClient.name}: ${firstClient.opening}`);
+
+	const speedRecordsBefore = JSON.stringify(persistence.load(localStorage).recordsByMode.speed);
+	await playUntilResults("(choice) => choice.badness === 0");
+	const firstResult = JSON.parse(JSON.stringify(vm.runInContext("latestResultSummary.career", context)));
+	assert.equal(firstResult.week, 1);
+	assert.equal(firstResult.ended, false);
+	assert.equal(firstResult.infamyGained, 0, "an all-helpful session earns no infamy");
+	assert.equal(firstResult.license, career.RULES.licenseStart);
+	assert.match(elements.get("resultBox").innerHTML, /Practice update/);
+	assert.match(elements.get("restartBtn").textContent, /Back to the practice/);
+	assert.match(elements.get("bestPill").textContent, /Career: Infamy 0 · License 100/);
+	assert.equal(JSON.stringify(persistence.load(localStorage).recordsByMode.speed), speedRecordsBefore,
+		"career sessions do not touch per-mode records");
+	assert.match(vm.runInContext("formatShareText(latestResultSummary)", context), /Career: Week 1 · Infamy 0 · License 100/);
+
+	vm.runInContext("restart()", context);
+	assert.equal(elements.get("careerScreen").hidden, false, "restart after a career session returns to the practice");
+	assert.equal(elements.get("restartBtn").textContent, "Restart");
+	const weekTwo = JSON.parse(JSON.stringify(vm.runInContext("careerState", context)));
+	assert.equal(weekTwo.week, 2);
+	assert.equal(weekTwo.clients[firstClient.id].visits, 1);
+	const returningId = weekTwo.waitlist.find((id) => weekTwo.clients[id]?.visits > 0);
+	assert.ok(returningId, "the week 2 waitlist includes a returning client");
+	assert.match(elements.get("careerBody").innerHTML, /Visit 2 · Starts at mood/);
+
+	// Lower the returning client's trust, then walk them out.
+	vm.runInContext(`careerState.clients["${returningId}"].trust = 45;`, context);
+	await vm.runInContext(`startGame({ careerClientId: "${returningId}" })`, context);
+	assert.equal(vm.runInContext("mood", context), 45, "returning clients start at their carried trust");
+	assert.equal(
+		elements.get("leadInBubble").textContent,
+		`${clients.getClient(returningId).name}: ${career.RETURNING_LINES.guarded}`,
+		"returning clients greet you based on how last time went"
+	);
+	await playUntilResults("(choice) => choice.badness === 3 && !choice.followUp");
+	const walkoutResult = JSON.parse(JSON.stringify(vm.runInContext("latestResultSummary", context)));
+	assert.equal(walkoutResult.completed, false);
+	assert.equal(walkoutResult.career.walkouts, 1);
+	assert.ok(walkoutResult.career.licenseLost >= career.RULES.walkoutPenalty);
+	assert.equal(walkoutResult.career.trust, career.RULES.minimumTrust);
+	vm.runInContext("restart()", context);
+	assert.equal(vm.runInContext("careerState.week", context), 3);
+
+	// Retiring takes two taps and shows the career summary.
+	vm.runInContext("retireCareer()", context);
+	assert.equal(vm.runInContext("careerState.status", context), "active", "the first tap only arms retirement");
+	assert.match(elements.get("careerRetireBtn").textContent, /Tap again/);
+	vm.runInContext("retireCareer()", context);
+	assert.equal(vm.runInContext("careerState.status", context), "ended");
+	assert.match(elements.get("careerBody").innerHTML, /Early Retirement/);
+	assert.match(elements.get("careerBody").innerHTML, /Start a new career/);
+	assert.equal(elements.get("careerRetireBtn").hidden, true);
+	assert.equal(career.load(localStorage).best.endReason, "quit", "an ended career is saved as the best so far");
+	await vm.runInContext(`startGame({ careerClientId: "${returningId}" })`, context);
+	assert.equal(vm.runInContext("careerSessionClientId", context), "", "an ended career cannot start sessions");
+	vm.runInContext(`interactionState = INTERACTION_STATES.IDLE;`, context);
+	vm.runInContext("leaveCareerScreen()", context);
+	assert.equal(elements.get("startScreen").hidden, false);
+	assert.equal(elements.get("careerBtn").textContent, "Start a new career");
+	assert.doesNotMatch(elements.get("meta").textContent, /^Career/, "leaving the practice restores the normal header");
+	assert.match(elements.get("careerPanelStatus").textContent, /Best career/);
 
 	assert.equal(elements.get("start").disabled, false);
 	vm.runInContext(`contentErrors.push({ path: "questions", message: "Broken" }); initializeContent();`, context);

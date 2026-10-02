@@ -69,6 +69,14 @@
 				</label>
 			</fieldset>
 			<aside class="packPreview" id="packPreview" aria-live="polite"></aside>
+			<section class="careerPanel" id="careerPanel" aria-labelledby="careerPanelHeading">
+				<div>
+					<p class="careerEyebrow">Career mode</p>
+					<h3 id="careerPanelHeading">Run your own practice</h3>
+					<p id="careerPanelStatus">Twelve weeks. One license. Pick clients from your waitlist and see how bad you can be before the board shuts you down.</p>
+				</div>
+				<button type="button" class="careerBtn" id="careerBtn">Start a career</button>
+			</section>
 			<details class="achievementCollection" id="achievementCollection">
 				<summary>Achievements <span id="achievementProgress">0 / 8 unlocked</span></summary>
 				<ul id="achievementList"></ul>
@@ -124,6 +132,16 @@
 			<p class="tiny">Hotkeys: <b>1–4</b> choose an answer, <b>Enter</b> next.</p>
 		</div>
 
+		<div id="careerScreen" class="screen careerScreen" hidden>
+			<h2 class="srOnly" id="careerHeading" tabindex="-1">Your practice</h2>
+			<div class="careerStatus" id="careerStatus"></div>
+			<div class="careerBody" id="careerBody" aria-live="polite"></div>
+			<div class="controls">
+				<button type="button" class="careerRetireBtn" id="careerRetireBtn">Retire early</button>
+				<button type="button" class="restartBtn" id="careerBackBtn">Back to start</button>
+			</div>
+		</div>
+
 		<div id="resultScreen" class="screen" hidden>
 			<h2 class="srOnly" id="resultHeading" tabindex="-1">Game results</h2>
 			<div class="resultBox" id="resultBox"></div>
@@ -146,6 +164,7 @@
 <script src="clients.js"></script>
 <script src="callbacks.js"></script>
 <script src="follow-ups.js"></script>
+<script src="career.js"></script>
 <script src="achievements.js"></script>
 <script src="scoring.js"></script>
 <script src="persistence.js"></script>
