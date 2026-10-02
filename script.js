@@ -2,6 +2,7 @@ const { getMode } = window.BadTherapistModes;
 const { getPack } = window.BadTherapistSessionPacks;
 const { getClientsForPack, pickClient } = window.BadTherapistClients;
 const { selectCallback } = window.BadTherapistCallbacks;
+const { shouldFollowUp, buildFollowUpQuestion, insertFollowUp } = window.BadTherapistFollowUps;
 const {
 	ACHIEVEMENTS,
 	load: loadAchievements,
@@ -92,6 +93,7 @@ let activeCaseNote = null;
 let activeClient = null;
 let lastClientId = "";
 let callbackLog = [];
+let followUpCount = 0;
 const INTERACTION_STATES = Object.freeze({
 	IDLE: "idle",
 	PRESENTING: "presenting",
@@ -371,6 +373,8 @@ function recordChoiceOutcome(question, choice, outcome) {
 		ethicsNote: choice.ethicsNote || "",
 		archetype: choice.archetype || "",
 		callbackLine: choice.callback || "",
+		isFollowUp: Boolean(question.isFollowUp),
+		followedUp: false,
 		badness: outcome.badnessGained,
 		moodLost: outcome.moodLost,
 		moodRemaining: outcome.moodRemaining,
@@ -636,7 +640,7 @@ function updateTopMeta() {
 
 function updateHUD() {
 	const questionNumber = Math.min(idx + 1, questions.length);
-	el.progressPill.textContent = `Question ${questionNumber}/${questions.length}`;
+	el.progressPill.textContent = `Question ${questionNumber}/${questions.length}${questions[idx]?.isFollowUp ? " · Follow-up" : ""}`;
 	el.scorePill.textContent = `Badness: ${score}`;
 	el.violPill.textContent = `Violations: ${violations}`;
 	el.moodPill.textContent = `Mood: ${moodEmoji(mood)} ${mood}`;
@@ -774,6 +778,7 @@ function buildQuestionsForRun() {
 // Question 1 opens with the client's greeting; later questions may bring back an earlier answer.
 function leadInForQuestion() {
 	if (idx === 0) return activeClient?.opening ? { type: "opening", line: activeClient.opening } : null;
+	if (questions[idx]?.isFollowUp) return null;
 	const callback = selectCallback({
 		history: runHistory,
 		questionNumber: idx + 1,
@@ -801,6 +806,7 @@ async function renderQuestion() {
 	el.leadInBubble.hidden = true;
 	el.leadInBubble.classList.remove("is-callback");
 	el.clientBubble.textContent = "";
+	el.clientBubble.classList.toggle("is-followUp", Boolean(q.isFollowUp));
 	el.therapistBubble.textContent = "";
 	el.reactionBubble.textContent = "";
 	const leadIn = leadInForQuestion();
@@ -814,7 +820,7 @@ async function renderQuestion() {
 		await typeInto(el.leadInBubble, `${clientName()}: ${leadIn.line}`, 14);
 		await pacingDelay(200);
 	}
-	await typeInto(el.clientBubble, `${clientName()} (confidential): ${q.client}`, 14);
+	await typeInto(el.clientBubble, `${clientName()} (${q.isFollowUp ? "pushing back" : "confidential"}): ${q.client}`, 14);
 	await pacingDelay(250);
 
 	// Build choices AFTER typing finishes
@@ -845,7 +851,12 @@ async function renderQuestion() {
 	await animateChoicesIn(buttons);
 	locked = false;
 	interactionState = INTERACTION_STATES.CHOOSING;
-	setRoundStatus("Choose the worst response. Buttons 1–4 also work.", "choosing");
+	setRoundStatus(
+		q.isFollowUp
+			? `${clientName()} is pushing back. Repair it, or choose the worst response. Buttons 1–4 also work.`
+			: "Choose the worst response. Buttons 1–4 also work.",
+		"choosing"
+	);
 	pulseElement(el.roundStatus, "is-bumped", 420);
 }
 
@@ -894,6 +905,12 @@ async function onPick(choiceIndex) {
 	});
 	applyChoiceOutcome(outcome);
 	const historyEntry = recordChoiceOutcome(q, chosen, outcome);
+	const followUpNext = shouldFollowUp({ questions, index: idx, choice: chosen, outcome, followUpsSoFar: followUpCount });
+	if (followUpNext) {
+		questions = insertFollowUp(questions, idx, buildFollowUpQuestion(q, chosen, Math.random));
+		followUpCount += 1;
+		historyEntry.followedUp = true;
+	}
 	updateHUD();
 	showOutcome(outcome, chosen);
 	pulseElement(el.scorePill);
@@ -929,10 +946,18 @@ async function onPick(choiceIndex) {
 
 	interactionState = INTERACTION_STATES.ROUND_COMPLETE;
 	setNextReady(true);
-	setRoundStatus(isFinalQuestion() ? `${pickLine("ready")} Press See results or Enter.` : `${pickLine("ready")} Press Next question or Enter.`, "ready");
+	if (followUpNext) {
+		setRoundStatus(`${clientName()} isn’t letting that go. Press Next question or Enter.`, "ready");
+	} else {
+		setRoundStatus(isFinalQuestion() ? `${pickLine("ready")} Press See results or Enter.` : `${pickLine("ready")} Press Next question or Enter.`, "ready");
+	}
 	pulseElement(el.nextBtn, "is-nudged", 620);
 	playBeep("ready");
-	announce("Response complete. Next question is available.");
+	announce(
+		followUpNext
+			? `Response complete. ${clientName()} wants to follow up on that. Next question is available.`
+			: "Response complete. Next question is available."
+	);
 }
 
 function weightedScore(totalBadness, totalViolations) {
@@ -1031,6 +1056,14 @@ function summarizeRun({ completed, reason = "" } = {}) {
 			}
 			: null,
 		callbacks: callbackLog.map((item) => ({ ...item })),
+		followUps: runHistory
+			.filter((entry) => entry.isFollowUp)
+			.map((entry) => ({
+				questionNumber: entry.questionNumber,
+				pushback: entry.client,
+				response: entry.response,
+				repaired: entry.badness === 0
+			})),
 		statusLabel: completed ? "Session completed" : "Session ended early",
 		reason,
 		grade: resultLabel(totalBadness, totalViolations),
@@ -1210,12 +1243,21 @@ function clientCloseoutMarkup(summary) {
 				.map((item) => `<li><q>${escapeHTML(item.line)}</q><small>Recalling question ${item.sourceQuestionNumber}</small></li>`)
 				.join("")}</ul>`
 		: `<p class="resultEmpty">${escapeHTML(summary.client.name)} didn’t bring anything back up. Yet.</p>`;
+	const followUps = summary.followUps || [];
+	const repairedCount = followUps.filter((item) => item.repaired).length;
+	const followUpMarkup = followUps.length
+		? `<p class="clientCallbacksTitle">Pushback: repaired ${repairedCount} of ${followUps.length}</p>
+			<ul class="clientCallbacks clientFollowUps">${followUps
+				.map((item) => `<li class="${item.repaired ? "is-repaired" : "is-doubled"}"><q>${escapeHTML(item.pushback)}</q><small>Question ${item.questionNumber} · ${item.repaired ? "You repaired it" : "You doubled down"}</small></li>`)
+				.join("")}</ul>`
+		: "";
 	return `
 		<section class="resultSection">
 			<article class="clientCloseout">
 				<p class="caseFileEyebrow">Client</p>
 				<h4><span aria-hidden="true">${escapeHTML(summary.client.avatar)}</span> ${escapeHTML(summary.client.name)}</h4>
 				<p>${escapeHTML(summary.client.farewell)}</p>
+				${followUpMarkup}
 				${callbackMarkup}
 			</article>
 		</section>
@@ -1389,6 +1431,7 @@ async function startGame() {
 	activeClient = pickClient(activePack.id, Math.random, lastClientId);
 	lastClientId = activeClient?.id || "";
 	callbackLog = [];
+	followUpCount = 0;
 	questions = buildQuestionsForRun();
 	recordQuestionRun(window.localStorage, questions.map((question) => question.id));
 	endedEarly = false;
@@ -1421,6 +1464,7 @@ function restart() {
 	activeCaseNote = null;
 	activeClient = null;
 	callbackLog = [];
+	followUpCount = 0;
 	renderCaseFile(el.caseFileGame, null);
 	refreshUpcomingCaseNote();
 	showScreen("start");
@@ -1468,6 +1512,9 @@ function formatShareText(summary) {
 		`Mood Remaining: ${summary.moodRemaining}`,
 		`Questions Survived: ${summary.questionsAnswered}/${summary.questionsTotal}`,
 		summary.client ? `Callbacks: ${summary.callbacks?.length || 0}` : null,
+		summary.followUps?.length
+			? `Follow-ups: repaired ${summary.followUps.filter((item) => item.repaired).length} of ${summary.followUps.length}`
+			: null,
 		`Worst Response: ${worst}`,
 		summary.newAchievements?.length
 			? `Achievements: ${summary.newAchievements.map((item) => item.label).join(", ")}`

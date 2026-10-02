@@ -525,6 +525,19 @@ button#start {
 	opacity: 0.7;
 }
 
+.bubble.client.is-followUp {
+	border-left: 4px solid #7550d8;
+	background: rgba(117, 80, 216, 0.1);
+}
+
+.clientFollowUps li.is-repaired {
+	border-left-color: #17845a;
+}
+
+.clientFollowUps li.is-doubled {
+	border-left-color: #a43b5b;
+}
+
 .bubble.leadIn {
 	font-style: italic;
 	opacity: 0.88;

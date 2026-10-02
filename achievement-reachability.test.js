@@ -7,6 +7,7 @@ const { SCORING, calculateChoiceOutcome } = require("./scoring.js");
 const { selectQuestionsForRun } = require("./question-selector.js");
 const { getMode } = require("./game-modes.js");
 const achievements = require("./achievements.js");
+const { shouldFollowUp, buildFollowUpQuestion, insertFollowUp } = require("./follow-ups.js");
 
 function memoryStorage() {
 	const values = new Map();
@@ -46,15 +47,23 @@ function outcomeFor(choice, mood, mode) {
 }
 
 // Plays a run, asking `pick` for a choice at each question, and stops on early ending.
-function playRun(mode, runQs, pick) {
+// Follow-ups are inserted exactly as the game does, so strategies face them too.
+function playRun(mode, initialQs, pick) {
+	let runQs = initialQs;
 	let mood = 100;
+	let followUps = 0;
 	const history = [];
-	for (const [index, question] of runQs.entries()) {
+	for (let index = 0; index < runQs.length; index += 1) {
+		const question = runQs[index];
 		const choice = pick(question, mood, index);
 		const outcome = outcomeFor(choice, mood, mode);
 		mood = outcome.moodRemaining;
 		history.push({ choice, outcome });
 		if (outcome.sessionWillEnd) break;
+		if (shouldFollowUp({ questions: runQs, index, choice, outcome, followUpsSoFar: followUps })) {
+			runQs = insertFollowUp(runQs, index, buildFollowUpQuestion(question, choice, () => 0));
+			followUps += 1;
+		}
 	}
 	return summarize(mode, runQs, history);
 }
@@ -89,12 +98,13 @@ function cheapest(choices, mood, mode) {
 const helpful = (question) => question.choices.find((choice) => choice.badness === 0);
 
 // Finds choices that complete the run with mood inside [low, high], via DP over mood values.
+// Only non-branching choices are searched, so the question list stays fixed.
 function playToMoodRange(mode, runQs, low, high) {
 	let frontier = new Map([[100, []]]);
 	for (const question of runQs) {
 		const nextFrontier = new Map();
 		frontier.forEach((path, mood) => {
-			question.choices.forEach((choice) => {
+			question.choices.filter((choice) => !choice.followUp).forEach((choice) => {
 				const outcome = outcomeFor(choice, mood, mode);
 				if (outcome.sessionWillEnd || nextFrontier.has(outcome.moodRemaining)) return;
 				nextFrontier.set(outcome.moodRemaining, [...path, choice]);

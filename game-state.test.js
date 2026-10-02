@@ -13,6 +13,7 @@ const sessionPacks = require("./session-packs.js");
 const achievements = require("./achievements.js");
 const clients = require("./clients.js");
 const callbacks = require("./callbacks.js");
+const followUps = require("./follow-ups.js");
 
 function makeElement() {
 	const attributes = {};
@@ -102,6 +103,7 @@ async function main() {
 			BadTherapistSessionPacks: sessionPacks,
 			BadTherapistClients: clients,
 			BadTherapistCallbacks: callbacks,
+			BadTherapistFollowUps: followUps,
 			BadTherapistAchievements: achievements,
 			BadTherapistScoring: scoring,
 			BadTherapistPersistence: persistence,
@@ -191,6 +193,8 @@ async function main() {
 		ethicsNote: "Dismissal damages safety.",
 		archetype: "dismissive",
 		callbackLine: "",
+		isFollowUp: false,
+		followedUp: false,
 		badness: 3,
 		moodLost: 15,
 		moodRemaining: 85,
@@ -439,6 +443,48 @@ async function main() {
 		startedClient.closing,
 		"completed sessions use the closing line"
 	);
+
+	const followUpParent = questionsContent.find((question) => question.choices.some((choice) => choice.followUp));
+	const followUpTrigger = followUpParent.choices.findIndex((choice) => choice.followUp);
+	const fillers = questionsContent.filter((question) => question !== followUpParent).slice(0, 2);
+	context.followUpRun = JSON.parse(JSON.stringify([followUpParent, ...fillers]));
+	vm.runInContext(
+		`questions = followUpRun; idx = 0; score = 0; violations = 0; mood = 100; runHistory = []; callbackLog = []; followUpCount = 0;` +
+		`typing = false; locked = false; interactionState = INTERACTION_STATES.CHOOSING;`,
+		context
+	);
+	await vm.runInContext(`onPick(${followUpTrigger})`, context);
+	const branched = JSON.parse(JSON.stringify(vm.runInContext(
+		`({ length: questions.length, next: questions[1], followUpCount, followedUp: runHistory[0].followedUp, interactionState })`,
+		context
+	)));
+	assert.equal(branched.length, 3, "a follow-up keeps the session length");
+	assert.equal(branched.next.isFollowUp, true, "the follow-up is queued as the next question");
+	assert.equal(branched.next.id, followUpParent.choices[followUpTrigger].followUp.id);
+	assert.equal(branched.next.topic, followUpParent.topic);
+	assert.equal(branched.followUpCount, 1);
+	assert.equal(branched.followedUp, true);
+	assert.equal(branched.interactionState, "round-complete");
+	assert.match(elements.get("roundStatus").textContent, new RegExp(`${startedClient.name} isn’t letting that go`));
+
+	await vm.runInContext("next()", context);
+	assert.match(elements.get("clientBubble").textContent, new RegExp(`^${startedClient.name} \\(pushing back\\): `));
+	assert.equal(elements.get("clientBubble").classList.contains("is-followUp"), true);
+	assert.equal(elements.get("leadInBubble").hidden, true, "follow-ups are not preceded by callbacks");
+	assert.match(elements.get("progressPill").textContent, /Question 2\/3 · Follow-up/);
+	assert.match(elements.get("roundStatus").textContent, /is pushing back/);
+
+	const repairIndex = vm.runInContext(`questions[1].choices.findIndex((choice) => choice.badness === 0)`, context);
+	await vm.runInContext(`onPick(${repairIndex})`, context);
+	assert.equal(vm.runInContext("questions.length", context), 3, "follow-ups never chain");
+	const followUpSummary = JSON.parse(JSON.stringify(vm.runInContext(`summarizeRun({ completed: true })`, context)));
+	assert.deepEqual(followUpSummary.followUps.map((item) => ({ questionNumber: item.questionNumber, repaired: item.repaired })), [
+		{ questionNumber: 2, repaired: true }
+	]);
+	const followUpMarkup = vm.runInContext(`resultMessage(${JSON.stringify(followUpSummary)})`, context);
+	assert.match(followUpMarkup, /Pushback: repaired 1 of 1/);
+	assert.match(followUpMarkup, /You repaired it/);
+	assert.match(vm.runInContext(`formatShareText(${JSON.stringify(followUpSummary)})`, context), /Follow-ups: repaired 1 of 1/);
 
 	vm.runInContext(
 		`activeMode = getMode("classic"); score = 0; violations = 0; mood = 9; idx = 0; runHistory = []; latestResultSummary = null; endedEarly = false; typing = false; locked = false;` +

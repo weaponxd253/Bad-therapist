@@ -42,36 +42,32 @@
 			return [{ path: "questions", message: "Expected an array of questions." }];
 		}
 
-		questions.forEach((question, questionIndex) => {
-			const questionPath = `questions[${questionIndex}]`;
-			if (!question || typeof question !== "object") {
-				add(questionPath, "Expected a question object.");
-				return;
-			}
-
-			if (!nonEmpty(question.id)) {
-				add(`${questionPath}.id`, "Expected a non-empty stable ID.");
-			} else if (questionIds.has(question.id)) {
-				add(`${questionPath}.id`, `Duplicate question ID: ${question.id}.`);
+		// Validates a question or a follow-up: both share the client prompt and four-choice shape.
+		function validateBody(body, path, isFollowUp) {
+			if (!nonEmpty(body.id)) {
+				add(`${path}.id`, "Expected a non-empty stable ID.");
+			} else if (questionIds.has(body.id)) {
+				add(`${path}.id`, `Duplicate question ID: ${body.id}.`);
 			} else {
-				questionIds.add(question.id);
+				questionIds.add(body.id);
 			}
 
-			if (!allowedTopics.has(question.topic)) {
-				add(`${questionPath}.topic`, `Unsupported topic: ${question.topic}.`);
+			if (!isFollowUp && !allowedTopics.has(body.topic)) {
+				add(`${path}.topic`, `Unsupported topic: ${body.topic}.`);
 			}
-			if (!nonEmpty(question.client)) {
-				add(`${questionPath}.client`, "Expected a non-empty client prompt.");
+			if (!nonEmpty(body.client)) {
+				add(`${path}.client`, "Expected a non-empty client prompt.");
 			}
-			if (!Array.isArray(question.choices) || question.choices.length !== 4) {
-				add(`${questionPath}.choices`, "Expected exactly four choices.");
+			if (!Array.isArray(body.choices) || body.choices.length !== 4) {
+				add(`${path}.choices`, "Expected exactly four choices.");
 				return;
 			}
 
 			const choiceIds = new Set();
 			let helpfulChoices = 0;
-			question.choices.forEach((choice, choiceIndex) => {
-				const choicePath = `${questionPath}.choices[${choiceIndex}]`;
+			let maxBadnessChoices = 0;
+			body.choices.forEach((choice, choiceIndex) => {
+				const choicePath = `${path}.choices[${choiceIndex}]`;
 				if (!choice || typeof choice !== "object") {
 					add(choicePath, "Expected a choice object.");
 					return;
@@ -100,6 +96,8 @@
 					add(`${choicePath}.badness`, "Expected an integer from 0 to 3.");
 				} else if (choice.badness === 0) {
 					helpfulChoices += 1;
+				} else if (choice.badness === 3) {
+					maxBadnessChoices += 1;
 				}
 				if (choice.violation && !allowedViolations.has(choice.violation)) {
 					add(`${choicePath}.violation`, `Unknown violation category: ${choice.violation}.`);
@@ -110,11 +108,35 @@
 				) {
 					add(`${choicePath}.moodModifier`, "Expected an integer from -10 to 10.");
 				}
+				if (choice.followUp !== undefined) {
+					if (isFollowUp) {
+						add(`${choicePath}.followUp`, "Follow-ups cannot trigger further follow-ups.");
+					} else if (choice.badness === 0) {
+						add(`${choicePath}.followUp`, "Follow-ups belong on bad responses, not the helpful one.");
+					} else if (!choice.followUp || typeof choice.followUp !== "object") {
+						add(`${choicePath}.followUp`, "Expected a follow-up object.");
+					} else {
+						validateBody(choice.followUp, `${choicePath}.followUp`, true);
+					}
+				}
 			});
 
 			if (helpfulChoices !== 1) {
-				add(`${questionPath}.choices`, "Expected exactly one choice with badness 0.");
+				add(`${path}.choices`, "Expected exactly one choice with badness 0.");
 			}
+			// Keeps all-badness-3 runs (Maximum Menace) possible when a follow-up is inserted.
+			if (isFollowUp && maxBadnessChoices === 0) {
+				add(`${path}.choices`, "Expected a follow-up to include at least one badness-3 choice.");
+			}
+		}
+
+		questions.forEach((question, questionIndex) => {
+			const questionPath = `questions[${questionIndex}]`;
+			if (!question || typeof question !== "object") {
+				add(questionPath, "Expected a question object.");
+				return;
+			}
+			validateBody(question, questionPath, false);
 		});
 
 		return errors;

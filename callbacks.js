@@ -34,7 +34,9 @@
 	const ARCHETYPE_LINES = Object.freeze({
 		helpful: Object.freeze([
 			"So I actually tried what you said about {topic}. It kind of helped, which is unsettling.",
-			"You were weirdly good about {topic}, so I’m going to risk telling you this."
+			"You were weirdly good about {topic}, so I’m going to risk telling you this.",
+			"I did the thing you suggested about {topic}. Don’t let it go to your head.",
+			"After {topic}, I’m starting to think you might know what you’re doing. Concerning."
 		]),
 		dismissive: Object.freeze([
 			"I’m going to try again, since {topic} kind of got waved away.",
@@ -113,6 +115,8 @@
 			Number.isInteger(entry.questionNumber) &&
 			entry.questionNumber <= questionNumber - RULES.minimumGap &&
 			!usedSources.has(entry.questionNumber) &&
+			// The client already pushed back on this answer in a follow-up.
+			!entry.followedUp &&
 			(entry.callbackLine || ARCHETYPE_LINES[entry.archetype])
 		);
 		if (candidates.length === 0) return null;

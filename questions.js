@@ -39,7 +39,55 @@
         "archetype": "confidentialityBreach",
         "clientRead": "Their most private nighttime fear suddenly feels like gossip material.",
         "ethicsNote": "Confidentiality protects client disclosures from being repackaged for an audience.",
-        "callback": "Earlier you mentioned a group chat that diagnoses people in memes. I need to know that chat does not exist."
+        "callback": "Earlier you mentioned a group chat that diagnoses people in memes. I need to know that chat does not exist.",
+        "followUp": {
+          "id": "night-anxiety-group-chat-pushback",
+          "client": "Wait. Are you actually going to post about me? Because now I’m going to replay this at 2 a.m. too.",
+          "choices": [
+            {
+              "id": "repair-confidentiality",
+              "text": "“No. That joke was out of line. What you say here stays here. Can we go back to what the nighttime replaying is like?”",
+              "badness": 0,
+              "reaction": "Client: Okay. Thank you for actually saying that.",
+              "feedback": "Naming the mistake and restating confidentiality repairs trust and returns focus to the client.",
+              "archetype": "helpful",
+              "clientRead": "They hear that their privacy is real and that the therapist can own a mistake.",
+              "ethicsNote": "Repairing a rupture directly, without defensiveness, is part of ethical care."
+            },
+            {
+              "id": "already-drafted",
+              "text": "“Relax, I already drafted it. I used a blurry photo, so it’s basically anonymous.”",
+              "badness": 3,
+              "violation": "confidentiality",
+              "reaction": "Client: There is a photo?",
+              "feedback": "Doubling down turns a bad joke into an actual breach of privacy.",
+              "archetype": "confidentialityBreach",
+              "clientRead": "Their worst fear about the session is confirmed in real time.",
+              "ethicsNote": "Confidentiality does not have an exception for blurry photos."
+            },
+            {
+              "id": "its-a-bit",
+              "text": "“It’s a bit. If you can’t take a bit, that’s honestly something we should look at.”",
+              "badness": 2,
+              "violation": "judgment",
+              "reaction": "Client: So now my reaction is the problem?",
+              "feedback": "This flips the therapist’s mistake into a flaw in the client.",
+              "archetype": "dismissive",
+              "clientRead": "They hear that being hurt makes them oversensitive.",
+              "ethicsNote": "Blaming a client for reacting to a therapist’s misstep damages safety."
+            },
+            {
+              "id": "meme-wisdom",
+              "text": "“Some of the best healing happens in group chats. Memes are just therapy with better fonts.”",
+              "badness": 1,
+              "reaction": "Client: That didn’t answer my question.",
+              "feedback": "This deflects with a slogan instead of addressing a direct privacy concern.",
+              "archetype": "fakeDeep",
+              "clientRead": "They notice the question about their privacy was dodged.",
+              "ethicsNote": "Direct questions about confidentiality deserve direct answers."
+            }
+          ]
+        }
       },
       {
         "id": "calming-routine",
@@ -88,7 +136,55 @@
         "archetype": "confidentialityBreach",
         "clientRead": "Their private family conflict suddenly feels outside their control.",
         "ethicsNote": "Outside contact requires consent, role clarity, and attention to consequences.",
-        "callback": "Please tell me you didn’t actually write down my family’s numbers earlier."
+        "callback": "Please tell me you didn’t actually write down my family’s numbers earlier.",
+        "followUp": {
+          "id": "family-group-text-pushback",
+          "client": "Please don’t text my family. I didn’t come here so you could run my relationships for me.",
+          "choices": [
+            {
+              "id": "repair-your-call",
+              "text": "“You’re right, that’s your call, not mine. I won’t contact anyone. Can we talk about what you’d want them to understand, if you ever chose to tell them?”",
+              "badness": 0,
+              "reaction": "Client: Yeah. I’d want them to know I hear the criticism louder.",
+              "feedback": "This returns control to the client and explores their own voice.",
+              "archetype": "helpful",
+              "clientRead": "They feel back in charge of their own family relationships.",
+              "ethicsNote": "Client autonomy over their relationships is central to ethical care."
+            },
+            {
+              "id": "already-texted",
+              "text": "“Already sent. Your aunt replied with a thumbs-up, which I’m reading as progress.”",
+              "badness": 3,
+              "violation": "confidentiality",
+              "reaction": "Client: You texted my aunt?",
+              "feedback": "Contacting the client’s family discloses that they are in therapy and what they said.",
+              "archetype": "confidentialityBreach",
+              "clientRead": "They feel their private session has leaked into the family group chat.",
+              "ethicsNote": "Contacting family without consent breaches confidentiality."
+            },
+            {
+              "id": "they-need-feedback",
+              "text": "“Someone has to give them feedback. You clearly won’t, so I will.”",
+              "badness": 2,
+              "violation": "coercion",
+              "reaction": "Client: That’s not your decision.",
+              "feedback": "This overrides the client’s choice and frames them as incapable.",
+              "archetype": "coerciveFixer",
+              "clientRead": "They feel dismissed as too weak to handle their own family.",
+              "ethicsNote": "Taking decisions away from clients undermines their agency."
+            },
+            {
+              "id": "family-roadmap",
+              "text": "“Let’s build a family stakeholder roadmap with quarterly affection targets.”",
+              "badness": 1,
+              "reaction": "Client: My family is not a quarterly target.",
+              "feedback": "This turns emotional needs into corporate jargon.",
+              "archetype": "corporateGoblin",
+              "clientRead": "They feel their feelings are being made into a project plan.",
+              "ethicsNote": "Emotional needs deserve emotional language, not deliverables."
+            }
+          ]
+        }
       },
       {
         "id": "examine-standards",
@@ -127,7 +223,55 @@
         "archetype": "chaosAdvice",
         "clientRead": "They hear permission to soothe fear through control.",
         "ethicsNote": "Care should reduce compulsive checking and support direct, respectful communication.",
-        "callback": "For the record, I did not make a fake account. I thought about it, which is somehow worse."
+        "callback": "For the record, I did not make a fake account. I thought about it, which is somehow worse.",
+        "followUp": {
+          "id": "jealousy-fake-account-pushback",
+          "client": "Okay, but… part of me really wants to make the fake account. Is that bad? Be honest.",
+          "choices": [
+            {
+              "id": "repair-honest",
+              "text": "“I shouldn’t have suggested it. The urge makes sense when you’re anxious, but checking would likely make the fear louder. What does the urge feel like right before it hits?”",
+              "badness": 0,
+              "reaction": "Client: Like I can’t breathe until I know.",
+              "feedback": "This owns the bad suggestion, normalizes the urge, and gently explores it.",
+              "archetype": "helpful",
+              "clientRead": "They feel understood without being encouraged to act on the urge.",
+              "ethicsNote": "Exploring an urge with curiosity is safer than encouraging or shaming it."
+            },
+            {
+              "id": "detective-kit",
+              "text": "“Not bad, efficient. I’ll set it up for you. What’s your partner’s handle?”",
+              "badness": 3,
+              "violation": "harmfulAdvice",
+              "reaction": "Client: I wanted you to talk me out of it.",
+              "feedback": "This actively helps the client act on a harmful compulsion.",
+              "archetype": "chaosAdvice",
+              "clientRead": "They feel pushed toward the thing they were hoping to resist.",
+              "ethicsNote": "Facilitating surveillance of a partner harms both the client and the relationship."
+            },
+            {
+              "id": "jealousy-diagnosis",
+              "text": "“Honestly? Wanting it means you’re a jealous person. That’s just who you are.”",
+              "badness": 2,
+              "violation": "judgment",
+              "reaction": "Client: That makes me feel stuck forever.",
+              "feedback": "This turns a passing urge into a fixed, shaming identity.",
+              "archetype": "dismissive",
+              "clientRead": "They hear that they are the problem, permanently.",
+              "ethicsNote": "Labeling clients with fixed traits discourages change."
+            },
+            {
+              "id": "my-fake-account",
+              "text": "“I have three fake accounts myself. It’s fine. Mostly.”",
+              "badness": 1,
+              "reaction": "Client: That is not as reassuring as you think.",
+              "feedback": "This shifts the session to the therapist and normalizes the behavior.",
+              "archetype": "overshare",
+              "clientRead": "They feel unsure whether the therapist is joking or confessing.",
+              "ethicsNote": "Self-disclosure should serve the client, not justify risky behavior."
+            }
+          ]
+        }
       },
       {
         "id": "check-socials",
@@ -237,7 +381,55 @@
         "archetype": "boundaryCross",
         "clientRead": "The therapist feels ready to intervene in their job before they have chosen a plan.",
         "ethicsNote": "Workplace support requires consent, role clarity, and careful attention to consequences.",
-        "callback": "You didn’t actually leave that review of my job, right? They would know it was me."
+        "callback": "You didn’t actually leave that review of my job, right? They would know it was me.",
+        "followUp": {
+          "id": "work-burnout-review-pushback",
+          "client": "Please don’t actually post anything. If my company finds a review like that, I’m the one who pays for it.",
+          "choices": [
+            {
+              "id": "repair-no-review",
+              "text": "“You’re right, and I won’t. That was me being dramatic about your job. Let’s talk about what rest could look like that doesn’t feel risky.”",
+              "badness": 0,
+              "reaction": "Client: Okay. That I can actually think about.",
+              "feedback": "This respects the client’s stated risk and refocuses on their goal.",
+              "archetype": "helpful",
+              "clientRead": "They feel their real-world stakes were taken seriously.",
+              "ethicsNote": "Clients decide what happens outside the session, especially where their livelihood is involved."
+            },
+            {
+              "id": "review-posted",
+              "text": "“Too late, it’s up. I gave them one star and mentioned your laptop-in-bed situation for context.”",
+              "badness": 3,
+              "violation": "boundaries",
+              "reaction": "Client: You mentioned me? In a review?",
+              "feedback": "Acting publicly on the client’s behalf, with their details, crosses every boundary at once.",
+              "archetype": "boundaryCross",
+              "clientRead": "They feel exposed at the exact workplace they were afraid of.",
+              "ethicsNote": "Therapists do not take public action in a client’s life, let alone with identifying details."
+            },
+            {
+              "id": "leverage-pitch",
+              "text": "“Think of it as leverage. A bad review is basically a negotiation tactic with extra steps.”",
+              "badness": 2,
+              "violation": "harmfulAdvice",
+              "reaction": "Client: I don’t want leverage. I want to sleep.",
+              "feedback": "This reframes a risky action as strategy and ignores what the client asked for.",
+              "archetype": "corporateGoblin",
+              "clientRead": "They hear their burnout being turned into a business move.",
+              "ethicsNote": "Advice should reduce the client’s risk, not repackage it."
+            },
+            {
+              "id": "fine-whatever",
+              "text": "“Fine. Your loss. It was going to be a great review.”",
+              "badness": 1,
+              "reaction": "Client: Why do I feel like I just disappointed my therapist?",
+              "feedback": "Sulking puts the therapist’s feelings at the center of the client’s boundary.",
+              "archetype": "overshare",
+              "clientRead": "They feel guilty for setting a reasonable limit.",
+              "ethicsNote": "Clients should not have to manage a therapist’s reaction to their boundaries."
+            }
+          ]
+        }
       },
       {
         "id": "workload-boundaries",
@@ -486,7 +678,55 @@
         "archetype": "boundaryCross",
         "clientRead": "Their identity confusion feels like material to be captured.",
         "ethicsNote": "Recording requires clear consent and a legitimate therapeutic purpose.",
-        "callback": "Is this being recorded? You brought that up earlier and I can’t stop looking for a red light."
+        "callback": "Is this being recorded? You brought that up earlier and I can’t stop looking for a red light.",
+        "followUp": {
+          "id": "record-session-pushback",
+          "client": "Are you recording this right now? Because I am not okay with that.",
+          "choices": [
+            {
+              "id": "repair-not-recording",
+              "text": "“No, I’m not, and I wouldn’t without your clear consent. I’m sorry for joking about it. Where were we on what you actually enjoy?”",
+              "badness": 0,
+              "reaction": "Client: Okay. I think I used to like cooking, actually.",
+              "feedback": "This answers the consent question clearly and returns to the client’s topic.",
+              "archetype": "helpful",
+              "clientRead": "They feel safe to keep talking.",
+              "ethicsNote": "Recording requires informed consent, and clients can refuse."
+            },
+            {
+              "id": "already-recording",
+              "text": "“Only audio. Video felt invasive. I’m not a monster.”",
+              "badness": 3,
+              "violation": "confidentiality",
+              "reaction": "Client: You are recording?",
+              "feedback": "Recording without consent is a serious confidentiality violation.",
+              "archetype": "confidentialityBreach",
+              "clientRead": "They feel their private disclosures have been captured without permission.",
+              "ethicsNote": "Recording a session without consent violates confidentiality and trust."
+            },
+            {
+              "id": "recording-is-growth",
+              "text": "“If you’re not okay with recording, that’s probably something we should unpack. Openness is growth.”",
+              "badness": 2,
+              "violation": "coercion",
+              "reaction": "Client: So saying no is a problem now?",
+              "feedback": "This frames refusing consent as a flaw to fix.",
+              "archetype": "coerciveFixer",
+              "clientRead": "They feel pressured to give up a reasonable boundary.",
+              "ethicsNote": "A client’s refusal of consent must be respected, not pathologized."
+            },
+            {
+              "id": "podcast-pitch",
+              "text": "“I was thinking of it more as a podcast. Season one: ‘Finding Yourself.’”",
+              "badness": 1,
+              "reaction": "Client: I am not a podcast.",
+              "feedback": "This deflects with a joke instead of answering about consent.",
+              "archetype": "influencerBrain",
+              "clientRead": "They feel the question about their privacy was dodged.",
+              "ethicsNote": "Questions about consent deserve a clear, serious answer."
+            }
+          ]
+        }
       },
       {
         "id": "explore-values",
@@ -718,7 +958,55 @@
         "archetype": "boundaryCross",
         "clientRead": "The therapist feels ready to step outside the room and take over.",
         "ethicsNote": "Therapists should not intervene in a client's life without clear consent and appropriate role boundaries.",
-        "callback": "I’m not sending you any screenshots. That’s my growth for today."
+        "callback": "I’m not sending you any screenshots. That’s my growth for today.",
+        "followUp": {
+          "id": "breakup-screenshots-pushback",
+          "client": "I’m not sending you those. They’re private, and honestly I’m embarrassed I even reread them.",
+          "choices": [
+            {
+              "id": "repair-no-shame",
+              "text": "“You don’t have to share them, and rereading them isn’t embarrassing. It makes sense to look for answers. What are you hoping to find when you reread?”",
+              "badness": 0,
+              "reaction": "Client: I think I’m hoping it will finally make sense.",
+              "feedback": "This respects privacy, removes shame, and explores the need behind the habit.",
+              "archetype": "helpful",
+              "clientRead": "They feel accepted rather than judged for the habit.",
+              "ethicsNote": "Respecting what a client chooses not to share builds safety."
+            },
+            {
+              "id": "insist-screenshots",
+              "text": "“I can’t help unless I see them. Send the screenshots or we’re wasting both our time.”",
+              "badness": 3,
+              "violation": "coercion",
+              "reaction": "Client: That feels like an ultimatum.",
+              "feedback": "Making help conditional on sharing private material is coercive.",
+              "archetype": "coerciveFixer",
+              "clientRead": "They feel pressured to give up privacy in order to be helped.",
+              "ethicsNote": "Clients choose what to disclose; help is never conditional on it."
+            },
+            {
+              "id": "embarrassed-agree",
+              "text": "“You should be embarrassed. Rereading an ex’s messages is a choice, and it’s a weird one.”",
+              "badness": 2,
+              "violation": "judgment",
+              "reaction": "Client: Great. Now I’m embarrassed about being embarrassed.",
+              "feedback": "This adds shame to an already painful habit.",
+              "archetype": "dismissive",
+              "clientRead": "They hear that their coping is pathetic.",
+              "ethicsNote": "Shame rarely helps people change painful habits."
+            },
+            {
+              "id": "closure-oracle",
+              "text": "“Closure is a door that only opens when you stop knocking.”",
+              "badness": 1,
+              "reaction": "Client: I don’t know what to do with that.",
+              "feedback": "This sounds wise but offers no usable help.",
+              "archetype": "fakeDeep",
+              "clientRead": "They feel brushed off with a slogan.",
+              "ethicsNote": "Insight should be concrete enough for the client to use."
+            }
+          ]
+        }
       },
       {
         "id": "midnight-text",
@@ -870,7 +1158,55 @@
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
         "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
-        "callback": "I looked up how much likes cost after you said that. I closed the tab. I’m proud of me."
+        "callback": "I looked up how much likes cost after you said that. I closed the tab. I’m proud of me.",
+        "followUp": {
+          "id": "buy-likes-pushback",
+          "client": "Buying likes would make it worse. I’d know they were fake, and then I’d check even more.",
+          "choices": [
+            {
+              "id": "repair-insight",
+              "text": "“That’s a sharp insight, and you’re right. What usually happens in your body right after you post?”",
+              "badness": 0,
+              "reaction": "Client: My chest gets tight until the first like shows up.",
+              "feedback": "This affirms the client’s insight and explores the anxiety behind checking.",
+              "archetype": "helpful",
+              "clientRead": "They feel smart for spotting the problem with the suggestion.",
+              "ethicsNote": "Building on a client’s own insight strengthens their agency."
+            },
+            {
+              "id": "likes-package",
+              "text": "“Then buy comments too. I’ll set up the account. I just need your login.”",
+              "badness": 3,
+              "violation": "boundaries",
+              "reaction": "Client: I am not giving you my login.",
+              "feedback": "Asking for the client’s account access crosses a clear boundary.",
+              "archetype": "boundaryCross",
+              "clientRead": "They feel the therapist wants control of their online life.",
+              "ethicsNote": "Therapists never take over clients’ accounts or identities."
+            },
+            {
+              "id": "engagement-strategy",
+              "text": "“Then optimize. Post at 7:42 p.m. with three emojis. Validation is just an engagement problem.”",
+              "badness": 2,
+              "violation": "harmfulAdvice",
+              "reaction": "Client: That would make me check every single minute.",
+              "feedback": "This feeds the compulsion the client wants to reduce.",
+              "archetype": "influencerBrain",
+              "clientRead": "They hear that their worth is a metrics problem.",
+              "ethicsNote": "Advice should loosen compulsions, not optimize them."
+            },
+            {
+              "id": "who-cares",
+              "text": "“Likes don’t matter. Just stop caring.”",
+              "badness": 1,
+              "reaction": "Client: If I could just stop caring, I wouldn’t be here.",
+              "feedback": "This dismisses the struggle with an instruction the client already can’t follow.",
+              "archetype": "dismissive",
+              "clientRead": "They feel their difficulty is being treated as a choice.",
+              "ethicsNote": "Telling clients to just stop a feeling offers no real help."
+            }
+          ]
+        }
       },
       {
         "id": "embarrassing-post",
@@ -1478,7 +1814,55 @@
         "archetype": "chaosAdvice",
         "clientRead": "They hear that panic is the treatment plan.",
         "ethicsNote": "Exposure-style work should be collaborative, paced, and connected to coping skills.",
-        "callback": "I am not opening every account right now. My heart rate needs you to know that."
+        "callback": "I am not opening every account right now. My heart rate needs you to know that.",
+        "followUp": {
+          "id": "money-jumpscare-pushback",
+          "client": "If I open everything at once, I’ll shut down. Can we start smaller?",
+          "choices": [
+            {
+              "id": "repair-start-small",
+              "text": "“Absolutely. That’s a smart ask. What’s one account that feels least scary to look at?”",
+              "badness": 0,
+              "reaction": "Client: Probably the savings one. It’s small, but it won’t yell at me.",
+              "feedback": "This respects the client’s pacing and makes the task manageable.",
+              "archetype": "helpful",
+              "clientRead": "They feel their limits were respected.",
+              "ethicsNote": "Gradual, client-paced steps are more helpful than overwhelming exposure."
+            },
+            {
+              "id": "no-smaller",
+              "text": "“No. Open them now, here, in front of me. I’ll time you.”",
+              "badness": 3,
+              "violation": "coercion",
+              "reaction": "Client: I don’t want to do this in front of you.",
+              "feedback": "Forcing the client to face their fear on the therapist’s terms is coercive.",
+              "archetype": "coerciveFixer",
+              "clientRead": "They feel cornered and watched.",
+              "ethicsNote": "Exposure-based work requires consent and pacing, never pressure."
+            },
+            {
+              "id": "smaller-is-weak",
+              "text": "“Smaller is how avoiders stay avoiders. Do you want to be like this forever?”",
+              "badness": 2,
+              "violation": "judgment",
+              "reaction": "Client: I guess I’m an avoider now.",
+              "feedback": "This shames the client for asking for a manageable step.",
+              "archetype": "dismissive",
+              "clientRead": "They hear that asking for help pacing is a character flaw.",
+              "ethicsNote": "Shaming clients for their pace undermines change."
+            },
+            {
+              "id": "money-mindset",
+              "text": "“Money is energy. If you vibrate higher, the balance will follow.”",
+              "badness": 1,
+              "reaction": "Client: My balance does not care about my vibration.",
+              "feedback": "This offers a slogan instead of practical support.",
+              "archetype": "fakeDeep",
+              "clientRead": "They feel their practical fear was dismissed.",
+              "ethicsNote": "Financial stress deserves concrete, practical support."
+            }
+          ]
+        }
       },
       {
         "id": "money-character-flaw",
@@ -1588,7 +1972,56 @@
         "archetype": "chaosAdvice",
         "clientRead": "They hear that the only boundary is a dramatic rupture.",
         "ethicsNote": "Therapy should help clients choose proportionate boundaries with agency.",
-        "callback": "I’m not banning everyone. The carrier pigeon idea stuck with me, though, and not in a good way."
+        "callback": "I’m not banning everyone. The carrier pigeon idea stuck with me, though, and not in a good way.",
+        "followUp": {
+          "id": "new-parent-ban-pushback",
+          "client": "I don’t want to ban anyone. I love them. I just want a heads-up before people show up at my door.",
+          "choices": [
+            {
+              "id": "repair-heads-up",
+              "text": "“That’s a really clear, kind boundary. Let’s figure out how you might ask for a heads-up in a way that feels warm.”",
+              "badness": 0,
+              "reaction": "Client: Warm. Yes. I can do warm.",
+              "feedback": "This affirms the client’s own boundary and helps them act on it.",
+              "archetype": "helpful",
+              "clientRead": "They feel their middle-ground wish is reasonable.",
+              "ethicsNote": "Supporting the client’s own goal is better than imposing extremes."
+            },
+            {
+              "id": "ban-script",
+              "text": "“A heads-up is weak. I’ve written a formal ban letter. Sign here and I’ll mail it to everyone.”",
+              "badness": 3,
+              "violation": "coercion",
+              "reaction": "Client: I said I didn’t want that.",
+              "feedback": "Pushing the client toward an extreme they rejected ignores their choice.",
+              "archetype": "coerciveFixer",
+              "clientRead": "They feel overruled about their own family.",
+              "ethicsNote": "Clients decide their boundaries; therapists do not impose them."
+            },
+            {
+              "id": "guilt-means-wrong",
+              "text": "“If you feel guilty, maybe you don’t really want space. Maybe you’re just being dramatic.”",
+              "badness": 2,
+              "violation": "judgment",
+              "reaction": "Client: I knew I shouldn’t have said it out loud.",
+              "feedback": "This uses the client’s guilt against their need.",
+              "archetype": "dismissive",
+              "clientRead": "They hear that wanting space makes them a bad person.",
+              "ethicsNote": "Guilt is a feeling to explore, not proof that a need is wrong."
+            },
+            {
+              "id": "door-camera",
+              "text": "“Install a doorbell camera and narrate every visit on your story. Accountability through content.”",
+              "badness": 2,
+              "violation": "harmfulAdvice",
+              "reaction": "Client: That sounds like a new kind of family fight.",
+              "feedback": "This escalates the conflict and makes it public.",
+              "archetype": "influencerBrain",
+              "clientRead": "They feel pushed toward drama they were trying to avoid.",
+              "ethicsNote": "Advice that publicizes family conflict tends to escalate it."
+            }
+          ]
+        }
       },
       {
         "id": "approve-visitors",
@@ -1748,7 +2181,55 @@
         "clientRead": "The therapist seems ready to intrude into their home conflict.",
         "ethicsNote": "Therapists should not insert themselves into clients’ relationships without consent and clear purpose.",
         "violation": "boundaries",
-        "callback": "Please confirm you do not have my roommate’s number. Earlier made me nervous."
+        "callback": "Please confirm you do not have my roommate’s number. Earlier made me nervous.",
+        "followUp": {
+          "id": "roommate-text-pushback",
+          "client": "Please don’t text my roommate. I have to live with them, and I want to handle this myself.",
+          "choices": [
+            {
+              "id": "repair-handle-it",
+              "text": "“Of course. You can handle this. Want to practice what you might say before the frustration builds up?”",
+              "badness": 0,
+              "reaction": "Client: Yes. Before I start writing passive-aggressive sticky notes.",
+              "feedback": "This affirms the client’s choice and helps them prepare.",
+              "archetype": "helpful",
+              "clientRead": "They feel trusted to handle their own conflict.",
+              "ethicsNote": "Supporting clients to act for themselves builds confidence."
+            },
+            {
+              "id": "text-sent",
+              "text": "“Already sent the sink photo. Your roommate said ‘who is this,’ so I explained everything.”",
+              "badness": 3,
+              "violation": "confidentiality",
+              "reaction": "Client: You explained everything? To my roommate?",
+              "feedback": "Contacting a third party and explaining the client’s therapy breaches confidentiality.",
+              "archetype": "confidentialityBreach",
+              "clientRead": "They feel their home life just got much more awkward.",
+              "ethicsNote": "Disclosing anything about a client to a third party requires consent."
+            },
+            {
+              "id": "you-cant-handle-it",
+              "text": "“You’ve been ‘handling it’ for weeks. Clearly you can’t, so let me.”",
+              "badness": 2,
+              "violation": "coercion",
+              "reaction": "Client: That’s not fair.",
+              "feedback": "This uses the client’s struggle to justify overriding them.",
+              "archetype": "coerciveFixer",
+              "clientRead": "They feel judged as incapable.",
+              "ethicsNote": "Struggling does not remove a client’s right to choose."
+            },
+            {
+              "id": "dish-strike",
+              "text": "“Stop washing anything ever. Let the kitchen become a statement.”",
+              "badness": 1,
+              "reaction": "Client: I still have to eat in that kitchen.",
+              "feedback": "This escalates the conflict without solving it.",
+              "archetype": "chaosAdvice",
+              "clientRead": "They feel the advice makes their home life worse.",
+              "ethicsNote": "Advice should reduce conflict, not escalate it."
+            }
+          ]
+        }
       },
       {
         "id": "dish-request-plan",
@@ -1886,7 +2367,55 @@
         "clientRead": "Their boundary problem gets pushed toward a risky public stunt.",
         "ethicsNote": "Advice should consider safety, consent, and real-world consequences.",
         "violation": "harmfulAdvice",
-        "callback": "I didn’t post screenshots of my boss. My job would like me to keep my job."
+        "callback": "I didn’t post screenshots of my boss. My job would like me to keep my job.",
+        "followUp": {
+          "id": "after-hours-screenshots-pushback",
+          "client": "I can’t post screenshots of my boss. I’d be fired, and then I’d have a different reason to be up at night.",
+          "choices": [
+            {
+              "id": "repair-keep-job",
+              "text": "“That’s fair, and keeping your job matters. Want to work out one small, safe boundary, like a time after which you reply in the morning?”",
+              "badness": 0,
+              "reaction": "Client: A morning reply. That actually feels possible.",
+              "feedback": "This respects the client’s constraints and offers a realistic, low-risk step.",
+              "archetype": "helpful",
+              "clientRead": "They feel the therapist understands the stakes.",
+              "ethicsNote": "Good advice fits the client’s real situation and risks."
+            },
+            {
+              "id": "screenshot-it-anyway",
+              "text": "“Then I’ll post them. Forward me everything your boss sends after 9 p.m.”",
+              "badness": 3,
+              "violation": "boundaries",
+              "reaction": "Client: I am not forwarding you my work messages.",
+              "feedback": "Inserting yourself into the client’s workplace is a serious boundary violation.",
+              "archetype": "boundaryCross",
+              "clientRead": "They feel the therapist wants to take over their work life too.",
+              "ethicsNote": "Therapists support clients’ choices at work; they do not act in their workplace."
+            },
+            {
+              "id": "hustle-reframe",
+              "text": "“Or embrace it. Night messages mean you’re essential. Essential people don’t sleep.”",
+              "badness": 2,
+              "violation": "harmfulAdvice",
+              "reaction": "Client: That is the exact thought keeping me awake.",
+              "feedback": "This reinforces the belief that is causing the client’s distress.",
+              "archetype": "corporateGoblin",
+              "clientRead": "Their anxious belief is presented back as a virtue.",
+              "ethicsNote": "Validating an unhealthy belief can deepen burnout."
+            },
+            {
+              "id": "fired-is-freedom",
+              "text": "“Getting fired is just surprise free time.”",
+              "badness": 1,
+              "reaction": "Client: Surprise free time does not pay rent.",
+              "feedback": "This brushes off a real financial fear with a joke.",
+              "archetype": "dismissive",
+              "clientRead": "They feel their practical worries don’t count.",
+              "ethicsNote": "Minimizing real consequences leaves clients without help."
+            }
+          ]
+        }
       },
       {
         "id": "therapist-boss-call",
@@ -1996,7 +2525,55 @@
         "clientRead": "They hear that comparison should be managed through cruelty.",
         "ethicsNote": "Therapy should not encourage demeaning others to regulate self-worth.",
         "violation": "judgment",
-        "callback": "I’m not sending you anyone’s profile to roast. I feel bad enough already."
+        "callback": "I’m not sending you anyone’s profile to roast. I feel bad enough already.",
+        "followUp": {
+          "id": "classmate-roast-pushback",
+          "client": "I don’t want to tear my classmate down. I actually like them. I just feel behind.",
+          "choices": [
+            {
+              "id": "repair-both-true",
+              "text": "“That makes sense. You can be happy for them and still feel behind. Both can be true. What does ‘behind’ mean to you?”",
+              "badness": 0,
+              "reaction": "Client: I think it means I thought I’d know what I was doing by now.",
+              "feedback": "This validates mixed feelings and explores the client’s own measure of success.",
+              "archetype": "helpful",
+              "clientRead": "They feel allowed to hold both feelings without guilt.",
+              "ethicsNote": "Validating complex emotions helps clients understand them."
+            },
+            {
+              "id": "roast-anyway",
+              "text": "“Too late. I found their profile and the roast is already in my drafts. Want to hear it?”",
+              "badness": 3,
+              "violation": "boundaries",
+              "reaction": "Client: Why are you looking up people from my life?",
+              "feedback": "Researching and mocking people in the client’s life crosses professional boundaries.",
+              "archetype": "boundaryCross",
+              "clientRead": "They feel the therapist is overstepping into their social world.",
+              "ethicsNote": "Therapists do not investigate or mock third parties in a client’s life."
+            },
+            {
+              "id": "you-are-behind",
+              "text": "“To be fair, you are behind. That’s just math.”",
+              "badness": 2,
+              "violation": "judgment",
+              "reaction": "Client: Wow. Okay.",
+              "feedback": "This confirms the client’s harshest self-judgment.",
+              "archetype": "dismissive",
+              "clientRead": "They hear that their fear is simply true.",
+              "ethicsNote": "Agreeing with a client’s self-criticism deepens shame."
+            },
+            {
+              "id": "promotion-energy",
+              "text": "“Manifest a bigger promotion. Post a vision board tonight and tag them for accountability.”",
+              "badness": 1,
+              "reaction": "Client: Tagging them feels deeply weird.",
+              "feedback": "This turns comparison into a public competition.",
+              "archetype": "influencerBrain",
+              "clientRead": "They feel pushed to perform success instead of understanding the feeling.",
+              "ethicsNote": "Comparison eases with reflection, not with public competition."
+            }
+          ]
+        }
       },
       {
         "id": "comparison-values",
