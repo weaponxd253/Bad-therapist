@@ -15,6 +15,7 @@ const clients = require("./clients.js");
 const callbacks = require("./callbacks.js");
 const followUps = require("./follow-ups.js");
 const career = require("./career.js");
+const board = require("./board-questions.js");
 
 function makeElement() {
 	const attributes = {};
@@ -106,6 +107,7 @@ async function main() {
 			BadTherapistCallbacks: callbacks,
 			BadTherapistFollowUps: followUps,
 			BadTherapistCareer: career,
+			BadTherapistBoard: board,
 			BadTherapistAchievements: achievements,
 			BadTherapistScoring: scoring,
 			BadTherapistPersistence: persistence,
@@ -196,6 +198,7 @@ async function main() {
 		archetype: "dismissive",
 		callbackLine: "",
 		recallLine: "",
+		speaker: "",
 		isFollowUp: false,
 		followedUp: false,
 		badness: 3,
@@ -651,7 +654,7 @@ async function main() {
 	assert.equal(weekTwo.clients[firstClient.id].visits, 1);
 	const returningId = weekTwo.waitlist.find((id) => weekTwo.clients[id]?.visits > 0);
 	assert.ok(returningId, "the week 2 waitlist includes a returning client");
-	assert.match(elements.get("careerBody").innerHTML, /Visit 2 · Starts at mood/);
+	assert.match(elements.get("careerBody").innerHTML, /Visit 2 of 3 · Starts at mood/);
 	const firstMemories = weekTwo.clients[firstClient.id].memories;
 	assert.equal(firstMemories.length, 2, "each session leaves two memories behind");
 	assert.ok(firstMemories.every((memory) => memory.week === 1 && memory.archetype === "helpful"));
@@ -685,6 +688,112 @@ async function main() {
 	vm.runInContext("restart()", context);
 	assert.equal(vm.runInContext("careerState.week", context), 3);
 
+	// Ethics Board hearing: summoned, played with board speakers, verdict applied.
+	vm.runInContext(`
+		careerState.license = 62;
+		careerState.pendingHearing = { charge: "confidentiality", threshold: 70, calledWeek: careerState.week - 1 };
+		careerState.incidents = ["unclear-values/record-session"];
+		persistCareer();
+		renderCareerScreen();
+	`, context);
+	assert.match(elements.get("careerBody").innerHTML, /The Ethics Board has called a hearing/);
+	assert.doesNotMatch(elements.get("careerBody").innerHTML, /careerClientBtn/, "no clients until the hearing is attended");
+	const blockedWeek = vm.runInContext("careerState.week", context);
+	await vm.runInContext(`startGame({ careerClientId: careerState.waitlist[0] })`, context);
+	assert.equal(vm.runInContext("careerSessionClientId", context), "", "clients cannot be seen while a hearing is pending");
+	vm.runInContext("renderCareerPanel()", context);
+	assert.match(elements.get("careerPanelStatus").textContent, /hearing pending/);
+
+	await vm.runInContext("startGame({ hearing: true })", context);
+	const hearingState = JSON.parse(JSON.stringify(vm.runInContext(
+		`({ careerHearing, length: questions.length, ids: questions.map((q) => q.id), speakers: questions.map((q) => q.speakerName), board: questions.every((q) => q.isBoard), mood })`,
+		context
+	)));
+	assert.equal(hearingState.careerHearing, true);
+	assert.equal(hearingState.length, career.RULES.hearingLength);
+	assert.equal(hearingState.board, true);
+	assert.ok(hearingState.ids.includes("board-confidentiality-recording"), "a committed incident is brought up");
+	assert.ok(hearingState.speakers.every((name) => board.BOARD_MEMBERS.some((member) => member.name === name)));
+	assert.equal(hearingState.mood, 100);
+	assert.match(elements.get("meta").textContent, /Ethics Board hearing/);
+	assert.match(elements.get("moodPill").textContent, /^Board patience: /);
+	assert.equal(elements.get("leadInBubble").textContent, `Chair Okafor: ${vm.runInContext("HEARING_OPENING", context)}`);
+	assert.match(elements.get("clientBubble").textContent, new RegExp(`^${hearingState.speakers[0]} \\(Ethics Board\\): `));
+	assert.match(elements.get("caseFileGame").innerHTML, /In re: Your Conduct/);
+	assert.match(elements.get("roundStatus").textContent, /The board is waiting/);
+	const achievementsBefore = JSON.stringify(achievements.load(localStorage));
+	const historyBefore = JSON.stringify(questionHistory.load(localStorage));
+	await playUntilResults("(choice) => choice.badness === 0");
+	assert.match(elements.get("reactionBubble").textContent, new RegExp(`^${hearingState.speakers[2]}: `), "board reactions are voiced by the speaker");
+	const hearingResult = JSON.parse(JSON.stringify(vm.runInContext("latestResultSummary.hearing", context)));
+	assert.equal(hearingResult.verdict, "cleared");
+	assert.equal(hearingResult.licenseChange, career.RULES.hearingLength * career.RULES.accountableReward);
+	assert.equal(hearingResult.license, 62 + hearingResult.licenseChange);
+	assert.match(elements.get("resultBox").innerHTML, /Verdict: Cleared with a Note/);
+	assert.match(elements.get("resultBox").innerHTML, /Hearing transcript/);
+	assert.match(elements.get("resultBox").innerHTML, /Owned it/);
+	assert.match(elements.get("restartBtn").textContent, /Back to the practice/);
+	assert.match(vm.runInContext("formatShareText(latestResultSummary)", context), /Ethics Board hearing: Cleared with a Note \(License \+18\)/);
+	assert.equal(JSON.stringify(achievements.load(localStorage)), achievementsBefore, "hearings do not count toward achievements");
+	assert.equal(JSON.stringify(questionHistory.load(localStorage)), historyBefore, "hearings do not enter replay history");
+	const afterHearing = career.load(localStorage).current;
+	assert.equal(afterHearing.pendingHearing, null);
+	assert.equal(afterHearing.week, blockedWeek + 1, "the hearing took up the week");
+	assert.equal(afterHearing.hearings[0].verdict, "cleared");
+	vm.runInContext("restart()", context);
+	assert.equal(elements.get("careerScreen").hidden, false);
+	assert.match(elements.get("careerBody").innerHTML, /careerClientBtn/, "clients are back on the waitlist");
+	assert.equal(vm.runInContext("careerHearing", context), false, "the next session is a normal one");
+
+	// Client arcs: a final visit ends the story, a thriving client refers someone new.
+	vm.runInContext(`
+		careerState.pendingHearing = null;
+		careerState.license = 80;
+		const finalId = careerState.waitlist[0];
+		careerState.clients[finalId] = {
+			...(careerState.clients[finalId] || {}),
+			visits: 2, trust: 90, walkouts: 0, left: false, lastWeek: 1, memories: careerState.clients[finalId]?.memories || [],
+			arc: { answers: 12, helpful: 12, violations: 0, badness: 0 }, ending: "", referredBy: ""
+		};
+		persistCareer();
+		renderCareerScreen();
+	`, context);
+	const finalId = vm.runInContext("careerState.waitlist[0]", context);
+	assert.match(elements.get("careerBody").innerHTML, /Visit 3 of 3 · Final visit/);
+	await vm.runInContext(`startGame({ careerClientId: "${finalId}" })`, context);
+	await playUntilResults("(choice) => choice.badness === 0");
+	const arcResult = JSON.parse(JSON.stringify(vm.runInContext("latestResultSummary.career", context)));
+	assert.equal(arcResult.arcEnding.id, "thriving");
+	assert.equal(arcResult.arcLine, clients.getClient(finalId).endings.thriving);
+	assert.ok(arcResult.referralName, "a thriving client refers someone");
+	assert.match(elements.get("resultBox").innerHTML, /Thriving Despite You/);
+	assert.match(elements.get("resultBox").innerHTML, /including \+5 because/);
+	assert.equal(arcResult.licenseNet, Math.min(100, 80 + career.RULES.cleanSessionRecovery + career.RULES.thrivingLicenseBonus) - 80,
+		"the practice update shows the real license change after every effect");
+	assert.match(elements.get("resultBox").innerHTML, new RegExp(`referred ${arcResult.referralName}`));
+	const memoirMarkup = vm.runInContext(`careerResultMarkup({ career: {
+		week: 4, infamy: 60, infamyGained: 20, infamyBonus: 15, license: 40, licenseNet: -18, licenseLost: 18, licenseRecovered: 0,
+		licenseBonus: 0, badPressAdded: 2, visits: 3, trust: 30, clientName: "Theo",
+		arcEnding: { id: "memoir", title: "Wrote a Memoir About You" }, arcLine: "${clients.getClient("theo").endings.memoir}"
+	} })`, context);
+	assert.match(memoirMarkup, /Theo’s story · Wrote a Memoir About You/);
+	assert.match(memoirMarkup, /Infamy \+35/);
+	assert.match(memoirMarkup, /The memoir alone added 15 infamy/);
+	assert.match(memoirMarkup, /Bad press: one fewer client on your waitlist for 2 weeks/);
+	assert.match(memoirMarkup, /Left on Read/);
+	vm.runInContext("restart()", context);
+	const referred = clients.CLIENTS.find((client) => client.name === arcResult.referralName);
+	assert.equal(vm.runInContext(`careerState.waitlist.includes("${finalId}")`, context), false, "finished clients leave the waitlist");
+	assert.equal(vm.runInContext(`careerState.waitlist.includes("${referred.id}")`, context), true);
+	assert.match(elements.get("careerBody").innerHTML, new RegExp(`Referred by ${clients.getClient(finalId).name}`));
+	await vm.runInContext(`startGame({ careerClientId: "${referred.id}" })`, context);
+	assert.equal(
+		elements.get("leadInBubble").textContent,
+		`${referred.name}: ${career.referralLine(clients.getClient(finalId).name)} ${referred.opening}`,
+		"referred clients mention who sent them"
+	);
+	vm.runInContext("interactionState = INTERACTION_STATES.RESULTS; careerSessionClientId = ''; careerReturnPending = true; restart();", context);
+
 	// Retiring takes two taps and shows the career summary.
 	vm.runInContext("retireCareer()", context);
 	assert.equal(vm.runInContext("careerState.status", context), "active", "the first tap only arms retirement");
@@ -692,6 +801,14 @@ async function main() {
 	vm.runInContext("retireCareer()", context);
 	assert.equal(vm.runInContext("careerState.status", context), "ended");
 	assert.match(elements.get("careerBody").innerHTML, /Early Retirement/);
+	assert.match(elements.get("careerBody").innerHTML, /Client outcomes/);
+	assert.match(elements.get("careerBody").innerHTML, /Thriving Despite You/);
+	const anyOpenArc = vm.runInContext(
+		"Object.values(careerState.clients).some((record) => record.visits > 0 && !record.ending)",
+		context
+	);
+	if (anyOpenArc) assert.match(elements.get("careerBody").innerHTML, /Still in treatment/);
+	else assert.doesNotMatch(elements.get("careerBody").innerHTML, /Still in treatment/);
 	assert.match(elements.get("careerBody").innerHTML, /Start a new career/);
 	assert.equal(elements.get("careerRetireBtn").hidden, true);
 	assert.equal(career.load(localStorage).best.endReason, "quit", "an ended career is saved as the best so far");

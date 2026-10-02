@@ -11,7 +11,11 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Ten balanced questions per session selected from a 68-question pool, with 23 branching follow-ups
 - Replay-aware selection remembers your last six sessions and favors unseen and least-recent questions
 - Classic, Speed Session, and Ethics Minefield modes
-- Career mode: run a practice for twelve weeks, pick clients from a waitlist, and balance Infamy against your License. Returning clients remember what you said on earlier visits and bring it up, two walkouts lose a client for good, and the career ends in retirement, a revoked license, an empty practice, or early retirement
+- Career mode: run a practice for twelve weeks and balance Infamy against your License
+  - Pick clients from a waitlist; returning clients remember what you said on earlier visits and bring it up
+  - Each client's story ends after three visits: Thriving Despite You (they refer someone new), Transferred, Wrote a Memoir About You (infamy plus bad press), or Blocked Your Number after two walkouts
+  - The Ethics Board calls a hearing when your license first drops below 70, and again below 40
+  - Careers end in retirement, a revoked license, an empty practice, or early retirement
 - Themed session packs with authored case-file previews, in-run context, and closing notes
 - A named client for every session, with a backstory, opening line, and walkout or closing farewell
 - Client callbacks: later in a session, the client brings up something you said earlier
@@ -74,7 +78,7 @@ session-packs.js       Declarative themed session pack configuration
 clients.js             Named client personas for each pack
 callbacks.js           When and how clients bring up earlier answers
 follow-ups.js          When a bad answer branches into a client pushback
-board-questions.js     Ethics Board hearing questions (for upcoming career hearings)
+board-questions.js     Ethics Board hearing questions and panel
 career.js              Career rules, waitlist, trust carry-over, endings, and saved careers
 achievements.js        Achievement evaluation and progress
 scoring.js             Scoring and violation rules

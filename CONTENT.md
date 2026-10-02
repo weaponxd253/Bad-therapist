@@ -34,7 +34,12 @@ Ethics Minefield prefers judgment, coercion, and harmful-advice content. New con
 - Voice reactions as `Board: …`. The helpful answer is plain accountability; the worst answer usually commits a fresh violation in front of the board.
 - If the prompt refers to a specific incident, list the answers it refers to in `relatedChoices` as `questionId/choiceId`, so a hearing can match what the player actually did.
 - Keep at least four questions per charge so hearings don't repeat.
+- Hearings ask about incidents the player actually committed first, then general questions (no `relatedChoices`) for the charge, then general questions for other charges. They never ask about an incident the player didn’t commit while a general question remains, so keep at least three general questions per charge (`content-diversity.test.js` enforces this).
 
 ## Diversity targets
 
 `content-diversity.test.js` simulates consecutive sessions with real replay history. Every topic needs at least 7 questions and 2 follow-ups. No question may repeat within 3 sessions in any pack, 5 sessions must show at least 47 different questions, and the Chaos Sampler must not repeat within 6 sessions. Themed packs are limited by their headline topic, so new content for work, relationships, family, and social media extends their variety the most.
+
+## Client personas
+
+Clients live in `clients.js`. Each needs an opening line, a walkout and a closing line for single sessions, and four career `endings`: `thriving`, `transferred`, `memoir`, and `blocked`. Write endings by name, never with pronouns (`clients.test.js` checks this), and keep the joke on the therapist: even a memoir ending should leave the client better off than the therapist.

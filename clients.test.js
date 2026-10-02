@@ -14,7 +14,10 @@ CLIENTS.forEach((client) => {
 	assert.ok(client.packIds.length > 0, `${client.id} must belong to a pack`);
 	client.packIds.forEach((packId) => assert.ok(packIds.includes(packId), `${client.id}: unknown pack ${packId}`));
 	// Persona copy refers to clients by name, never by guessed pronouns.
-	const copy = [client.backstory, client.opening, client.walkout, client.closing].join(" ");
+	["thriving", "transferred", "memoir", "blocked"].forEach((ending) => {
+		assert.ok(nonEmpty(client.endings?.[ending]), `${client.id} needs a ${ending} ending`);
+	});
+	const copy = [client.backstory, client.opening, client.walkout, client.closing, ...Object.values(client.endings)].join(" ");
 	assert.doesNotMatch(copy, /\b(he|she|him|her|his|hers|himself|herself)\b/i, `${client.id} copy must not use gendered pronouns`);
 });
 

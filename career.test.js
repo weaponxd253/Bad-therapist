@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const career = require("./career.js");
 const { CLIENTS } = require("./clients.js");
+const { BOARD_QUESTIONS } = require("./board-questions.js");
 
 const { RULES } = career;
 const roster = CLIENTS.map((client) => client.id);
@@ -102,6 +103,17 @@ for (let seed = 1; seed <= 20; seed += 1) {
 	let state = career.newCareer({ rosterIds: roster, random });
 	let guard = 0;
 	while (state.status === "active" && guard < 100) {
+		guard += 1;
+		if (state.pendingHearing) {
+			const hearingQuestions = career.selectHearingQuestions(state, BOARD_QUESTIONS, random);
+			state = career.applyHearing(state, {
+				completed: true,
+				weighted: 4,
+				questionIds: hearingQuestions.map((question) => question.id),
+				answers: hearingQuestions.map(() => (random() > 0.5 ? { badness: 0 } : { badness: 3, violation: "judgment" }))
+			}, roster, random).state;
+			continue;
+		}
 		const pick = state.waitlist[Math.floor(random() * state.waitlist.length)];
 		const violationsThisWeek = Math.floor(random() * 3);
 		const completed = random() > 0.3;
@@ -112,11 +124,11 @@ for (let seed = 1; seed <= 20; seed += 1) {
 			weighted: 6 + violationsThisWeek * 2,
 			moodRemaining: completed ? Math.floor(random() * 80) + 11 : 0
 		}, roster, random).state;
-		guard += 1;
 	}
 	assert.equal(state.status, "ended", `seed ${seed}: the career should end`);
+	assert.ok(state.hearings.length <= RULES.hearingThresholds.length, "at most one hearing per threshold");
 	assert.ok(Object.keys(career.ENDINGS).includes(state.endReason));
-	assert.ok(state.sessions.length <= RULES.weeks);
+	assert.ok(state.sessions.length + state.hearings.length <= RULES.weeks, "hearings take up weeks");
 }
 
 // Persistence: round trip, best career tracking, and resilience.
@@ -175,3 +187,183 @@ assert.equal(career.returningGreeting(warmState, clientId, { archetype: "boundar
 assert.equal(career.returningGreeting(warmState, clientId, null), career.RETURNING_LINES.warm);
 assert.equal(career.returningGreeting(walkout.state, clientId, { archetype: "helpful" }), career.RETURNING_LINES.guarded,
 	"low trust stays guarded even when recalling something kind");
+
+// --- Board hearings ---
+const hearingStart = career.newCareer({ rosterIds: roster, random: seededRandom(5) });
+const hearingClient = hearingStart.waitlist[0];
+assert.equal(hearingStart.pendingHearing, null);
+// 100 → 64: crosses 70, so a hearing is called; violations and incidents are tracked.
+const summoned = career.applySession(hearingStart, {
+	clientId: hearingClient, completed: true, totalViolations: 6, weighted: 30, moodRemaining: 40,
+	violationCountsByType: { confidentiality: 4, boundaries: 2 },
+	incidents: ["unclear-values/record-session", "night-anxiety/group-chat"]
+}, roster, seededRandom(6));
+assert.equal(summoned.update.hearingCalled, true);
+assert.deepEqual(summoned.state.pendingHearing, { charge: "confidentiality", threshold: 70, calledWeek: 1 },
+	"the hearing focuses on the most frequent violation");
+assert.deepEqual(summoned.state.violationCounts, { confidentiality: 4, boundaries: 2 });
+assert.deepEqual(summoned.state.hearingThresholdsCrossed, [70]);
+assert.ok(summoned.state.incidents.includes("unclear-values/record-session"));
+
+const panel = career.selectHearingQuestions(summoned.state, BOARD_QUESTIONS, seededRandom(7));
+assert.equal(panel.length, RULES.hearingLength);
+assert.equal(new Set(panel.map((question) => question.id)).size, RULES.hearingLength);
+const incidentQuestions = panel.filter((question) => (question.relatedChoices || []).some((key) => summoned.state.incidents.includes(key)));
+assert.deepEqual(incidentQuestions.map((question) => question.id).sort(),
+	["board-confidentiality-group-chat", "board-confidentiality-recording"],
+	"board questions about incidents the player actually committed come first");
+assert.equal(panel.filter((question) => question.charge === "confidentiality").length, 3, "the rest follow the charge");
+
+// An all-accountable hearing clears the therapist and recovers license.
+const cleared = career.applyHearing(summoned.state, {
+	completed: true, weighted: 0, questionIds: panel.map((question) => question.id),
+	answers: [{ badness: 0 }, { badness: 0 }, { badness: 0 }]
+}, roster, seededRandom(8));
+assert.equal(cleared.update.verdict, "cleared");
+assert.equal(cleared.update.licenseChange, 3 * RULES.accountableReward);
+assert.equal(cleared.state.license, summoned.state.license + 3 * RULES.accountableReward);
+assert.equal(cleared.state.week, summoned.state.week + 1, "a hearing takes up a week");
+assert.equal(cleared.state.pendingHearing, null);
+assert.equal(cleared.state.hearings.length, 1);
+assert.equal(cleared.state.hearings[0].charge, "confidentiality");
+assert.equal(cleared.state.waitlist.length, RULES.waitlistSize, "clients return after the hearing");
+const nextPanel = career.selectHearingQuestions({ ...cleared.state, pendingHearing: { charge: "confidentiality" } }, BOARD_QUESTIONS, seededRandom(9));
+assert.equal(nextPanel.some((question) => cleared.state.usedBoardQuestionIds.includes(question.id)), false,
+	"board questions never repeat within a career");
+
+// Mixed answers: a warning. Fresh violations: sanctioned.
+const warned = career.applyHearing(summoned.state, { completed: true, weighted: 4, answers: [{ badness: 0 }, { badness: 1 }, { badness: 0 }] }, roster);
+assert.equal(warned.update.verdict, "warning");
+assert.equal(warned.update.licenseChange, 2 * RULES.accountableReward - RULES.hearingBadAnswerPenalty);
+const sanctioned = career.applyHearing(summoned.state, {
+	completed: true, weighted: 14, answers: [{ badness: 3, violation: "confidentiality" }, { badness: 0 }, { badness: 2 }]
+}, roster);
+assert.equal(sanctioned.update.verdict, "sanctioned");
+assert.equal(sanctioned.update.licenseChange, RULES.accountableReward - RULES.hearingViolationPenalty - RULES.hearingBadAnswerPenalty);
+assert.equal(sanctioned.state.infamy, summoned.state.infamy + 14, "bad hearing answers still earn infamy");
+
+// A disastrous hearing can revoke the license.
+const brink = { ...summoned.state, license: 5 };
+const revokedAtHearing = career.applyHearing(brink, { completed: true, weighted: 20, answers: [{ badness: 3, violation: "boundaries" }] }, roster);
+assert.equal(revokedAtHearing.update.endReason, "revoked");
+
+// Each threshold only calls one hearing, and one big drop crossing both calls just one.
+const reDrop = career.applySession({ ...cleared.state, license: 75 }, { clientId: hearingClient, completed: true, totalViolations: 1, weighted: 5, moodRemaining: 50 }, roster);
+assert.equal(reDrop.update.hearingCalled, false, "the 70 threshold already called its hearing");
+const bigDrop = career.applySession(hearingStart, {
+	clientId: hearingClient, completed: false, totalViolations: 8, weighted: 30, moodRemaining: 0,
+	violationCountsByType: { judgment: 8 }
+}, roster);
+assert.equal(bigDrop.update.hearingCalled, true);
+assert.deepEqual(bigDrop.state.hearingThresholdsCrossed, [70, 40]);
+assert.equal(bigDrop.state.pendingHearing.threshold, 40);
+assert.equal(career.topCharge({}, () => 0), "confidentiality", "with no violations, a charge is still chosen");
+
+// Hearing state survives saving.
+const hearingStore = memoryStorage();
+career.saveCareer(hearingStore, summoned.state, fixedNow);
+const reloaded = career.load(hearingStore).current;
+assert.deepEqual(reloaded.pendingHearing, summoned.state.pendingHearing);
+assert.deepEqual(reloaded.violationCounts, summoned.state.violationCounts);
+assert.deepEqual(reloaded.incidents, summoned.state.incidents);
+career.saveCareer(hearingStore, cleared.state, fixedNow);
+assert.equal(career.load(hearingStore).current.hearings[0].verdict, "cleared");
+assert.ok(career.load(hearingStore).current.usedBoardQuestionIds.length === RULES.hearingLength);
+assert.equal(career.careerSummary(cleared.state).weeks, 2, "career weeks count hearings");
+
+// Within a charge, a general question is preferred over an incident the player never committed.
+const confidentialityOnly = { ...hearingStart, incidents: [], pendingHearing: { charge: "confidentiality" } };
+for (let seed = 1; seed <= 10; seed += 1) {
+	const picked = career.selectHearingQuestions(confidentialityOnly, BOARD_QUESTIONS, seededRandom(seed));
+	assert.ok(picked.some((question) => question.id === "board-confidentiality-podcast"),
+		`seed ${seed}: the general confidentiality question is asked when no incidents match`);
+}
+
+// Two hearings on the same charge never ask about incidents the player didn't commit.
+["confidentiality", "boundaries", "judgment", "coercion", "harmfulAdvice"].forEach((charge) => {
+	for (let seed = 1; seed <= 5; seed += 1) {
+		let state = { ...hearingStart, incidents: [], pendingHearing: { charge } };
+		const asked = [];
+		for (let hearing = 0; hearing < RULES.hearingThresholds.length; hearing += 1) {
+			const picked = career.selectHearingQuestions(state, BOARD_QUESTIONS, seededRandom(seed * 10 + hearing));
+			asked.push(...picked);
+			state = { ...state, usedBoardQuestionIds: [...state.usedBoardQuestionIds, ...picked.map((q) => q.id)], pendingHearing: { charge } };
+		}
+		assert.equal(asked.filter((q) => (q.relatedChoices || []).length > 0).length, 0,
+			`${charge}/seed ${seed}: a hearing asked about an incident the player never committed`);
+		assert.ok(asked.slice(0, RULES.hearingLength).every((q) => q.charge === charge), `${charge}: the first hearing stays on its charge`);
+	}
+});
+
+// --- Client arcs, endings, and referrals ---
+function visit(state, id, overrides = {}) {
+	return career.applySession(state, {
+		clientId: id, completed: true, totalViolations: 0, weighted: 2, moodRemaining: 80,
+		questionsAnswered: 6, helpfulCount: 6, totalBadness: 0,
+		samePackIds: roster.filter((other) => other !== id),
+		...overrides
+	}, roster, seededRandom(42));
+}
+const arcStart = career.newCareer({ rosterIds: roster, random: seededRandom(11) });
+const arcClient = arcStart.waitlist[0];
+
+// Thriving: a mostly-helpful arc ends on the third visit, recovers license, and refers someone.
+let arcState = { ...arcStart, license: 80 };
+arcState = visit(arcState, arcClient).state;
+arcState = visit(arcState, arcClient).state;
+assert.equal(arcState.clients[arcClient].ending, "", "the arc is still running after two visits");
+const thrivingVisit = visit(arcState, arcClient);
+assert.equal(thrivingVisit.update.visits, RULES.arcLength);
+assert.equal(thrivingVisit.update.arcEnding.id, "thriving");
+assert.equal(thrivingVisit.update.licenseBonus, RULES.thrivingLicenseBonus);
+assert.equal(thrivingVisit.state.license, 80 + 3 * RULES.cleanSessionRecovery + RULES.thrivingLicenseBonus);
+assert.ok(thrivingVisit.update.referral, "a thriving client refers someone");
+const referredId = thrivingVisit.update.referral.clientId;
+assert.equal(thrivingVisit.state.clients[referredId], undefined, "the referral is someone new");
+assert.ok(thrivingVisit.state.waitlist.includes(referredId), "the referred client is on the next waitlist");
+assert.equal(thrivingVisit.state.waitlist.includes(arcClient), false, "a finished client leaves the waitlist");
+assert.equal(career.referrerFor(thrivingVisit.state, referredId), arcClient);
+assert.equal(career.referralLine("Theo"), "Theo said you were actually worth a try. I’m skeptical, but here I am.");
+const afterReferral = visit(thrivingVisit.state, referredId);
+assert.equal(afterReferral.state.clients[referredId].referredBy, arcClient, "the client remembers who referred them");
+assert.equal(career.referrerFor(afterReferral.state, referredId), "", "a referral is used up once seen");
+
+// Memoir: a violent arc earns infamy and bad press, which shrinks the waitlist.
+let memoirState = arcStart;
+for (let index = 0; index < RULES.arcLength; index += 1) {
+	memoirState = visit(memoirState, arcClient, {
+		totalViolations: 3, weighted: 24, moodRemaining: 40, helpfulCount: 0, totalBadness: 15
+	}).state;
+}
+const memoirClient = memoirState.clients[arcClient];
+assert.equal(memoirClient.ending, "memoir");
+assert.equal(memoirState.infamy, 3 * 24 + RULES.memoirInfamyBonus);
+assert.equal(memoirState.badPressWeeks, RULES.memoirBadPressWeeks);
+assert.equal(memoirState.waitlist.length, RULES.waitlistSize - 1, "bad press shrinks the waitlist");
+assert.equal(memoirState.referrals.length, 0, "memoirs bring no referrals");
+const pressFades = visit(memoirState, memoirState.waitlist[0]).state;
+assert.equal(pressFades.badPressWeeks, RULES.memoirBadPressWeeks - 1, "bad press fades week by week");
+
+// Transferred: a middling arc.
+let middling = arcStart;
+for (let index = 0; index < RULES.arcLength; index += 1) {
+	middling = visit(middling, arcClient, { totalViolations: 1, helpfulCount: 2, totalBadness: 8 }).state;
+}
+assert.equal(middling.clients[arcClient].ending, "transferred");
+assert.equal(career.arcEndingFor({ answers: 6, helpful: 3, violations: 2, badness: 8 }), "transferred",
+	"too many violations keep a helpful arc from thriving");
+
+// Blocked: two walkouts end the arc early and bring a week of bad press.
+const blockedState = visit(visit(arcStart, arcClient, { completed: false }).state, arcClient, { completed: false });
+assert.equal(blockedState.update.arcEnding.id, "blocked");
+assert.equal(blockedState.state.badPressWeeks, RULES.blockedBadPressWeeks);
+
+// Every outcome is counted in the summary, and arcs survive saving.
+assert.equal(career.careerSummary(thrivingVisit.state).outcomes.thriving, 1);
+assert.equal(career.careerSummary(memoirState).outcomes.memoir, 1);
+const arcStore = memoryStorage();
+career.saveCareer(arcStore, thrivingVisit.state, fixedNow);
+const arcReloaded = career.load(arcStore).current;
+assert.equal(arcReloaded.clients[arcClient].ending, "thriving");
+assert.deepEqual(arcReloaded.clients[arcClient].arc, thrivingVisit.state.clients[arcClient].arc);
+assert.deepEqual(arcReloaded.referrals, thrivingVisit.state.referrals);
