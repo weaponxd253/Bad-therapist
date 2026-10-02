@@ -8,8 +8,8 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 
 ## Features
 
-- Ten balanced questions per session selected from a 41-question pool
-- Replay-aware selection favors unseen and least-recent questions
+- Ten balanced questions per session selected from a 68-question pool, with 23 branching follow-ups
+- Replay-aware selection remembers your last six sessions and favors unseen and least-recent questions
 - Classic, Speed Session, and Ethics Minefield modes
 - Themed session packs with authored case-file previews, in-run context, and closing notes
 - A named client for every session, with a backstory, opening line, and walkout or closing farewell
@@ -73,6 +73,7 @@ session-packs.js       Declarative themed session pack configuration
 clients.js             Named client personas for each pack
 callbacks.js           When and how clients bring up earlier answers
 follow-ups.js          When a bad answer branches into a client pushback
+board-questions.js     Ethics Board hearing questions (content for the upcoming career mode)
 achievements.js        Achievement evaluation and progress
 scoring.js             Scoring and violation rules
 persistence.js         Versioned local records

@@ -29,7 +29,8 @@
 		"overshare"
 	]);
 
-	function validateQuestions(questions, violationTypes = {}) {
+	// Shared state and per-item checks for questions, follow-ups and board questions.
+	function createValidator(violationTypes) {
 		const errors = [];
 		const questionIds = new Set();
 		const allowedTopics = new Set(TOPICS);
@@ -38,12 +39,11 @@
 		const add = (path, message) => errors.push({ path, message });
 		const nonEmpty = (value) => typeof value === "string" && value.trim().length > 0;
 
-		if (!Array.isArray(questions)) {
-			return [{ path: "questions", message: "Expected an array of questions." }];
-		}
-
-		// Validates a question or a follow-up: both share the client prompt and four-choice shape.
-		function validateBody(body, path, isFollowUp) {
+		// Validates a question, follow-up or board question: all share the four-choice shape.
+		// kind: "question" (has a topic), "followUp" (inherits one), or "board" (has a charge).
+		function validateBody(body, path, kind) {
+			const isFollowUp = kind === "followUp";
+			const isBoard = kind === "board";
 			if (!nonEmpty(body.id)) {
 				add(`${path}.id`, "Expected a non-empty stable ID.");
 			} else if (questionIds.has(body.id)) {
@@ -52,10 +52,20 @@
 				questionIds.add(body.id);
 			}
 
-			if (!isFollowUp && !allowedTopics.has(body.topic)) {
+			if (kind === "question" && !allowedTopics.has(body.topic)) {
 				add(`${path}.topic`, `Unsupported topic: ${body.topic}.`);
 			}
-			if (!nonEmpty(body.client)) {
+			if (isBoard) {
+				if (!allowedViolations.has(body.charge)) {
+					add(`${path}.charge`, `Unknown board charge: ${body.charge}.`);
+				}
+				if (!nonEmpty(body.speaker)) {
+					add(`${path}.speaker`, "Expected a non-empty board speaker.");
+				}
+				if (!nonEmpty(body.prompt)) {
+					add(`${path}.prompt`, "Expected a non-empty board prompt.");
+				}
+			} else if (!nonEmpty(body.client)) {
 				add(`${path}.client`, "Expected a non-empty client prompt.");
 			}
 			if (!Array.isArray(body.choices) || body.choices.length !== 4) {
@@ -109,14 +119,16 @@
 					add(`${choicePath}.moodModifier`, "Expected an integer from -10 to 10.");
 				}
 				if (choice.followUp !== undefined) {
-					if (isFollowUp) {
+					if (isBoard) {
+						add(`${choicePath}.followUp`, "Board questions cannot have follow-ups.");
+					} else if (isFollowUp) {
 						add(`${choicePath}.followUp`, "Follow-ups cannot trigger further follow-ups.");
 					} else if (choice.badness === 0) {
 						add(`${choicePath}.followUp`, "Follow-ups belong on bad responses, not the helpful one.");
 					} else if (!choice.followUp || typeof choice.followUp !== "object") {
 						add(`${choicePath}.followUp`, "Expected a follow-up object.");
 					} else {
-						validateBody(choice.followUp, `${choicePath}.followUp`, true);
+						validateBody(choice.followUp, `${choicePath}.followUp`, "followUp");
 					}
 				}
 			});
@@ -130,17 +142,32 @@
 			}
 		}
 
-		questions.forEach((question, questionIndex) => {
-			const questionPath = `questions[${questionIndex}]`;
-			if (!question || typeof question !== "object") {
-				add(questionPath, "Expected a question object.");
-				return;
+		function validateList(items, label, kind) {
+			if (!Array.isArray(items)) {
+				add(label, `Expected an array of ${label}.`);
+				return errors;
 			}
-			validateBody(question, questionPath, false);
-		});
+			items.forEach((item, index) => {
+				const path = `${label}[${index}]`;
+				if (!item || typeof item !== "object") {
+					add(path, "Expected a question object.");
+					return;
+				}
+				validateBody(item, path, kind);
+			});
+			return errors;
+		}
 
-		return errors;
+		return { validateList };
 	}
 
-	return Object.freeze({ TOPICS, RESPONSE_ARCHETYPES, validateQuestions });
+	function validateQuestions(questions, violationTypes = {}) {
+		return createValidator(violationTypes).validateList(questions, "questions", "question");
+	}
+
+	function validateBoardQuestions(boardQuestions, violationTypes = {}) {
+		return createValidator(violationTypes).validateList(boardQuestions, "boardQuestions", "board");
+	}
+
+	return Object.freeze({ TOPICS, RESPONSE_ARCHETYPES, validateQuestions, validateBoardQuestions });
 });

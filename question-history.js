@@ -7,8 +7,10 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
 	const VERSION = 1;
 	const STORAGE_KEY = "bad-therapist-question-history-v1";
-	const MAX_RECENT_RUNS = 3;
-	const RECENCY_WEIGHTS = Object.freeze([100, 35, 10]);
+	// Six runs of memory lets a 68-question pool cycle by least-recently-seen
+	// instead of resurfacing a question after only three sessions.
+	const MAX_RECENT_RUNS = 6;
+	const RECENCY_WEIGHTS = Object.freeze([100, 60, 35, 20, 10, 5]);
 
 	function emptyHistory() {
 		return { version: VERSION, recentRuns: [] };
