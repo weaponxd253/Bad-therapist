@@ -12,6 +12,8 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Replay-aware selection favors unseen and least-recent questions
 - Classic, Speed Session, and Ethics Minefield modes
 - Themed session packs with authored case-file previews, in-run context, and closing notes
+- A named client for every session, with a backstory, opening line, and walkout or closing farewell
+- Client callbacks: later in a session, the client brings up something you said earlier
 - Eight persistent, non-blocking achievements
 - Four shuffled responses for every question
 - Badness, ethics-violation, and client-mood scoring
@@ -67,6 +69,8 @@ question-selector.js   Balanced, replay-aware run selection
 question-history.js    Versioned recent-run history
 game-modes.js          Declarative game mode configuration
 session-packs.js       Declarative themed session pack configuration
+clients.js             Named client personas for each pack
+callbacks.js           When and how clients bring up earlier answers
 achievements.js        Achievement evaluation and progress
 scoring.js             Scoring and violation rules
 persistence.js         Versioned local records
