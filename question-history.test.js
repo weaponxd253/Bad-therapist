@@ -18,18 +18,26 @@ assert.equal(JSON.stringify(firstIds), firstSnapshot, "recording must not mutate
 assert.deepEqual(historyApi.load(storage).recentRuns, [firstIds]);
 
 historyApi.recordRun(storage, ["q4", "q5"]);
-historyApi.recordRun(storage, ["q6"]);
-historyApi.recordRun(storage, ["q7"]);
+["q6", "q7", "q8", "q9", "q10"].forEach((id) => historyApi.recordRun(storage, [id]));
 const capped = historyApi.load(storage);
-assert.equal(capped.recentRuns.length, 3);
-assert.deepEqual(capped.recentRuns[0], ["q7"]);
-assert.deepEqual(capped.recentRuns[2], ["q4", "q5"]);
+assert.equal(capped.recentRuns.length, historyApi.MAX_RECENT_RUNS);
+assert.deepEqual(capped.recentRuns[0], ["q10"]);
+assert.deepEqual(capped.recentRuns[5], ["q4", "q5"], "the oldest kept run is the sixth most recent");
 assert.deepEqual(historyApi.getRecentQuestionWeights(capped), {
-	q7: 100,
-	q6: 35,
-	q4: 10,
-	q5: 10
+	q10: 100,
+	q9: 60,
+	q8: 35,
+	q7: 20,
+	q6: 10,
+	q4: 5,
+	q5: 5
 });
+
+// Histories saved under the old three-run limit still load unchanged.
+const legacy = memoryStorage({
+	[historyApi.STORAGE_KEY]: JSON.stringify({ version: 1, recentRuns: [["a"], ["b"], ["c"]] })
+});
+assert.deepEqual(historyApi.load(legacy).recentRuns, [["a"], ["b"], ["c"]]);
 
 const malformed = memoryStorage({ [historyApi.STORAGE_KEY]: "not json" });
 assert.deepEqual(historyApi.load(malformed), historyApi.emptyHistory());
