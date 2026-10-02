@@ -25,6 +25,11 @@ TOPICS.forEach((topic) => {
 assert.deepEqual(validateBoardQuestions(BOARD_QUESTIONS, VIOLATION_TYPES), []);
 Object.keys(VIOLATION_TYPES).forEach((charge) => {
 	assert.ok(questionsForCharge(charge).length >= 4, `${charge} needs at least 4 board questions`);
+	// General questions (no relatedChoices) fill a hearing when the player never committed a matching incident.
+	assert.ok(
+		questionsForCharge(charge).filter((question) => !(question.relatedChoices || []).length).length >= 3,
+		`${charge} needs at least 3 general board questions`
+	);
 });
 const allIds = new Set([...questions.map((q) => q.id), ...followUps.map(({ followUp }) => followUp.id)]);
 BOARD_QUESTIONS.forEach((boardQuestion) => {

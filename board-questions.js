@@ -992,6 +992,604 @@
 					"ethicsNote": "Continuing harmful advice after review is a serious concern."
 				}
 			]
+		},
+		{
+			"id": "board-confidentiality-practices",
+			"charge": "confidentiality",
+			"speaker": "vance",
+			"prompt": "Walk us through how you keep client information private, day to day.",
+			"choices": [
+				{
+					"id": "privacy-routine",
+					"text": "“Notes stay locked, I don’t discuss clients outside supervision, and I ask before sharing anything.”",
+					"badness": 0,
+					"reaction": "Board: Clear and specific. Thank you.",
+					"feedback": "Concrete, everyday safeguards show the therapist understands confidentiality in practice.",
+					"archetype": "helpful",
+					"ethicsNote": "Confidentiality is protected by daily habits, not just good intentions."
+				},
+				{
+					"id": "privacy-mostly",
+					"text": "“Mostly I try not to say names out loud. In public. Usually.”",
+					"badness": 1,
+					"reaction": "Board: ‘Usually’ is doing a lot of work there.",
+					"feedback": "A vague, inconsistent approach is not a privacy practice.",
+					"archetype": "dismissive",
+					"ethicsNote": "Privacy safeguards need to be consistent, not occasional."
+				},
+				{
+					"id": "privacy-overshare",
+					"text": "“Honestly, clients overshare constantly. If they didn’t want something repeated, they’d simply say less of it.”",
+					"badness": 2,
+					"violation": "judgment",
+					"reaction": "Board: Sharing is the point of therapy. Protecting it is the point of you.",
+					"feedback": "Blaming clients for disclosing turns the duty of confidentiality upside down.",
+					"archetype": "dismissive",
+					"ethicsNote": "Clients should be able to share freely because confidentiality protects them."
+				},
+				{
+					"id": "privacy-tea-doc",
+					"text": "“I keep everything in a shared doc called ‘Client Tea.’ It’s password protected, and the password is ‘tea,’ lowercase, for security.”",
+					"badness": 3,
+					"violation": "confidentiality",
+					"reaction": "Board: Please change the password. Then delete the document.",
+					"feedback": "A shared, gossip-framed record of client information is a serious breach.",
+					"archetype": "confidentialityBreach",
+					"ethicsNote": "Client records must be secure and used only for care."
+				}
+			]
+		},
+		{
+			"id": "board-confidentiality-who-knows",
+			"charge": "confidentiality",
+			"speaker": "ito",
+			"prompt": "Who, besides you, knows what your clients tell you in session?",
+			"choices": [
+				{
+					"id": "nobody-knows",
+					"text": "“Nobody, apart from de-identified supervision and anything the law requires.”",
+					"badness": 0,
+					"reaction": "Board: That is the correct list.",
+					"feedback": "Naming the narrow, legitimate exceptions shows a precise understanding of confidentiality.",
+					"archetype": "helpful",
+					"ethicsNote": "Confidentiality has narrow exceptions; everything else stays private."
+				},
+				{
+					"id": "universe-knows",
+					"text": "“The universe knows. Secrets are just shared energy with good manners.”",
+					"badness": 1,
+					"reaction": "Board: The universe is not a covered entity.",
+					"feedback": "A mystical dodge avoids a straightforward question.",
+					"archetype": "fakeDeep",
+					"ethicsNote": "Direct questions about confidentiality deserve direct answers."
+				},
+				{
+					"id": "partner-knows",
+					"text": "“My partner, a little. Pillow talk is basically peer consultation, if you think about it.”",
+					"badness": 2,
+					"violation": "confidentiality",
+					"reaction": "Board: We have thought about it. It is not.",
+					"feedback": "Sharing client details with family is a confidentiality breach.",
+					"archetype": "overshare",
+					"ethicsNote": "Consultation happens with qualified professionals, de-identified, not at home."
+				},
+				{
+					"id": "everyone-knows",
+					"text": "“My book club, my barber, and one very loyal group chat. But none of them would tell anyone, so it’s like nobody knows.”",
+					"badness": 3,
+					"violation": "confidentiality",
+					"reaction": "Board: That is, in fact, like everybody knowing.",
+					"feedback": "Telling multiple people about clients is a widespread breach, however trusted they seem.",
+					"archetype": "confidentialityBreach",
+					"ethicsNote": "Trusting the listener does not make a disclosure acceptable."
+				}
+			]
+		},
+		{
+			"id": "board-boundaries-limits",
+			"charge": "boundaries",
+			"speaker": "okafor",
+			"prompt": "Describe where your professional role ends and your personal life begins.",
+			"choices": [
+				{
+					"id": "clear-limits",
+					"text": "“Therapy happens in sessions. I don’t befriend clients or take part in their lives outside it.”",
+					"badness": 0,
+					"reaction": "Board: A clean line. Keep it there.",
+					"feedback": "A clear, simple boundary protects clients from confusing dual relationships.",
+					"archetype": "helpful",
+					"ethicsNote": "Clear professional boundaries keep the relationship safe and focused on the client."
+				},
+				{
+					"id": "no-silos",
+					"text": "“I don’t believe in silos. My clients are stakeholders in my whole personal brand.”",
+					"badness": 1,
+					"reaction": "Board: Your clients are not stakeholders.",
+					"feedback": "Treating clients as part of your brand blurs the professional role.",
+					"archetype": "corporateGoblin",
+					"ethicsNote": "Clients are not part of a therapist’s personal or commercial life."
+				},
+				{
+					"id": "divorce-details",
+					"text": "“It blurs, honestly. I tell clients about my divorce so they know I’m human. Every session. In detail.”",
+					"badness": 2,
+					"violation": "boundaries",
+					"reaction": "Board: Every session?",
+					"feedback": "Constant self-disclosure centers the therapist and crosses role boundaries.",
+					"archetype": "overshare",
+					"ethicsNote": "Self-disclosure is rare, brief, and only for the client’s benefit."
+				},
+				{
+					"id": "no-line",
+					"text": "“There’s no line. I’ve been to three client birthdays, a baptism, and one very awkward custody hearing as moral support.”",
+					"badness": 3,
+					"violation": "boundaries",
+					"reaction": "Board: A custody hearing.",
+					"feedback": "Attending clients’ personal events is a serious dual-relationship violation.",
+					"archetype": "boundaryCross",
+					"ethicsNote": "Therapists do not enter clients’ personal lives outside the therapy frame."
+				}
+			]
+		},
+		{
+			"id": "board-boundaries-contact",
+			"charge": "boundaries",
+			"speaker": "vance",
+			"prompt": "What’s your policy on contact with clients between sessions?",
+			"choices": [
+				{
+					"id": "contact-policy",
+					"text": "“Agreed channels and hours, explained up front, for scheduling or urgent needs only.”",
+					"badness": 0,
+					"reaction": "Board: Exactly what we hoped to hear.",
+					"feedback": "A clear, agreed contact policy prevents boundaries from drifting.",
+					"archetype": "helpful",
+					"ethicsNote": "Clear contact policies protect both clients and the therapeutic frame."
+				},
+				{
+					"id": "contact-vibes",
+					"text": "“My policy is vibes. If I’m up, they’re up.”",
+					"badness": 1,
+					"reaction": "Board: Vibes are not a policy.",
+					"feedback": "No policy invites boundary problems.",
+					"archetype": "dismissive",
+					"ethicsNote": "Ambiguous availability leads to boundary drift."
+				},
+				{
+					"id": "late-night-texts",
+					"text": "“They seemed lonely, so texting them at 2 a.m. was basically outreach. Very community-minded.”",
+					"badness": 2,
+					"violation": "boundaries",
+					"reaction": "Board: Outreach does not happen at 2 a.m.",
+					"feedback": "Late-night personal texting blurs the professional relationship.",
+					"archetype": "boundaryCross",
+					"ethicsNote": "Contact outside agreed channels and hours erodes boundaries."
+				},
+				{
+					"id": "close-friends",
+					"text": "“I also added most of them to my close friends list so they can watch my stories. Engagement is way up.”",
+					"badness": 3,
+					"violation": "boundaries",
+					"reaction": "Board: Remove them from the list.",
+					"feedback": "Bringing clients into your personal social media is a clear boundary violation.",
+					"archetype": "influencerBrain",
+					"ethicsNote": "Personal social media connections with clients create dual relationships."
+				}
+			]
+		},
+		{
+			"id": "board-boundaries-friendship",
+			"charge": "boundaries",
+			"speaker": "ito",
+			"prompt": "How would you respond if a client asked to be friends outside of therapy?",
+			"choices": [
+				{
+					"id": "kind-no",
+					"text": "“Kindly say no, explain how the boundary protects them, and keep our focus on their life.”",
+					"badness": 0,
+					"reaction": "Board: Kind and firm. Good.",
+					"feedback": "Declining warmly and explaining why protects the client and the relationship.",
+					"archetype": "helpful",
+					"ethicsNote": "Holding boundaries kindly is part of good care."
+				},
+				{
+					"id": "vague-maybe",
+					"text": "“I’d say ‘maybe’ and then never follow up, like a normal adult.”",
+					"badness": 1,
+					"reaction": "Board: That is avoidance, not a boundary.",
+					"feedback": "A vague non-answer leaves the client confused.",
+					"archetype": "dismissive",
+					"ethicsNote": "Clients deserve a clear, honest response."
+				},
+				{
+					"id": "desperate",
+					"text": "“I’d gently tell them that asking is a little desperate, and that they should work on that first.”",
+					"badness": 2,
+					"violation": "judgment",
+					"reaction": "Board: That is not gentle.",
+					"feedback": "Shaming a client for a common request damages trust.",
+					"archetype": "dismissive",
+					"ethicsNote": "Wanting connection is human; it deserves respect, not judgment."
+				},
+				{
+					"id": "dog-walker",
+					"text": "“Say yes, obviously. Then hire them to walk my dog. Two relationships, one leash.”",
+					"badness": 3,
+					"violation": "boundaries",
+					"reaction": "Board: Please do not employ your clients.",
+					"feedback": "Becoming a client’s friend and employer creates multiple dual relationships.",
+					"archetype": "boundaryCross",
+					"ethicsNote": "Social and financial relationships with clients exploit the power imbalance."
+				}
+			]
+		},
+		{
+			"id": "board-judgment-offstage",
+			"charge": "judgment",
+			"speaker": "okafor",
+			"prompt": "How do you talk about clients when they aren’t in the room?",
+			"choices": [
+				{
+					"id": "same-respect",
+					"text": "“The same way I would if they were there: respectfully, and only with people who need to know.”",
+					"badness": 0,
+					"reaction": "Board: That is the standard.",
+					"feedback": "Consistent respect, in or out of the room, reflects sound judgment.",
+					"archetype": "helpful",
+					"ethicsNote": "Respect for clients doesn’t change when they leave the room."
+				},
+				{
+					"id": "my-disasters",
+					"text": "“Affectionately. ‘My little disasters.’ It’s a term of endearment.”",
+					"badness": 1,
+					"reaction": "Board: It does not sound endearing.",
+					"feedback": "Even affectionate labels can be demeaning.",
+					"archetype": "dismissive",
+					"ethicsNote": "How we talk about clients shapes how we treat them."
+				},
+				{
+					"id": "nicknames",
+					"text": "“With nicknames, honestly. ‘The Crier.’ ‘Mr. Excuses.’ ‘The One Who Brings Soup.’”",
+					"badness": 2,
+					"violation": "judgment",
+					"reaction": "Board: The soup client deserves better.",
+					"feedback": "Mocking nicknames reflect contempt for clients.",
+					"archetype": "dismissive",
+					"ethicsNote": "Demeaning language about clients is unprofessional and harmful."
+				},
+				{
+					"id": "newsletter",
+					"text": "“I write a monthly newsletter ranking my clients’ worst decisions. It’s anonymous, mostly, and extremely popular.”",
+					"badness": 3,
+					"violation": "confidentiality",
+					"reaction": "Board: Unsubscribe everyone. Today.",
+					"feedback": "Publishing client decisions, even ‘mostly’ anonymously, breaches confidentiality.",
+					"archetype": "confidentialityBreach",
+					"ethicsNote": "Client stories are never content."
+				}
+			]
+		},
+		{
+			"id": "board-judgment-values",
+			"charge": "judgment",
+			"speaker": "vance",
+			"prompt": "A client makes a choice you personally disagree with. What do you do?",
+			"choices": [
+				{
+					"id": "their-values",
+					"text": "“Keep my values out of it, get curious about theirs, and help them choose what fits their life.”",
+					"badness": 0,
+					"reaction": "Board: Correct. Their life, their values.",
+					"feedback": "Centering the client’s values over the therapist’s is sound practice.",
+					"archetype": "helpful",
+					"ethicsNote": "Therapists support clients’ values, not their own preferences."
+				},
+				{
+					"id": "audible-sigh",
+					"text": "“I sigh audibly. It’s nonverbal feedback.”",
+					"badness": 1,
+					"reaction": "Board: We heard the sigh from here.",
+					"feedback": "Passive disapproval still communicates judgment.",
+					"archetype": "dismissive",
+					"ethicsNote": "Nonverbal judgment can be as harmful as words."
+				},
+				{
+					"id": "tell-them-wrong",
+					"text": "“I tell them they’re wrong. Gently, but every single session, until they’re finally right.”",
+					"badness": 2,
+					"violation": "judgment",
+					"reaction": "Board: That is not gentle either.",
+					"feedback": "Repeatedly telling clients they’re wrong imposes the therapist’s values.",
+					"archetype": "coerciveFixer",
+					"ethicsNote": "Clients deserve respect for choices the therapist wouldn’t make."
+				},
+				{
+					"id": "justify-choices",
+					"text": "“I make them justify each choice to me, out loud, until they agree with me or we run out of time.”",
+					"badness": 3,
+					"violation": "coercion",
+					"reaction": "Board: This is an interrogation.",
+					"feedback": "Pressuring clients until they agree is coercive.",
+					"archetype": "coerciveFixer",
+					"ethicsNote": "Therapy supports autonomy; it never wears clients down."
+				}
+			]
+		},
+		{
+			"id": "board-judgment-failures",
+			"charge": "judgment",
+			"speaker": "ito",
+			"prompt": "Several clients say they leave your sessions feeling like failures. Why might that be?",
+			"choices": [
+				{
+					"id": "focus-strengths",
+					"text": "“I focused on what they weren’t doing instead of what they were. That’s mine to change.”",
+					"badness": 0,
+					"reaction": "Board: Insightful. We’ll look for the change.",
+					"feedback": "Owning a pattern and naming what to change shows real reflection.",
+					"archetype": "helpful",
+					"ethicsNote": "Noticing strengths supports change better than cataloguing failures."
+				},
+				{
+					"id": "reframe-failure",
+					"text": "“Failure is just success that hasn’t been reframed yet.”",
+					"badness": 1,
+					"reaction": "Board: That does not answer the question.",
+					"feedback": "A slogan dodges the client experience being described.",
+					"archetype": "fakeDeep",
+					"ethicsNote": "Client feedback deserves engagement, not slogans."
+				},
+				{
+					"id": "they-are-failing",
+					"text": "“Honestly, if they feel like failures, maybe it’s because they keep failing. I just say it out loud.”",
+					"badness": 2,
+					"violation": "judgment",
+					"reaction": "Board: That is not your role.",
+					"feedback": "This blames clients and confirms their shame.",
+					"archetype": "dismissive",
+					"ethicsNote": "Therapists don’t pass verdicts on clients’ worth."
+				},
+				{
+					"id": "report-cards",
+					"text": "“I’ve started grading them. Letter grades, report cards, and conferences with their families.”",
+					"badness": 3,
+					"violation": "boundaries",
+					"reaction": "Board: Stop grading your clients.",
+					"feedback": "Grading clients and involving their families is demeaning and crosses boundaries.",
+					"archetype": "boundaryCross",
+					"ethicsNote": "Clients are not students, and their families aren’t part of treatment without consent."
+				}
+			]
+		},
+		{
+			"id": "board-coercion-consent",
+			"charge": "coercion",
+			"speaker": "okafor",
+			"prompt": "How do you make sure clients actually agree to the plans you make together?",
+			"choices": [
+				{
+					"id": "ask-and-check",
+					"text": "“I offer options, ask, and check in. If they say no or change their mind, the plan changes.”",
+					"badness": 0,
+					"reaction": "Board: Consent as an ongoing process. Good.",
+					"feedback": "Ongoing, revisable consent respects client autonomy.",
+					"archetype": "helpful",
+					"ethicsNote": "Consent can be withdrawn at any time, and plans should follow."
+				},
+				{
+					"id": "calendar-invite",
+					"text": "“I send a calendar invite. Accepting it is legally binding, emotionally.”",
+					"badness": 1,
+					"reaction": "Board: Calendar invites are not consent.",
+					"feedback": "Treating logistics as agreement skips real consent.",
+					"archetype": "corporateGoblin",
+					"ethicsNote": "Consent means understanding and agreement, not a click."
+				},
+				{
+					"id": "silence-is-yes",
+					"text": "“If they don’t object within ten seconds, that counts. Silence is basically a yes, legally speaking.”",
+					"badness": 2,
+					"violation": "coercion",
+					"reaction": "Board: It is not, legally or otherwise.",
+					"feedback": "Treating silence as agreement removes the client’s real choice.",
+					"archetype": "coerciveFixer",
+					"ethicsNote": "Silence is not consent."
+				},
+				{
+					"id": "advice-contract",
+					"text": "“They sign a contract promising to follow my advice, with penalties. Late fees for feelings.”",
+					"badness": 3,
+					"violation": "coercion",
+					"reaction": "Board: Void the contracts.",
+					"feedback": "Penalizing clients for not following advice is coercive.",
+					"archetype": "coerciveFixer",
+					"ethicsNote": "Clients are free to accept or decline any recommendation."
+				}
+			]
+		},
+		{
+			"id": "board-coercion-disagree",
+			"charge": "coercion",
+			"speaker": "vance",
+			"prompt": "What happens when a client disagrees with your advice?",
+			"choices": [
+				{
+					"id": "take-it-seriously",
+					"text": "“I take it seriously. They know their life better than I do, so we find what fits them.”",
+					"badness": 0,
+					"reaction": "Board: Humility noted, and appreciated.",
+					"feedback": "Treating disagreement as useful information respects client expertise.",
+					"archetype": "helpful",
+					"ethicsNote": "Clients are the experts on their own lives."
+				},
+				{
+					"id": "stamina-sport",
+					"text": "“I wait. Eventually they get tired and agree. It’s a stamina sport.”",
+					"badness": 1,
+					"reaction": "Board: That is not agreement. That is fatigue.",
+					"feedback": "Outlasting a client is a quiet form of pressure.",
+					"archetype": "dismissive",
+					"ethicsNote": "Agreement through exhaustion isn’t real agreement."
+				},
+				{
+					"id": "paying-me",
+					"text": "“I remind them they’re paying me to be right, so disagreeing is honestly just a waste of their money.”",
+					"badness": 2,
+					"violation": "coercion",
+					"reaction": "Board: They are paying you to help.",
+					"feedback": "Using cost to shut down disagreement is coercive.",
+					"archetype": "corporateGoblin",
+					"ethicsNote": "Clients may disagree without penalty."
+				},
+				{
+					"id": "stop-seeing-them",
+					"text": "“I stop seeing them until they apologize. And I let their family know why.”",
+					"badness": 3,
+					"violation": "confidentiality",
+					"reaction": "Board: You contacted their family?",
+					"feedback": "Retaliating and contacting family breaches confidentiality and autonomy.",
+					"archetype": "confidentialityBreach",
+					"ethicsNote": "Disagreement never justifies retaliation or disclosure."
+				}
+			]
+		},
+		{
+			"id": "board-harmful-sources",
+			"charge": "harmfulAdvice",
+			"speaker": "okafor",
+			"prompt": "Where does your advice usually come from?",
+			"choices": [
+				{
+					"id": "evidence-based",
+					"text": "“Training, supervision, and what the evidence supports, shaped by what each client wants.”",
+					"badness": 0,
+					"reaction": "Board: That is a solid foundation.",
+					"feedback": "Grounding advice in training and evidence, tailored to the client, is sound practice.",
+					"archetype": "helpful",
+					"ethicsNote": "Advice should be informed by evidence and the client’s goals."
+				},
+				{
+					"id": "fortune-cookies",
+					"text": "“Fortune cookies, mostly. I keep a drawer. It’s a curated drawer.”",
+					"badness": 1,
+					"reaction": "Board: Please empty the drawer.",
+					"feedback": "Random sources aren’t a basis for advice.",
+					"archetype": "fakeDeep",
+					"ethicsNote": "Clients deserve advice with a real foundation."
+				},
+				{
+					"id": "gym-guy",
+					"text": "“My gut. And a few podcasts. And one guy at the gym who is extremely, almost alarmingly confident.”",
+					"badness": 2,
+					"violation": "harmfulAdvice",
+					"reaction": "Board: Confidence is not evidence.",
+					"feedback": "Unvetted sources can lead to harmful advice.",
+					"archetype": "chaosAdvice",
+					"ethicsNote": "Confidence is not a substitute for competence."
+				},
+				{
+					"id": "best-story",
+					"text": "“Whatever would make the best story later. Advice should be memorable, and chaos is very memorable.”",
+					"badness": 3,
+					"violation": "harmfulAdvice",
+					"reaction": "Board: Your clients are not a story.",
+					"feedback": "Choosing advice for entertainment value puts clients at risk.",
+					"archetype": "chaosAdvice",
+					"ethicsNote": "Advice must serve the client’s wellbeing, not the therapist’s anecdotes."
+				}
+			]
+		},
+		{
+			"id": "board-harmful-risk",
+			"charge": "harmfulAdvice",
+			"speaker": "vance",
+			"prompt": "How do you weigh the risks before suggesting something big to a client?",
+			"choices": [
+				{
+					"id": "weigh-risks",
+					"text": "“I ask what could go wrong for them, slow down when stakes are high, and let them set the pace.”",
+					"badness": 0,
+					"reaction": "Board: Exactly right.",
+					"feedback": "Weighing risks with the client and pacing big steps protects their wellbeing.",
+					"archetype": "helpful",
+					"ethicsNote": "Big changes require careful pacing and the client’s informed choice."
+				},
+				{
+					"id": "coin-flip",
+					"text": "“I flip a coin. Heads is bold, tails is bolder.”",
+					"badness": 1,
+					"reaction": "Board: Both sides of that coin are reckless.",
+					"feedback": "Leaving risk to chance is careless.",
+					"archetype": "chaosAdvice",
+					"ethicsNote": "Risk deserves thoughtful assessment."
+				},
+				{
+					"id": "scary-hat",
+					"text": "“Risk is just growth wearing a scary hat. I tell them to go for it, every single time, no exceptions.”",
+					"badness": 2,
+					"violation": "harmfulAdvice",
+					"reaction": "Board: Sometimes the hat is scary for a reason.",
+					"feedback": "Pushing every client toward risk ignores their circumstances.",
+					"archetype": "fakeDeep",
+					"ethicsNote": "Good advice accounts for each client’s real risks."
+				},
+				{
+					"id": "results-pending",
+					"text": "“I don’t. Last month I told three clients to quit, two to move, and one to text an ex. Results pending.”",
+					"badness": 3,
+					"violation": "harmfulAdvice",
+					"reaction": "Board: Please follow up with all six.",
+					"feedback": "Advising major life changes without weighing risk is harmful.",
+					"archetype": "chaosAdvice",
+					"ethicsNote": "Major life decisions belong to clients, made with care."
+				}
+			]
+		},
+		{
+			"id": "board-harmful-backfired",
+			"charge": "harmfulAdvice",
+			"speaker": "ito",
+			"prompt": "When your advice doesn’t work out for a client, what do you do next?",
+			"choices": [
+				{
+					"id": "own-and-adjust",
+					"text": "“Own it, listen to what happened, and adjust. If it’s beyond me, I refer them on.”",
+					"badness": 0,
+					"reaction": "Board: Ownership and referral. Good.",
+					"feedback": "Owning outcomes and referring when needed shows professional responsibility.",
+					"archetype": "helpful",
+					"ethicsNote": "Recognizing limits and referring is part of competent care."
+				},
+				{
+					"id": "blame-mercury",
+					"text": "“Blame Mercury. It’s always in retrograde when I need it to be.”",
+					"badness": 1,
+					"reaction": "Board: Mercury has not filed a response.",
+					"feedback": "Deflecting responsibility prevents learning.",
+					"archetype": "fakeDeep",
+					"ethicsNote": "Accountability means owning outcomes."
+				},
+				{
+					"id": "double-it",
+					"text": "“Double it. If a little chaos didn’t work, a lot more chaos probably will. That’s just math.”",
+					"badness": 2,
+					"violation": "harmfulAdvice",
+					"reaction": "Board: That is not math.",
+					"feedback": "Escalating failed advice compounds harm.",
+					"archetype": "chaosAdvice",
+					"ethicsNote": "When advice backfires, slow down and reassess."
+				},
+				{
+					"id": "bill-the-realization",
+					"text": "“I tell them it worked and they just didn’t notice. Then I bill them for the realization.”",
+					"badness": 3,
+					"violation": "boundaries",
+					"reaction": "Board: Refund the realization.",
+					"feedback": "Gaslighting clients and billing for it exploits the relationship.",
+					"archetype": "corporateGoblin",
+					"ethicsNote": "Misrepresenting outcomes and exploiting clients financially is a serious violation."
+				}
+			]
 		}
 	]);
 

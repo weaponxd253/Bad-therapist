@@ -278,3 +278,19 @@ for (let seed = 1; seed <= 10; seed += 1) {
 	assert.ok(picked.some((question) => question.id === "board-confidentiality-podcast"),
 		`seed ${seed}: the general confidentiality question is asked when no incidents match`);
 }
+
+// Two hearings on the same charge never ask about incidents the player didn't commit.
+["confidentiality", "boundaries", "judgment", "coercion", "harmfulAdvice"].forEach((charge) => {
+	for (let seed = 1; seed <= 5; seed += 1) {
+		let state = { ...hearingStart, incidents: [], pendingHearing: { charge } };
+		const asked = [];
+		for (let hearing = 0; hearing < RULES.hearingThresholds.length; hearing += 1) {
+			const picked = career.selectHearingQuestions(state, BOARD_QUESTIONS, seededRandom(seed * 10 + hearing));
+			asked.push(...picked);
+			state = { ...state, usedBoardQuestionIds: [...state.usedBoardQuestionIds, ...picked.map((q) => q.id)], pendingHearing: { charge } };
+		}
+		assert.equal(asked.filter((q) => (q.relatedChoices || []).length > 0).length, 0,
+			`${charge}/seed ${seed}: a hearing asked about an incident the player never committed`);
+		assert.ok(asked.slice(0, RULES.hearingLength).every((q) => q.charge === charge), `${charge}: the first hearing stays on its charge`);
+	}
+});

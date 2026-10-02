@@ -295,8 +295,9 @@
 					score:
 						(committed ? 100 : 0) +
 						(question.charge === charge ? 50 : 0) +
-						// A general question beats one about an incident this player never committed.
-						(related.length > 0 && !committed ? -20 : 0) +
+						// Any general question, even off-charge, beats one about an incident this player
+						// never committed, so the board doesn't quiz them on someone else's file.
+						(related.length > 0 && !committed ? -60 : 0) +
 						random() * 10
 				};
 			})
