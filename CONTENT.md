@@ -39,3 +39,7 @@ Ethics Minefield prefers judgment, coercion, and harmful-advice content. New con
 ## Diversity targets
 
 `content-diversity.test.js` simulates consecutive sessions with real replay history. Every topic needs at least 7 questions and 2 follow-ups. No question may repeat within 3 sessions in any pack, 5 sessions must show at least 47 different questions, and the Chaos Sampler must not repeat within 6 sessions. Themed packs are limited by their headline topic, so new content for work, relationships, family, and social media extends their variety the most.
+
+## Client personas
+
+Clients live in `clients.js`. Each needs an opening line, a walkout and a closing line for single sessions, and four career `endings`: `thriving`, `transferred`, `memoir`, and `blocked`. Write endings by name, never with pronouns (`clients.test.js` checks this), and keep the joke on the therapist: even a memoir ending should leave the client better off than the therapist.

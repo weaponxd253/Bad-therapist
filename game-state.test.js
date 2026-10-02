@@ -654,7 +654,7 @@ async function main() {
 	assert.equal(weekTwo.clients[firstClient.id].visits, 1);
 	const returningId = weekTwo.waitlist.find((id) => weekTwo.clients[id]?.visits > 0);
 	assert.ok(returningId, "the week 2 waitlist includes a returning client");
-	assert.match(elements.get("careerBody").innerHTML, /Visit 2 · Starts at mood/);
+	assert.match(elements.get("careerBody").innerHTML, /Visit 2 of 3 · Starts at mood/);
 	const firstMemories = weekTwo.clients[firstClient.id].memories;
 	assert.equal(firstMemories.length, 2, "each session leaves two memories behind");
 	assert.ok(firstMemories.every((memory) => memory.week === 1 && memory.archetype === "helpful"));
@@ -745,6 +745,55 @@ async function main() {
 	assert.match(elements.get("careerBody").innerHTML, /careerClientBtn/, "clients are back on the waitlist");
 	assert.equal(vm.runInContext("careerHearing", context), false, "the next session is a normal one");
 
+	// Client arcs: a final visit ends the story, a thriving client refers someone new.
+	vm.runInContext(`
+		careerState.pendingHearing = null;
+		careerState.license = 80;
+		const finalId = careerState.waitlist[0];
+		careerState.clients[finalId] = {
+			...(careerState.clients[finalId] || {}),
+			visits: 2, trust: 90, walkouts: 0, left: false, lastWeek: 1, memories: careerState.clients[finalId]?.memories || [],
+			arc: { answers: 12, helpful: 12, violations: 0, badness: 0 }, ending: "", referredBy: ""
+		};
+		persistCareer();
+		renderCareerScreen();
+	`, context);
+	const finalId = vm.runInContext("careerState.waitlist[0]", context);
+	assert.match(elements.get("careerBody").innerHTML, /Visit 3 of 3 · Final visit/);
+	await vm.runInContext(`startGame({ careerClientId: "${finalId}" })`, context);
+	await playUntilResults("(choice) => choice.badness === 0");
+	const arcResult = JSON.parse(JSON.stringify(vm.runInContext("latestResultSummary.career", context)));
+	assert.equal(arcResult.arcEnding.id, "thriving");
+	assert.equal(arcResult.arcLine, clients.getClient(finalId).endings.thriving);
+	assert.ok(arcResult.referralName, "a thriving client refers someone");
+	assert.match(elements.get("resultBox").innerHTML, /Thriving Despite You/);
+	assert.match(elements.get("resultBox").innerHTML, /including \+5 because/);
+	assert.equal(arcResult.licenseNet, Math.min(100, 80 + career.RULES.cleanSessionRecovery + career.RULES.thrivingLicenseBonus) - 80,
+		"the practice update shows the real license change after every effect");
+	assert.match(elements.get("resultBox").innerHTML, new RegExp(`referred ${arcResult.referralName}`));
+	const memoirMarkup = vm.runInContext(`careerResultMarkup({ career: {
+		week: 4, infamy: 60, infamyGained: 20, infamyBonus: 15, license: 40, licenseNet: -18, licenseLost: 18, licenseRecovered: 0,
+		licenseBonus: 0, badPressAdded: 2, visits: 3, trust: 30, clientName: "Theo",
+		arcEnding: { id: "memoir", title: "Wrote a Memoir About You" }, arcLine: "${clients.getClient("theo").endings.memoir}"
+	} })`, context);
+	assert.match(memoirMarkup, /Theo’s story · Wrote a Memoir About You/);
+	assert.match(memoirMarkup, /Infamy \+35/);
+	assert.match(memoirMarkup, /The memoir alone added 15 infamy/);
+	assert.match(memoirMarkup, /Bad press: one fewer client on your waitlist for 2 weeks/);
+	assert.match(memoirMarkup, /Left on Read/);
+	vm.runInContext("restart()", context);
+	const referred = clients.CLIENTS.find((client) => client.name === arcResult.referralName);
+	assert.equal(vm.runInContext(`careerState.waitlist.includes("${finalId}")`, context), false, "finished clients leave the waitlist");
+	assert.equal(vm.runInContext(`careerState.waitlist.includes("${referred.id}")`, context), true);
+	assert.match(elements.get("careerBody").innerHTML, new RegExp(`Referred by ${clients.getClient(finalId).name}`));
+	await vm.runInContext(`startGame({ careerClientId: "${referred.id}" })`, context);
+	assert.equal(
+		elements.get("leadInBubble").textContent,
+		`${referred.name}: ${career.referralLine(clients.getClient(finalId).name)} ${referred.opening}`,
+		"referred clients mention who sent them"
+	);
+	vm.runInContext("interactionState = INTERACTION_STATES.RESULTS; careerSessionClientId = ''; careerReturnPending = true; restart();", context);
+
 	// Retiring takes two taps and shows the career summary.
 	vm.runInContext("retireCareer()", context);
 	assert.equal(vm.runInContext("careerState.status", context), "active", "the first tap only arms retirement");
@@ -752,6 +801,14 @@ async function main() {
 	vm.runInContext("retireCareer()", context);
 	assert.equal(vm.runInContext("careerState.status", context), "ended");
 	assert.match(elements.get("careerBody").innerHTML, /Early Retirement/);
+	assert.match(elements.get("careerBody").innerHTML, /Client outcomes/);
+	assert.match(elements.get("careerBody").innerHTML, /Thriving Despite You/);
+	const anyOpenArc = vm.runInContext(
+		"Object.values(careerState.clients).some((record) => record.visits > 0 && !record.ending)",
+		context
+	);
+	if (anyOpenArc) assert.match(elements.get("careerBody").innerHTML, /Still in treatment/);
+	else assert.doesNotMatch(elements.get("careerBody").innerHTML, /Still in treatment/);
 	assert.match(elements.get("careerBody").innerHTML, /Start a new career/);
 	assert.equal(elements.get("careerRetireBtn").hidden, true);
 	assert.equal(career.load(localStorage).best.endReason, "quit", "an ended career is saved as the best so far");

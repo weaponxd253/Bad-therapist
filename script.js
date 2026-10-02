@@ -821,7 +821,10 @@ function leadInForQuestion() {
 			const greeting = Career.returningGreeting(careerState, careerSessionClientId, recall);
 			return { type: "callback", line: `${greeting} ${recall.line}` };
 		}
-		return activeClient?.opening ? { type: "opening", line: activeClient.opening } : null;
+		if (!activeClient?.opening) return null;
+		const referrer = careerSessionClientId && careerState ? getClient(Career.referrerFor(careerState, careerSessionClientId)) : null;
+		const referral = referrer ? Career.referralLine(referrer.name) : "";
+		return { type: "opening", line: referral ? `${referral} ${activeClient.opening}` : activeClient.opening };
 	}
 	if (questions[idx]?.isFollowUp) return null;
 	const callback = selectCallback({
@@ -1792,7 +1795,13 @@ function recordCareerSession(summary) {
 		moodRemaining: summary.moodRemaining,
 		memories: pickMemories(runHistory),
 		violationCountsByType: summary.violationCountsByType,
-		incidents: runHistory.filter((entry) => entry.violation).map((entry) => `${entry.questionId}/${entry.choiceId}`)
+		incidents: runHistory.filter((entry) => entry.violation).map((entry) => `${entry.questionId}/${entry.choiceId}`),
+		questionsAnswered: summary.questionsAnswered,
+		helpfulCount: summary.helpfulCount,
+		totalBadness: summary.totalBadness,
+		samePackIds: CLIENTS
+			.filter((other) => other.id !== clientId && other.packIds.some((packId) => getClient(clientId)?.packIds.includes(packId)))
+			.map((other) => other.id)
 	}, CAREER_ROSTER, Math.random);
 	careerState = state;
 	careerSessionClientId = "";
@@ -1804,6 +1813,10 @@ function recordCareerSession(summary) {
 		week: before.week,
 		infamy: state.infamy,
 		clientName: getClient(clientId)?.name || "Client",
+		// The real change after every effect and the 0–100 cap, for display.
+		licenseNet: state.license - before.license,
+		arcLine: update.arcEnding ? getClient(clientId)?.endings?.[update.arcEnding.id] || "" : "",
+		referralName: update.referral ? getClient(update.referral.clientId)?.name || "" : "",
 		endingTitle: ending?.title || "",
 		endingText: ending?.text || ""
 	};
@@ -1818,20 +1831,34 @@ function updateCareerPills(summary) {
 function careerResultMarkup(summary) {
 	const career = summary.career;
 	if (!career) return "";
-	const licenseChange = career.licenseRecovered - career.licenseLost;
+	const licenseChange = Number.isFinite(career.licenseNet) ? career.licenseNet : career.licenseRecovered - career.licenseLost;
+	const licenseNote = career.licenseBonus && licenseChange > 0 ? `, including +${career.licenseBonus} because ${career.clientName} is thriving` : "";
+	const licenseLine = licenseChange === 0 && career.license >= Career.RULES.licenseStart
+		? `License maxed at ${career.license}`
+		: `License ${licenseChange >= 0 ? "+" : "−"}${Math.abs(licenseChange)} (now ${career.license}${licenseNote})`;
 	const lines = [
-		`Infamy +${career.infamyGained} (career total ${career.infamy})`,
-		`License ${licenseChange >= 0 ? "+" : "−"}${Math.abs(licenseChange)} (now ${career.license})`,
-		career.clientLeft
-			? `${career.clientName} has left your practice for good.`
-			: `${career.clientName} will start next visit at mood ${career.trust}.`,
+		`Infamy +${career.infamyGained + (career.infamyBonus || 0)} (career total ${career.infamy})`,
+		licenseLine,
+		career.arcEnding
+			? ""
+			: `${career.clientName} will start visit ${career.visits + 1} of ${Career.RULES.arcLength} at mood ${career.trust}.`,
+		career.infamyBonus ? `The memoir alone added ${career.infamyBonus} infamy.` : "",
+		career.referralName ? `${career.clientName} referred ${career.referralName}. They’re on next week’s waitlist.` : "",
+		career.badPressAdded ? `Bad press: one fewer client on your waitlist for ${career.badPressAdded} week${career.badPressAdded === 1 ? "" : "s"}.` : "",
 		career.hearingCalled ? "Your license slipped past a line. The Ethics Board has called a hearing for next week." : ""
 	].filter(Boolean);
+	const arcMarkup = career.arcEnding
+		? `<div class="careerArcEnding" data-ending="${escapeHTML(career.arcEnding.id)}">
+			<p class="careerEyebrow">${escapeHTML(career.clientName)}’s story · ${escapeHTML(career.arcEnding.title)}</p>
+			<p>${escapeHTML(career.arcLine)}</p>
+		</div>`
+		: "";
 	return `
 		<section class="resultSection">
 			<article class="careerUpdate${career.ended ? " is-ended" : ""}">
 				<p class="careerEyebrow">Career · Week ${career.week}</p>
 				<h4>${career.ended ? escapeHTML(career.endingTitle) : "Practice update"}</h4>
+				${arcMarkup}
 				<ul>${lines.map((line) => `<li>${escapeHTML(line)}</li>`).join("")}</ul>
 				${career.ended ? `<p>${escapeHTML(career.endingText)}</p>` : ""}
 			</article>
@@ -1848,7 +1875,8 @@ function memoryTeaser(record) {
 
 function careerClientStatus(record) {
 	if (!record || record.visits === 0) return "New client";
-	const visits = `Visit ${record.visits + 1}`;
+	const final = record.visits + 1 >= Career.RULES.arcLength ? " · Final visit" : "";
+	const visits = `Visit ${record.visits + 1} of ${Career.RULES.arcLength}${final}`;
 	const walkouts = record.walkouts ? ` · ${record.walkouts} walkout${record.walkouts === 1 ? "" : "s"}` : "";
 	return `${visits} · Starts at mood ${record.trust}${walkouts}`;
 }
@@ -1913,7 +1941,8 @@ function renderCareerScreen() {
 	if (careerState.status === "active") {
 		el.careerBody.innerHTML = `
 			<h4>Waitlist</h4>
-			<p class="careerHint">Pick who to see this week. Each session is ${Career.RULES.sessionLength} questions. Violations cost license; walkouts cost more.</p>
+			<p class="careerHint">Pick who to see this week. Each session is ${Career.RULES.sessionLength} questions, and each client’s story ends after ${Career.RULES.arcLength} visits. Violations cost license; walkouts cost more.</p>
+			${careerState.badPressWeeks ? `<p class="careerBadPress">Bad press: one fewer client on your waitlist for ${careerState.badPressWeeks} more week${careerState.badPressWeeks === 1 ? "" : "s"}.</p>` : ""}
 			<ul class="careerWaitlist">${careerState.waitlist.map((id) => {
 				const client = getClient(id);
 				if (!client) return "";
@@ -1923,6 +1952,7 @@ function renderCareerScreen() {
 						<small>${escapeHTML(client.backstory)}</small>
 						<span class="careerClientStatus">${escapeHTML(careerClientStatus(careerState.clients[id]))}</span>
 						${memoryTeaser(careerState.clients[id]) ? `<span class="careerClientMemory">Remembers you said: “${escapeHTML(memoryTeaser(careerState.clients[id]))}”</span>` : ""}
+						${Career.referrerFor(careerState, id) ? `<span class="careerClientReferral">Referred by ${escapeHTML(getClient(Career.referrerFor(careerState, id))?.name || "a former client")}</span>` : ""}
 					</button>
 				</li>`;
 			}).join("")}</ul>
@@ -1944,6 +1974,7 @@ function renderCareerScreen() {
 				<div><span>Walkouts</span><b>${summary.walkouts}</b></div>
 				<div><span>Clients lost</span><b>${summary.clientsLost} / ${summary.clientsSeen}</b></div>
 			</div>
+			${clientOutcomesMarkup()}
 			${best ? `<p class="careerHint">Best career: ${best.infamy} infamy over ${best.weeks} week${best.weeks === 1 ? "" : "s"} (${escapeHTML((Career.ENDINGS[best.endReason] || Career.ENDINGS.quit).title)}).</p>` : ""}
 			<button type="button" class="careerBtn" data-career-action="new">Start a new career</button>
 		</article>
@@ -1991,6 +2022,24 @@ function leaveCareerScreen() {
 	syncStartSelections();
 	renderCareerPanel();
 	el.careerBtn.focus();
+}
+
+function clientOutcomesMarkup() {
+	const seen = Object.entries(careerState.clients || {}).filter(([, record]) => record.visits > 0);
+	if (!seen.length) return "";
+	return `
+		<h4 class="careerOutcomesTitle">Client outcomes</h4>
+		<ul class="careerOutcomes">${seen.map(([id, record]) => {
+			const client = getClient(id);
+			if (!client) return "";
+			const ending = record.ending ? Career.ARC_ENDINGS[record.ending] : null;
+			return `<li data-ending="${escapeHTML(record.ending || "open")}">
+				<b><span aria-hidden="true">${escapeHTML(client.avatar)}</span> ${escapeHTML(client.name)}</b>
+				<span>${ending ? escapeHTML(ending.title) : `Still in treatment · ${record.visits} of ${Career.RULES.arcLength} visits`}</span>
+				${ending ? `<small>${escapeHTML(client.endings?.[record.ending] || "")}</small>` : ""}
+			</li>`;
+		}).join("")}</ul>
+	`;
 }
 
 function onCareerBodyClick(event) {

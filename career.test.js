@@ -294,3 +294,76 @@ for (let seed = 1; seed <= 10; seed += 1) {
 		assert.ok(asked.slice(0, RULES.hearingLength).every((q) => q.charge === charge), `${charge}: the first hearing stays on its charge`);
 	}
 });
+
+// --- Client arcs, endings, and referrals ---
+function visit(state, id, overrides = {}) {
+	return career.applySession(state, {
+		clientId: id, completed: true, totalViolations: 0, weighted: 2, moodRemaining: 80,
+		questionsAnswered: 6, helpfulCount: 6, totalBadness: 0,
+		samePackIds: roster.filter((other) => other !== id),
+		...overrides
+	}, roster, seededRandom(42));
+}
+const arcStart = career.newCareer({ rosterIds: roster, random: seededRandom(11) });
+const arcClient = arcStart.waitlist[0];
+
+// Thriving: a mostly-helpful arc ends on the third visit, recovers license, and refers someone.
+let arcState = { ...arcStart, license: 80 };
+arcState = visit(arcState, arcClient).state;
+arcState = visit(arcState, arcClient).state;
+assert.equal(arcState.clients[arcClient].ending, "", "the arc is still running after two visits");
+const thrivingVisit = visit(arcState, arcClient);
+assert.equal(thrivingVisit.update.visits, RULES.arcLength);
+assert.equal(thrivingVisit.update.arcEnding.id, "thriving");
+assert.equal(thrivingVisit.update.licenseBonus, RULES.thrivingLicenseBonus);
+assert.equal(thrivingVisit.state.license, 80 + 3 * RULES.cleanSessionRecovery + RULES.thrivingLicenseBonus);
+assert.ok(thrivingVisit.update.referral, "a thriving client refers someone");
+const referredId = thrivingVisit.update.referral.clientId;
+assert.equal(thrivingVisit.state.clients[referredId], undefined, "the referral is someone new");
+assert.ok(thrivingVisit.state.waitlist.includes(referredId), "the referred client is on the next waitlist");
+assert.equal(thrivingVisit.state.waitlist.includes(arcClient), false, "a finished client leaves the waitlist");
+assert.equal(career.referrerFor(thrivingVisit.state, referredId), arcClient);
+assert.equal(career.referralLine("Theo"), "Theo said you were actually worth a try. I’m skeptical, but here I am.");
+const afterReferral = visit(thrivingVisit.state, referredId);
+assert.equal(afterReferral.state.clients[referredId].referredBy, arcClient, "the client remembers who referred them");
+assert.equal(career.referrerFor(afterReferral.state, referredId), "", "a referral is used up once seen");
+
+// Memoir: a violent arc earns infamy and bad press, which shrinks the waitlist.
+let memoirState = arcStart;
+for (let index = 0; index < RULES.arcLength; index += 1) {
+	memoirState = visit(memoirState, arcClient, {
+		totalViolations: 3, weighted: 24, moodRemaining: 40, helpfulCount: 0, totalBadness: 15
+	}).state;
+}
+const memoirClient = memoirState.clients[arcClient];
+assert.equal(memoirClient.ending, "memoir");
+assert.equal(memoirState.infamy, 3 * 24 + RULES.memoirInfamyBonus);
+assert.equal(memoirState.badPressWeeks, RULES.memoirBadPressWeeks);
+assert.equal(memoirState.waitlist.length, RULES.waitlistSize - 1, "bad press shrinks the waitlist");
+assert.equal(memoirState.referrals.length, 0, "memoirs bring no referrals");
+const pressFades = visit(memoirState, memoirState.waitlist[0]).state;
+assert.equal(pressFades.badPressWeeks, RULES.memoirBadPressWeeks - 1, "bad press fades week by week");
+
+// Transferred: a middling arc.
+let middling = arcStart;
+for (let index = 0; index < RULES.arcLength; index += 1) {
+	middling = visit(middling, arcClient, { totalViolations: 1, helpfulCount: 2, totalBadness: 8 }).state;
+}
+assert.equal(middling.clients[arcClient].ending, "transferred");
+assert.equal(career.arcEndingFor({ answers: 6, helpful: 3, violations: 2, badness: 8 }), "transferred",
+	"too many violations keep a helpful arc from thriving");
+
+// Blocked: two walkouts end the arc early and bring a week of bad press.
+const blockedState = visit(visit(arcStart, arcClient, { completed: false }).state, arcClient, { completed: false });
+assert.equal(blockedState.update.arcEnding.id, "blocked");
+assert.equal(blockedState.state.badPressWeeks, RULES.blockedBadPressWeeks);
+
+// Every outcome is counted in the summary, and arcs survive saving.
+assert.equal(career.careerSummary(thrivingVisit.state).outcomes.thriving, 1);
+assert.equal(career.careerSummary(memoirState).outcomes.memoir, 1);
+const arcStore = memoryStorage();
+career.saveCareer(arcStore, thrivingVisit.state, fixedNow);
+const arcReloaded = career.load(arcStore).current;
+assert.equal(arcReloaded.clients[arcClient].ending, "thriving");
+assert.deepEqual(arcReloaded.clients[arcClient].arc, thrivingVisit.state.clients[arcClient].arc);
+assert.deepEqual(arcReloaded.referrals, thrivingVisit.state.referrals);
