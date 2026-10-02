@@ -15,6 +15,7 @@ const clients = require("./clients.js");
 const callbacks = require("./callbacks.js");
 const followUps = require("./follow-ups.js");
 const career = require("./career.js");
+const board = require("./board-questions.js");
 
 function makeElement() {
 	const attributes = {};
@@ -106,6 +107,7 @@ async function main() {
 			BadTherapistCallbacks: callbacks,
 			BadTherapistFollowUps: followUps,
 			BadTherapistCareer: career,
+			BadTherapistBoard: board,
 			BadTherapistAchievements: achievements,
 			BadTherapistScoring: scoring,
 			BadTherapistPersistence: persistence,
@@ -196,6 +198,7 @@ async function main() {
 		archetype: "dismissive",
 		callbackLine: "",
 		recallLine: "",
+		speaker: "",
 		isFollowUp: false,
 		followedUp: false,
 		badness: 3,
@@ -684,6 +687,63 @@ async function main() {
 	assert.equal(walkoutResult.career.trust, career.RULES.minimumTrust);
 	vm.runInContext("restart()", context);
 	assert.equal(vm.runInContext("careerState.week", context), 3);
+
+	// Ethics Board hearing: summoned, played with board speakers, verdict applied.
+	vm.runInContext(`
+		careerState.license = 62;
+		careerState.pendingHearing = { charge: "confidentiality", threshold: 70, calledWeek: careerState.week - 1 };
+		careerState.incidents = ["unclear-values/record-session"];
+		persistCareer();
+		renderCareerScreen();
+	`, context);
+	assert.match(elements.get("careerBody").innerHTML, /The Ethics Board has called a hearing/);
+	assert.doesNotMatch(elements.get("careerBody").innerHTML, /careerClientBtn/, "no clients until the hearing is attended");
+	const blockedWeek = vm.runInContext("careerState.week", context);
+	await vm.runInContext(`startGame({ careerClientId: careerState.waitlist[0] })`, context);
+	assert.equal(vm.runInContext("careerSessionClientId", context), "", "clients cannot be seen while a hearing is pending");
+	vm.runInContext("renderCareerPanel()", context);
+	assert.match(elements.get("careerPanelStatus").textContent, /hearing pending/);
+
+	await vm.runInContext("startGame({ hearing: true })", context);
+	const hearingState = JSON.parse(JSON.stringify(vm.runInContext(
+		`({ careerHearing, length: questions.length, ids: questions.map((q) => q.id), speakers: questions.map((q) => q.speakerName), board: questions.every((q) => q.isBoard), mood })`,
+		context
+	)));
+	assert.equal(hearingState.careerHearing, true);
+	assert.equal(hearingState.length, career.RULES.hearingLength);
+	assert.equal(hearingState.board, true);
+	assert.ok(hearingState.ids.includes("board-confidentiality-recording"), "a committed incident is brought up");
+	assert.ok(hearingState.speakers.every((name) => board.BOARD_MEMBERS.some((member) => member.name === name)));
+	assert.equal(hearingState.mood, 100);
+	assert.match(elements.get("meta").textContent, /Ethics Board hearing/);
+	assert.match(elements.get("moodPill").textContent, /^Board patience: /);
+	assert.equal(elements.get("leadInBubble").textContent, `Chair Okafor: ${vm.runInContext("HEARING_OPENING", context)}`);
+	assert.match(elements.get("clientBubble").textContent, new RegExp(`^${hearingState.speakers[0]} \\(Ethics Board\\): `));
+	assert.match(elements.get("caseFileGame").innerHTML, /In re: Your Conduct/);
+	assert.match(elements.get("roundStatus").textContent, /The board is waiting/);
+	const achievementsBefore = JSON.stringify(achievements.load(localStorage));
+	const historyBefore = JSON.stringify(questionHistory.load(localStorage));
+	await playUntilResults("(choice) => choice.badness === 0");
+	assert.match(elements.get("reactionBubble").textContent, new RegExp(`^${hearingState.speakers[2]}: `), "board reactions are voiced by the speaker");
+	const hearingResult = JSON.parse(JSON.stringify(vm.runInContext("latestResultSummary.hearing", context)));
+	assert.equal(hearingResult.verdict, "cleared");
+	assert.equal(hearingResult.licenseChange, career.RULES.hearingLength * career.RULES.accountableReward);
+	assert.equal(hearingResult.license, 62 + hearingResult.licenseChange);
+	assert.match(elements.get("resultBox").innerHTML, /Verdict: Cleared with a Note/);
+	assert.match(elements.get("resultBox").innerHTML, /Hearing transcript/);
+	assert.match(elements.get("resultBox").innerHTML, /Owned it/);
+	assert.match(elements.get("restartBtn").textContent, /Back to the practice/);
+	assert.match(vm.runInContext("formatShareText(latestResultSummary)", context), /Ethics Board hearing: Cleared with a Note \(License \+18\)/);
+	assert.equal(JSON.stringify(achievements.load(localStorage)), achievementsBefore, "hearings do not count toward achievements");
+	assert.equal(JSON.stringify(questionHistory.load(localStorage)), historyBefore, "hearings do not enter replay history");
+	const afterHearing = career.load(localStorage).current;
+	assert.equal(afterHearing.pendingHearing, null);
+	assert.equal(afterHearing.week, blockedWeek + 1, "the hearing took up the week");
+	assert.equal(afterHearing.hearings[0].verdict, "cleared");
+	vm.runInContext("restart()", context);
+	assert.equal(elements.get("careerScreen").hidden, false);
+	assert.match(elements.get("careerBody").innerHTML, /careerClientBtn/, "clients are back on the waitlist");
+	assert.equal(vm.runInContext("careerHearing", context), false, "the next session is a normal one");
 
 	// Retiring takes two taps and shows the career summary.
 	vm.runInContext("retireCareer()", context);

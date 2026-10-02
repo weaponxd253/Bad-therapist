@@ -1660,3 +1660,90 @@ button#start {
 		grid-template-columns: 1fr;
 	}
 }
+
+/* Ethics Board hearings */
+.hearingSummons,
+.hearingVerdict {
+	padding: 14px 16px;
+	border: 2px solid rgba(164, 59, 91, 0.3);
+	border-left: 6px solid #a43b5b;
+	border-radius: 14px;
+	background: rgba(164, 59, 91, 0.07);
+	text-align: left;
+}
+
+.hearingSummons h4,
+.hearingVerdict h3 {
+	margin: 2px 0 6px;
+}
+
+.hearingSummons p,
+.hearingVerdict p {
+	margin: 0 0 8px;
+	line-height: 1.4;
+}
+
+.hearingSummons .careerBtn {
+	margin-top: 4px;
+}
+
+.hearingVerdict[data-verdict="cleared"] {
+	border-color: rgba(23, 132, 90, 0.35);
+	border-left-color: #17845a;
+	background: rgba(23, 132, 90, 0.08);
+}
+
+.hearingVerdict[data-verdict="warning"] {
+	border-color: rgba(179, 84, 30, 0.35);
+	border-left-color: #b3541e;
+	background: rgba(179, 84, 30, 0.08);
+}
+
+.hearingVerdict ul {
+	margin: 0;
+	padding-left: 18px;
+	line-height: 1.5;
+}
+
+.hearingEnding {
+	margin-top: 10px !important;
+}
+
+.hearingTranscript {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hearingTranscript li {
+	display: grid;
+	gap: 4px;
+	padding: 10px 12px;
+	border-left: 4px solid rgba(0, 0, 0, 0.2);
+	border-radius: 8px;
+	background: rgba(0, 0, 0, 0.04);
+	text-align: left;
+}
+
+.hearingTranscript p {
+	margin: 0;
+}
+
+.hearingTranscript small {
+	font-weight: 700;
+	opacity: 0.8;
+}
+
+.hearingTranscript li.is-owned {
+	border-left-color: #17845a;
+}
+
+.hearingTranscript li.is-dodged {
+	border-left-color: #b3541e;
+}
+
+.hearingTranscript li.is-violation {
+	border-left-color: #a43b5b;
+}

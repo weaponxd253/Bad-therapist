@@ -4,6 +4,8 @@ const { CLIENTS, getClient, getClientsForPack, pickClient } = window.BadTherapis
 const { selectCallback, selectOpeningRecall, pickMemories } = window.BadTherapistCallbacks;
 const { shouldFollowUp, buildFollowUpQuestion, insertFollowUp } = window.BadTherapistFollowUps;
 const Career = window.BadTherapistCareer;
+const { BOARD_QUESTIONS, getBoardMember } = window.BadTherapistBoard;
+const HEARING_OPENING = "This hearing will come to order. The board has reviewed your file. It was a long read.";
 const CAREER_ROSTER = CLIENTS.map((client) => client.id);
 const {
 	ACHIEVEMENTS,
@@ -111,6 +113,8 @@ let careerReturnPending = false;
 let careerRetireArmed = false;
 // What the current career client remembers from previous visits.
 let careerMemories = [];
+// True while an Ethics Board hearing is being played.
+let careerHearing = false;
 const INTERACTION_STATES = Object.freeze({
 	IDLE: "idle",
 	PRESENTING: "presenting",
@@ -356,13 +360,14 @@ function showScreen(name) {
 	});
 }
 
+// In a hearing each question has its own board speaker; otherwise it's the session's client.
 function clientName() {
-	return activeClient?.name || "Client";
+	return questions[idx]?.speakerName || activeClient?.name || "Client";
 }
 
-// Authored reactions are written as "Client: …"; voice them as the session's client.
+// Authored reactions are written as "Client: …" or "Board: …"; voice them as the speaker.
 function voicedReaction(reaction) {
-	return String(reaction).replace(/^Client:\s*/, `${clientName()}: `);
+	return String(reaction).replace(/^(Client|Board):\s*/, `${clientName()}: `);
 }
 
 function clamp(n, min, max) {
@@ -392,6 +397,7 @@ function recordChoiceOutcome(question, choice, outcome) {
 		archetype: choice.archetype || "",
 		callbackLine: choice.callback || "",
 		recallLine: choice.recall || "",
+		speaker: question.speakerName || "",
 		isFollowUp: Boolean(question.isFollowUp),
 		followedUp: false,
 		badness: outcome.badnessGained,
@@ -654,6 +660,10 @@ function syncStartSelections() {
 }
 
 function updateTopMeta() {
+	if (careerHearing && careerState) {
+		el.meta.textContent = `Career • Week ${careerState.week} of ${Career.RULES.weeks} • Ethics Board hearing`;
+		return;
+	}
 	el.meta.textContent = careerSessionClientId && careerState
 		? `Career • Week ${careerState.week} of ${Career.RULES.weeks} • ${activeMode.label}`
 		: `${activePack.label} • ${activeMode.label}`;
@@ -664,7 +674,7 @@ function updateHUD() {
 	el.progressPill.textContent = `Question ${questionNumber}/${questions.length}${questions[idx]?.isFollowUp ? " · Follow-up" : ""}`;
 	el.scorePill.textContent = `Badness: ${score}`;
 	el.violPill.textContent = `Violations: ${violations}`;
-	el.moodPill.textContent = `Mood: ${moodEmoji(mood)} ${mood}`;
+	el.moodPill.textContent = `${careerHearing ? "Board patience" : "Mood"}: ${moodEmoji(mood)} ${mood}`;
 	el.gameHeading.textContent = `Question ${questionNumber} of ${questions.length}`;
 	el.progressBar.setAttribute("aria-valuemax", String(questions.length));
 	el.progressBar.setAttribute("aria-valuenow", String(idx));
@@ -798,6 +808,9 @@ function buildQuestionsForRun(count = activeMode.questionCount) {
 
 // Question 1 opens with the client's greeting; later questions may bring back an earlier answer.
 function leadInForQuestion() {
+	if (careerHearing) {
+		return idx === 0 ? { type: "opening", line: HEARING_OPENING, speaker: getBoardMember("okafor")?.name || "The Chair" } : null;
+	}
 	if (idx === 0) {
 		const returning = careerSessionClientId && careerState ? Career.returningLine(careerState, careerSessionClientId) : "";
 		if (returning) {
@@ -850,10 +863,11 @@ async function renderQuestion() {
 	if (leadIn) {
 		el.leadInBubble.hidden = false;
 		el.leadInBubble.classList.toggle("is-callback", leadIn.type === "callback");
-		await typeInto(el.leadInBubble, `${clientName()}: ${leadIn.line}`, 14);
+		await typeInto(el.leadInBubble, `${leadIn.speaker || clientName()}: ${leadIn.line}`, 14);
 		await pacingDelay(200);
 	}
-	await typeInto(el.clientBubble, `${clientName()} (${q.isFollowUp ? "pushing back" : "confidential"}): ${q.client}`, 14);
+	const speakerRole = q.isBoard ? "Ethics Board" : q.isFollowUp ? "pushing back" : "confidential";
+	await typeInto(el.clientBubble, `${clientName()} (${speakerRole}): ${q.client}`, 14);
 	await pacingDelay(250);
 
 	// Build choices AFTER typing finishes
@@ -885,9 +899,11 @@ async function renderQuestion() {
 	locked = false;
 	interactionState = INTERACTION_STATES.CHOOSING;
 	setRoundStatus(
-		q.isFollowUp
-			? `${clientName()} is pushing back. Repair it, or choose the worst response. Buttons 1–4 also work.`
-			: "Choose the worst response. Buttons 1–4 also work.",
+		q.isBoard
+			? "The board is waiting. Own it, or choose the worst response. Buttons 1–4 also work."
+			: q.isFollowUp
+				? `${clientName()} is pushing back. Repair it, or choose the worst response. Buttons 1–4 also work.`
+				: "Choose the worst response. Buttons 1–4 also work.",
 		"choosing"
 	);
 	pulseElement(el.roundStatus, "is-bumped", 420);
@@ -951,9 +967,11 @@ async function onPick(choiceIndex) {
 	if (outcome.violation) pulseElement(el.violPill, "is-alerted", 620);
 	setRoundStatus(pickLine("selected"), outcome.sessionWillEnd ? "collapse" : outcome.violation ? "violation" : "selected");
 
-	const earlyEndReason = outcome.violation
-		? `${outcome.violation.label} violation and client trust collapsed`
-		: "Client trust collapsed beyond repair";
+	const earlyEndReason = careerHearing
+		? "The board ran out of patience"
+		: outcome.violation
+			? `${outcome.violation.label} violation and client trust collapsed`
+			: "Client trust collapsed beyond repair";
 
 	el.therapistBubble.style.display = "block";
 	el.reactionBubble.style.display = "block";
@@ -971,7 +989,9 @@ async function onPick(choiceIndex) {
 	if (outcome.sessionWillEnd) {
 		setRoundStatus("Client trust collapsed — preparing results.", "collapse");
 		playBeep("collapse");
-		announce(`${activeClient ? activeClient.name : "The client"} is ending the session. ${earlyEndReason}.`);
+		announce(careerHearing
+			? `The board is ending the hearing. ${earlyEndReason}.`
+			: `${activeClient ? activeClient.name : "The client"} is ending the session. ${earlyEndReason}.`);
 		await pacingDelay(900);
 		endSessionEarly(earlyEndReason);
 		return;
@@ -1403,6 +1423,10 @@ function updateFinalScorePills(summary) {
 }
 
 function showResults(summary) {
+	if (careerHearing) {
+		showHearingResults(summary);
+		return;
+	}
 	const achievementResult = evaluateAchievements(window.localStorage, summary);
 	const career = careerSessionClientId ? recordCareerSession(summary) : null;
 	const finalSummary = { ...summary, newAchievements: achievementResult.newUnlocks, career };
@@ -1456,14 +1480,23 @@ function finishGame() {
 async function startGame(options = {}) {
 	if (contentErrors.length > 0) return;
 	if (interactionState !== INTERACTION_STATES.IDLE && interactionState !== INTERACTION_STATES.RESULTS) return;
-	const careerClientId = careerState?.status === "active" && careerState.waitlist.includes(options.careerClientId)
+	const hearing = options.hearing === true && careerState?.status === "active" && Boolean(careerState.pendingHearing);
+	const careerClientId = !hearing && !careerState?.pendingHearing && careerState?.status === "active" &&
+		careerState.waitlist.includes(options.careerClientId)
 		? options.careerClientId
 		: "";
+	if (!hearing && options.careerClientId && !careerClientId) return;
 	syncStartSelections();
 	careerSessionClientId = careerClientId;
+	careerHearing = hearing;
 	careerReturnPending = false;
 	careerMemories = careerClientId ? Career.clientMemories(careerState, careerClientId) : [];
-	if (careerClientId) {
+	if (hearing) {
+		activeMode = getMode(careerState.modeId);
+		activeClient = null;
+		activePack = getPack("chaos");
+		activeCaseNote = null;
+	} else if (careerClientId) {
 		activeMode = getMode(careerState.modeId);
 		activeClient = getClient(careerClientId);
 		activePack = getPack(activeClient.packIds[0]);
@@ -1481,17 +1514,22 @@ async function startGame(options = {}) {
 	runHistory = [];
 	latestResultSummary = null;
 	streakState = emptyStreakState();
-	if (!careerClientId) activeClient = pickClient(activePack.id, Math.random, lastClientId);
-	lastClientId = activeClient?.id || "";
+	if (!careerClientId && !hearing) activeClient = pickClient(activePack.id, Math.random, lastClientId);
+	if (activeClient) lastClientId = activeClient.id;
 	callbackLog = [];
 	followUpCount = 0;
-	questions = buildQuestionsForRun(careerClientId ? Career.RULES.sessionLength : activeMode.questionCount);
-	recordQuestionRun(window.localStorage, questions.map((question) => question.id));
+	if (hearing) {
+		questions = buildHearingQuestions();
+	} else {
+		questions = buildQuestionsForRun(careerClientId ? Career.RULES.sessionLength : activeMode.questionCount);
+		recordQuestionRun(window.localStorage, questions.map((question) => question.id));
+	}
 	endedEarly = false;
 
 	updateTopMeta();
 	showScreen("game");
-	renderCaseFile(el.caseFileGame, activePack, activeClient);
+	if (hearing) renderHearingCard(el.caseFileGame, careerState.pendingHearing);
+	else renderCaseFile(el.caseFileGame, activePack, activeClient);
 	renderCaseNote(el.caseNoteGame, activeCaseNote, true);
 	el.progressFill.style.width = "0%";
 	updateHUD();
@@ -1513,6 +1551,7 @@ async function next() {
 function restart() {
 	interactionState = INTERACTION_STATES.IDLE;
 	el.restartBtn.textContent = "Restart";
+	careerHearing = false;
 	if (careerReturnPending) {
 		careerReturnPending = false;
 		el.modePicker.disabled = false;
@@ -1570,6 +1609,7 @@ function formatShareText(summary) {
 		summary.packCaseFileTitle ? `Case File: ${summary.packCaseFileTitle.replace(/^Case File:\s*/i, "")}` : null,
 		summary.client ? `Client: ${summary.client.name}` : null,
 		summary.career ? `Career: Week ${summary.career.week} · Infamy ${summary.career.infamy} · License ${summary.career.license}` : null,
+		summary.hearing ? `Ethics Board hearing: ${summary.hearing.verdictTitle} (License ${summary.hearing.licenseChange >= 0 ? "+" : "−"}${Math.abs(summary.hearing.licenseChange)})` : null,
 		`Status: ${summary.statusLabel}`,
 		summary.reason ? `Reason: ${summary.reason}` : null,
 		`Therapist Style: ${therapistStyle}`,
@@ -1623,6 +1663,114 @@ el.careerBtn.addEventListener("click", openCareer);
 el.careerRetireBtn.addEventListener("click", retireCareer);
 el.careerBackBtn.addEventListener("click", leaveCareerScreen);
 el.careerBody.addEventListener("click", onCareerBodyClick);
+function shuffledCopy(values) {
+	const result = [...values];
+	for (let index = result.length - 1; index > 0; index -= 1) {
+		const swapIndex = Math.floor(Math.random() * (index + 1));
+		[result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+	}
+	return result;
+}
+
+// Board questions become playable questions; the speaker replaces the client.
+function buildHearingQuestions() {
+	return Career.selectHearingQuestions(careerState, BOARD_QUESTIONS, Math.random).map((boardQuestion) => ({
+		id: boardQuestion.id,
+		topic: boardQuestion.charge,
+		client: boardQuestion.prompt,
+		speakerName: getBoardMember(boardQuestion.speaker)?.name || "The Board",
+		isBoard: true,
+		choices: shuffledCopy(JSON.parse(JSON.stringify(boardQuestion.choices)))
+	}));
+}
+
+function renderHearingCard(element, pendingHearing) {
+	if (!element) return;
+	const charge = VIOLATION_TYPES[pendingHearing?.charge]?.label || "Professional conduct";
+	element.hidden = false;
+	element.dataset.accent = "rose";
+	element.innerHTML = `
+		<p class="caseFileEyebrow">Ethics Board hearing</p>
+		<h3>In re: Your Conduct</h3>
+		<p>Focus: ${escapeHTML(charge)} • Panel: Chair Okafor, Dr. Vance, Member Ito</p>
+	`;
+}
+
+function hearingAnswerLabel(entry) {
+	if (entry.badness === 0) return "Owned it";
+	if (entry.violation) return `Fresh violation · ${entry.violation.label}`;
+	return "Dodged it";
+}
+
+function showHearingResults(summary) {
+	const before = careerState;
+	const { state, update } = Career.applyHearing(before, {
+		completed: summary.completed,
+		weighted: summary.weighted,
+		questionIds: questions.map((question) => question.id),
+		answers: runHistory.map((entry) => ({ badness: entry.badness, violation: entry.violation?.type || "" }))
+	}, CAREER_ROSTER, Math.random);
+	careerState = state;
+	careerHearing = false;
+	careerReturnPending = true;
+	persistCareer();
+	const ending = update.ended ? Career.ENDINGS[update.endReason] : null;
+	const hearing = {
+		...update,
+		week: before.week,
+		charge: VIOLATION_TYPES[before.pendingHearing?.charge]?.label || "Professional conduct",
+		endingTitle: ending?.title || "",
+		endingText: ending?.text || ""
+	};
+	const finalSummary = { ...summary, newAchievements: [], hearing };
+	latestResultSummary = finalSummary;
+	interactionState = INTERACTION_STATES.RESULTS;
+	showScreen("result");
+	el.finalScorePill.textContent = `Hearing Badness: ${summary.totalBadness} / ${summary.questionsTotal * 3}`;
+	el.finalViolPill.textContent = `Fresh Violations: ${update.violations}`;
+	el.bestPill.textContent = `Career: Infamy ${state.infamy} · License ${state.license}`;
+	el.restartBtn.textContent = update.ended ? "See career summary" : "Back to the practice";
+	el.resultBox.innerHTML = hearingResultMarkup(finalSummary);
+	el.progressFill.style.width = "100%";
+	el.resultHeading.focus();
+	playBeep(update.verdict === "cleared" ? "achievement" : "collapse");
+	announce(
+		`Ethics Board verdict: ${update.verdictTitle}. ${update.verdictText} ` +
+		`License ${update.licenseChange >= 0 ? "plus" : "minus"} ${Math.abs(update.licenseChange)}, now ${update.license}. ` +
+		(update.ended ? `${hearing.endingTitle}. ` : "")
+	);
+}
+
+function hearingResultMarkup(summary) {
+	const hearing = summary.hearing;
+	const transcript = runHistory.map((entry) => `
+		<li class="${entry.badness === 0 ? "is-owned" : entry.violation ? "is-violation" : "is-dodged"}">
+			<p><b>${escapeHTML(entry.speaker || "The Board")}:</b> ${escapeHTML(entry.client)}</p>
+			<q>${escapeHTML(entry.response)}</q>
+			<small>${escapeHTML(hearingAnswerLabel(entry))}</small>
+		</li>
+	`).join("");
+	return `
+		<section class="resultSection">
+			<article class="hearingVerdict" data-verdict="${escapeHTML(hearing.verdict)}">
+				<p class="careerEyebrow">Ethics Board hearing · Week ${hearing.week} · Focus: ${escapeHTML(hearing.charge)}</p>
+				<h3>Verdict: ${escapeHTML(hearing.verdictTitle)}</h3>
+				<p>${escapeHTML(hearing.verdictText)}</p>
+				<ul>
+					<li>License ${hearing.licenseChange >= 0 ? "+" : "−"}${Math.abs(hearing.licenseChange)} (now ${hearing.license})</li>
+					<li>Infamy +${hearing.infamyGained}</li>
+					<li>Owned it on ${hearing.accountable} of ${summary.questionsAnswered} question${summary.questionsAnswered === 1 ? "" : "s"}</li>
+				</ul>
+				${hearing.ended ? `<p class="hearingEnding"><b>${escapeHTML(hearing.endingTitle)}.</b> ${escapeHTML(hearing.endingText)}</p>` : ""}
+			</article>
+		</section>
+		<section class="resultSection">
+			<h4>Hearing transcript</h4>
+			<ol class="hearingTranscript">${transcript}</ol>
+		</section>
+	`;
+}
+
 function loadCareerState() {
 	careerState = Career.load(window.localStorage).current;
 	return careerState;
@@ -1642,7 +1790,9 @@ function recordCareerSession(summary) {
 		totalViolations: summary.totalViolations,
 		weighted: summary.weighted,
 		moodRemaining: summary.moodRemaining,
-		memories: pickMemories(runHistory)
+		memories: pickMemories(runHistory),
+		violationCountsByType: summary.violationCountsByType,
+		incidents: runHistory.filter((entry) => entry.violation).map((entry) => `${entry.questionId}/${entry.choiceId}`)
 	}, CAREER_ROSTER, Math.random);
 	careerState = state;
 	careerSessionClientId = "";
@@ -1674,8 +1824,9 @@ function careerResultMarkup(summary) {
 		`License ${licenseChange >= 0 ? "+" : "−"}${Math.abs(licenseChange)} (now ${career.license})`,
 		career.clientLeft
 			? `${career.clientName} has left your practice for good.`
-			: `${career.clientName} will start next visit at mood ${career.trust}.`
-	];
+			: `${career.clientName} will start next visit at mood ${career.trust}.`,
+		career.hearingCalled ? "Your license slipped past a line. The Ethics Board has called a hearing for next week." : ""
+	].filter(Boolean);
 	return `
 		<section class="resultSection">
 			<article class="careerUpdate${career.ended ? " is-ended" : ""}">
@@ -1709,7 +1860,8 @@ function renderCareerPanel() {
 	if (careerState?.status === "active") {
 		el.careerBtn.textContent = "Continue career";
 		el.careerPanelStatus.textContent =
-			`Week ${careerState.week} of ${Career.RULES.weeks} · License ${careerState.license} · Infamy ${careerState.infamy} · ${getMode(careerState.modeId).label}`;
+			`Week ${careerState.week} of ${Career.RULES.weeks} · License ${careerState.license} · Infamy ${careerState.infamy} · ${getMode(careerState.modeId).label}` +
+			(careerState.pendingHearing ? " · Ethics Board hearing pending" : "");
 		return;
 	}
 	el.careerBtn.textContent = careerState ? "Start a new career" : "Start a career";
@@ -1745,6 +1897,19 @@ function renderCareerScreen() {
 	careerRetireArmed = false;
 	el.careerRetireBtn.textContent = "Retire early";
 	el.careerRetireBtn.hidden = careerState.status !== "active";
+	if (careerState.status === "active" && careerState.pendingHearing) {
+		const charge = VIOLATION_TYPES[careerState.pendingHearing.charge]?.label || "Professional conduct";
+		el.careerBody.innerHTML = `
+			<article class="hearingSummons">
+				<p class="careerEyebrow">Summons · Week ${careerState.week}</p>
+				<h4>The Ethics Board has called a hearing</h4>
+				<p>Your license dropped below ${careerState.pendingHearing.threshold}. Before you see another client, the board has ${Career.RULES.hearingLength} questions about your conduct. Focus: <b>${escapeHTML(charge)}</b>.</p>
+				<p class="careerHint">Owning it recovers license. Fresh violations in front of the board cost a lot, but still earn infamy.</p>
+				<button type="button" class="careerBtn" data-career-action="hearing">Attend the hearing</button>
+			</article>
+		`;
+		return;
+	}
 	if (careerState.status === "active") {
 		el.careerBody.innerHTML = `
 			<h4>Waitlist</h4>
@@ -1775,6 +1940,7 @@ function renderCareerScreen() {
 			<div class="resultMetrics">
 				<div><span>Infamy</span><b>${summary.infamy}</b></div>
 				<div><span>Weeks</span><b>${summary.weeks}</b></div>
+				<div><span>Hearings</span><b>${summary.hearings}</b></div>
 				<div><span>Walkouts</span><b>${summary.walkouts}</b></div>
 				<div><span>Clients lost</span><b>${summary.clientsLost} / ${summary.clientsSeen}</b></div>
 			</div>
@@ -1832,6 +1998,10 @@ function onCareerBodyClick(event) {
 	if (!target) return;
 	if (target.dataset.careerAction === "new") {
 		startNewCareer();
+		return;
+	}
+	if (target.dataset.careerAction === "hearing") {
+		startGame({ hearing: true });
 		return;
 	}
 	if (target.dataset.clientId) startGame({ careerClientId: target.dataset.clientId });

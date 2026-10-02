@@ -22,8 +22,33 @@
 		minimumTrust: 30,
 		maximumWalkouts: 2,
 		// Memories kept per client across visits, newest first.
-		memoryLimit: 4
+		memoryLimit: 4,
+		// The board calls a hearing the first time the license drops below each threshold.
+		hearingThresholds: Object.freeze([70, 40]),
+		hearingLength: 3,
+		accountableReward: 6,
+		hearingViolationPenalty: 10,
+		hearingBadAnswerPenalty: 4,
+		clearedThreshold: 12,
+		incidentLimit: 40
 	});
+
+	const HEARING_VERDICTS = Object.freeze({
+		cleared: Object.freeze({
+			title: "Cleared with a Note",
+			text: "The board accepts your accountability, suspiciously. Your license recovers a little. Everyone is uneasy."
+		}),
+		warning: Object.freeze({
+			title: "Formal Warning",
+			text: "The board files a formal warning and a sigh so long it gets its own paperwork."
+		}),
+		sanctioned: Object.freeze({
+			title: "Sanctioned",
+			text: "You committed fresh violations in front of the Ethics Board. Bold. Costly. Recorded in triplicate."
+		})
+	});
+
+	const VIOLATION_TYPE_IDS = Object.freeze(["confidentiality", "boundaries", "judgment", "coercion", "harmfulAdvice"]);
 
 	const ENDINGS = Object.freeze({
 		revoked: Object.freeze({
@@ -122,7 +147,13 @@
 			sessions: [],
 			waitlist: [],
 			endReason: "",
-			startedAt: now()
+			startedAt: now(),
+			violationCounts: {},
+			incidents: [],
+			hearings: [],
+			pendingHearing: null,
+			hearingThresholdsCrossed: [],
+			usedBoardQuestionIds: []
 		};
 		state.waitlist = buildWaitlist(state, rosterIds, random);
 		return state;
@@ -192,10 +223,29 @@
 			}]
 		};
 
+		const violationCounts = { ...(state.violationCounts || {}) };
+		Object.entries(session.violationCountsByType || {}).forEach(([type, count]) => {
+			if (VIOLATION_TYPE_IDS.includes(type) && Number.isInteger(count)) violationCounts[type] = (violationCounts[type] || 0) + count;
+		});
+		next.violationCounts = violationCounts;
+		const incidents = (Array.isArray(session.incidents) ? session.incidents : []).filter((key) => typeof key === "string");
+		next.incidents = [...new Set([...incidents, ...(state.incidents || [])])].slice(0, RULES.incidentLimit);
+
+		// Crossing a license threshold for the first time calls a hearing for next week.
+		const crossed = RULES.hearingThresholds.filter((threshold) =>
+			state.license > threshold && license <= threshold && !(state.hearingThresholdsCrossed || []).includes(threshold)
+		);
+		next.hearingThresholdsCrossed = [...(state.hearingThresholdsCrossed || []), ...crossed];
+
 		let endReason = "";
 		if (license <= 0) endReason = "revoked";
 		else if (availableClientIds(next, rosterIds).length === 0) endReason = "emptyPractice";
 		else if (next.week > RULES.weeks) endReason = "retired";
+
+		const hearingCalled = !endReason && crossed.length > 0;
+		if (hearingCalled) {
+			next.pendingHearing = { charge: topCharge(violationCounts, random), threshold: Math.min(...crossed), calledWeek: state.week };
+		}
 
 		if (endReason) next = endCareer(next, endReason);
 		else next.waitlist = buildWaitlist(next, rosterIds, random);
@@ -210,6 +260,106 @@
 				trust,
 				clientLeft: left,
 				walkouts,
+				hearingCalled,
+				ended: Boolean(endReason),
+				endReason
+			}
+		};
+	}
+
+	// The violation type the player has committed most, which the board will focus on.
+	function topCharge(violationCounts = {}, random = Math.random) {
+		const ranked = VIOLATION_TYPE_IDS
+			.map((type) => ({ type, count: violationCounts[type] || 0 }))
+			.filter((item) => item.count > 0)
+			.sort((a, b) => b.count - a.count);
+		if (ranked.length === 0) return VIOLATION_TYPE_IDS[Math.floor(random() * VIOLATION_TYPE_IDS.length)] || "judgment";
+		const tied = ranked.filter((item) => item.count === ranked[0].count);
+		return tied[Math.floor(random() * tied.length)]?.type || ranked[0].type;
+	}
+
+	// Picks the hearing's questions: incidents the player actually committed first, then the
+	// charge (general questions before other players' incidents), never repeating within a career.
+	function selectHearingQuestions(state, boardQuestions = [], random = Math.random) {
+		const used = new Set(state.usedBoardQuestionIds || []);
+		const fresh = boardQuestions.filter((question) => !used.has(question.id));
+		const pool = fresh.length >= RULES.hearingLength ? fresh : boardQuestions;
+		const incidents = new Set(state.incidents || []);
+		const charge = state.pendingHearing?.charge;
+		return pool
+			.map((question) => {
+				const related = question.relatedChoices || [];
+				const committed = related.some((key) => incidents.has(key));
+				return {
+					question,
+					score:
+						(committed ? 100 : 0) +
+						(question.charge === charge ? 50 : 0) +
+						// A general question beats one about an incident this player never committed.
+						(related.length > 0 && !committed ? -20 : 0) +
+						random() * 10
+				};
+			})
+			.sort((a, b) => b.score - a.score)
+			.slice(0, RULES.hearingLength)
+			.map(({ question }) => question);
+	}
+
+	function hearingVerdictId(answers, licenseChange) {
+		if (answers.some((answer) => answer.violation)) return "sanctioned";
+		if (licenseChange >= RULES.clearedThreshold) return "cleared";
+		return "warning";
+	}
+
+	// Applies a finished hearing. `hearing.answers` lists { badness, violation } per answered question.
+	function applyHearing(state, hearing, rosterIds, random = Math.random) {
+		const answers = Array.isArray(hearing.answers) ? hearing.answers : [];
+		const accountable = answers.filter((answer) => answer.badness === 0).length;
+		const violations = answers.filter((answer) => answer.violation).length;
+		const otherBad = answers.length - accountable - violations;
+		const walkedOut = hearing.completed === false;
+		const licenseChange =
+			accountable * RULES.accountableReward -
+			violations * RULES.hearingViolationPenalty -
+			otherBad * RULES.hearingBadAnswerPenalty -
+			(walkedOut ? RULES.walkoutPenalty : 0);
+		const license = clamp(state.license + licenseChange, 0, RULES.licenseStart);
+		const infamyGained = Number.isFinite(hearing.weighted) ? hearing.weighted : 0;
+		const verdict = hearingVerdictId(answers, licenseChange);
+
+		let next = {
+			...state,
+			week: state.week + 1,
+			infamy: state.infamy + infamyGained,
+			license,
+			pendingHearing: null,
+			usedBoardQuestionIds: [...new Set([...(state.usedBoardQuestionIds || []), ...(hearing.questionIds || [])])],
+			hearings: [...(state.hearings || []), {
+				week: state.week,
+				charge: state.pendingHearing?.charge || "",
+				verdict,
+				licenseChange,
+				infamyGained
+			}]
+		};
+
+		let endReason = "";
+		if (license <= 0) endReason = "revoked";
+		else if (next.week > RULES.weeks) endReason = "retired";
+		if (endReason) next = endCareer(next, endReason);
+		else next.waitlist = buildWaitlist(next, rosterIds, random);
+
+		return {
+			state: next,
+			update: {
+				verdict,
+				verdictTitle: HEARING_VERDICTS[verdict].title,
+				verdictText: HEARING_VERDICTS[verdict].text,
+				accountable,
+				violations,
+				licenseChange,
+				license,
+				infamyGained,
 				ended: Boolean(endReason),
 				endReason
 			}
@@ -220,7 +370,8 @@
 		const sessions = state.sessions || [];
 		return {
 			infamy: state.infamy,
-			weeks: sessions.length,
+			weeks: sessions.length + (state.hearings || []).length,
+			hearings: (state.hearings || []).length,
 			sessionsCompleted: sessions.filter((item) => item.completed).length,
 			walkouts: sessions.filter((item) => !item.completed).length,
 			clientsSeen: Object.keys(state.clients || {}).length,
@@ -251,6 +402,13 @@
 		}]));
 	}
 
+	function normalizeViolationCounts(value) {
+		if (!value || typeof value !== "object") return {};
+		return Object.fromEntries(
+			VIOLATION_TYPE_IDS.filter((type) => Number.isInteger(value[type]) && value[type] > 0).map((type) => [type, value[type]])
+		);
+	}
+
 	function normalizeCareer(value) {
 		if (!value || typeof value !== "object") return null;
 		if (value.status !== "active" && value.status !== "ended") return null;
@@ -265,7 +423,21 @@
 			sessions: Array.isArray(value.sessions) ? value.sessions.filter((item) => item && typeof item === "object") : [],
 			waitlist: Array.isArray(value.waitlist) ? value.waitlist.filter((id) => typeof id === "string") : [],
 			endReason: ENDINGS[value.endReason] ? value.endReason : "",
-			startedAt: typeof value.startedAt === "string" ? value.startedAt : ""
+			startedAt: typeof value.startedAt === "string" ? value.startedAt : "",
+			violationCounts: normalizeViolationCounts(value.violationCounts),
+			incidents: Array.isArray(value.incidents) ? value.incidents.filter((key) => typeof key === "string").slice(0, RULES.incidentLimit) : [],
+			hearings: Array.isArray(value.hearings) ? value.hearings.filter((item) => item && HEARING_VERDICTS[item.verdict]) : [],
+			pendingHearing: value.pendingHearing && VIOLATION_TYPE_IDS.includes(value.pendingHearing.charge)
+				? {
+					charge: value.pendingHearing.charge,
+					threshold: Number.isFinite(value.pendingHearing.threshold) ? value.pendingHearing.threshold : 0,
+					calledWeek: Number.isInteger(value.pendingHearing.calledWeek) ? value.pendingHearing.calledWeek : 0
+				}
+				: null,
+			hearingThresholdsCrossed: Array.isArray(value.hearingThresholdsCrossed)
+				? value.hearingThresholdsCrossed.filter((threshold) => RULES.hearingThresholds.includes(threshold))
+				: [],
+			usedBoardQuestionIds: Array.isArray(value.usedBoardQuestionIds) ? value.usedBoardQuestionIds.filter((id) => typeof id === "string") : []
 		};
 	}
 
@@ -311,6 +483,7 @@
 		RULES,
 		ENDINGS,
 		RETURNING_LINES,
+		HEARING_VERDICTS,
 		emptyStore,
 		newCareer,
 		buildWaitlist,
@@ -319,6 +492,9 @@
 		returningGreeting,
 		clientMemories,
 		applySession,
+		topCharge,
+		selectHearingQuestions,
+		applyHearing,
 		endCareer,
 		careerSummary,
 		load,

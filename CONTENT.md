@@ -34,6 +34,7 @@ Ethics Minefield prefers judgment, coercion, and harmful-advice content. New con
 - Voice reactions as `Board: …`. The helpful answer is plain accountability; the worst answer usually commits a fresh violation in front of the board.
 - If the prompt refers to a specific incident, list the answers it refers to in `relatedChoices` as `questionId/choiceId`, so a hearing can match what the player actually did.
 - Keep at least four questions per charge so hearings don't repeat.
+- Hearings prefer questions about incidents the player actually committed, then general questions for the charge. Most current questions cite a specific incident, so adding general questions (no `relatedChoices`) for each charge makes hearings feel less like they're about someone else's file.
 
 ## Diversity targets
 
