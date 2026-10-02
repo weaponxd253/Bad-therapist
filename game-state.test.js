@@ -195,6 +195,7 @@ async function main() {
 		ethicsNote: "Dismissal damages safety.",
 		archetype: "dismissive",
 		callbackLine: "",
+		recallLine: "",
 		isFollowUp: false,
 		followedUp: false,
 		badness: 3,
@@ -583,7 +584,12 @@ async function main() {
 			const state = vm.runInContext("interactionState", context);
 			if (state === "results") return;
 			if (state === "choosing") {
-				const index = vm.runInContext(`questions[idx].choices.findIndex(${pickExpression})`, context);
+				// Take the first matching choice for each predicate in order, so a fallback always exists.
+				const index = vm.runInContext(
+					`[${pickExpression}].map((test) => questions[idx].choices.findIndex(test)).find((found) => found >= 0)`,
+					context
+				);
+				if (!Number.isInteger(index)) throw new Error("no choice matched the pick strategy");
 				await vm.runInContext(`onPick(${index})`, context);
 			} else if (state === "round-complete") {
 				await vm.runInContext("next()", context);
@@ -646,18 +652,32 @@ async function main() {
 	const returningId = weekTwo.waitlist.find((id) => weekTwo.clients[id]?.visits > 0);
 	assert.ok(returningId, "the week 2 waitlist includes a returning client");
 	assert.match(elements.get("careerBody").innerHTML, /Visit 2 · Starts at mood/);
+	const firstMemories = weekTwo.clients[firstClient.id].memories;
+	assert.equal(firstMemories.length, 2, "each session leaves two memories behind");
+	assert.ok(firstMemories.every((memory) => memory.week === 1 && memory.archetype === "helpful"));
+	assert.ok(firstMemories.every((memory) => !/\b(earlier|today)\b/i.test(memory.recallLine)),
+		"same-session wording is never carried into a later visit");
+	assert.match(elements.get("careerBody").innerHTML, /Remembers you said: “/);
 
 	// Lower the returning client's trust, then walk them out.
 	vm.runInContext(`careerState.clients["${returningId}"].trust = 45;`, context);
 	await vm.runInContext(`startGame({ careerClientId: "${returningId}" })`, context);
 	assert.equal(vm.runInContext("mood", context), 45, "returning clients start at their carried trust");
-	assert.equal(
-		elements.get("leadInBubble").textContent,
-		`${clients.getClient(returningId).name}: ${career.RETURNING_LINES.guarded}`,
+	const returningName = clients.getClient(returningId).name;
+	assert.ok(
+		elements.get("leadInBubble").textContent.startsWith(`${returningName}: ${career.RETURNING_LINES.guarded} `),
 		"returning clients greet you based on how last time went"
 	);
-	await playUntilResults("(choice) => choice.badness === 3 && !choice.followUp");
+	const openingRecall = JSON.parse(JSON.stringify(vm.runInContext("callbackLog[0]", context)));
+	assert.ok(Number.isInteger(openingRecall.fromWeek), "the greeting brings up something from a previous visit");
+	assert.ok(elements.get("leadInBubble").textContent.endsWith(openingRecall.line));
+	assert.equal(elements.get("leadInBubble").classList.contains("is-callback"), true);
+	await playUntilResults(
+		"(choice) => choice.badness === 3 && !choice.followUp, (choice) => choice.badness >= 2 && !choice.followUp, (choice) => choice.badness >= 1"
+	);
 	const walkoutResult = JSON.parse(JSON.stringify(vm.runInContext("latestResultSummary", context)));
+	assert.ok(walkoutResult.callbacks.some((item) => item.fromWeek), "results list what the client remembered");
+	assert.match(elements.get("resultBox").innerHTML, /Remembering week \d+/);
 	assert.equal(walkoutResult.completed, false);
 	assert.equal(walkoutResult.career.walkouts, 1);
 	assert.ok(walkoutResult.career.licenseLost >= career.RULES.walkoutPenalty);

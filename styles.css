@@ -1607,6 +1607,13 @@ button#start {
 	color: #4b49eb;
 }
 
+.careerClientMemory {
+	font-size: 0.82rem;
+	font-style: italic;
+	line-height: 1.3;
+	opacity: 0.8;
+}
+
 .careerEnding,
 .careerUpdate {
 	padding: 14px 16px;

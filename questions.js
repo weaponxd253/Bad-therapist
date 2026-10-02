@@ -757,7 +757,8 @@
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
         "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
-        "callback": "I pictured the worst possible failure like you said. Now I picture it in high definition."
+        "callback": "I keep picturing the failure you told me to picture. Thanks for that.",
+        "recall": "I pictured the worst possible failure like you said. Now I picture it in high definition."
       },
       {
         "id": "everyone-forgets",
@@ -1107,7 +1108,8 @@
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
         "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
-        "callback": "I scrolled faster like you said. It didn’t make me productive. It made me tired faster."
+        "callback": "I’m not going to scroll faster. That is not a strategy. I checked.",
+        "recall": "I scrolled faster like you said. It didn’t make me productive. It made me tired faster."
       },
       {
         "id": "phone-confiscation",
@@ -1158,7 +1160,7 @@
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
         "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
-        "callback": "I looked up how much likes cost after you said that. I closed the tab. I’m proud of me.",
+        "callback": "I’m not buying likes. I’m saying it out loud so my thumbs hear it.",
         "followUp": {
           "id": "buy-likes-pushback",
           "client": "Buying likes would make it worse. I’d know they were fake, and then I’d check even more.",
@@ -1206,7 +1208,8 @@
               "ethicsNote": "Telling clients to just stop a feeling offers no real help."
             }
           ]
-        }
+        },
+        "recall": "I looked up how much likes cost after you said that. I closed the tab. I’m proud of me."
       },
       {
         "id": "embarrassing-post",
@@ -1410,7 +1413,8 @@
         "archetype": "coerciveFixer",
         "clientRead": "Their agency shrinks while the therapist grabs the steering wheel.",
         "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust.",
-        "callback": "I’ve been counting punishment days since you said that. I’m at fourteen."
+        "callback": "I’m not doing punishment days. I need that settled before we go on.",
+        "recall": "I’ve been counting punishment days since you said that. I’m at fourteen."
       },
       {
         "id": "never-miss",
@@ -1460,7 +1464,8 @@
         "archetype": "coerciveFixer",
         "clientRead": "Their agency shrinks while the therapist grabs the steering wheel.",
         "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust.",
-        "callback": "Nobody agreed to be my best friend by Friday. I didn’t ask. I want credit for not asking."
+        "callback": "I’m not asking anyone to be my best friend by Friday. I’d like that noted.",
+        "recall": "Nobody agreed to be my best friend by Friday. I didn’t ask. I want credit for not asking."
       },
       {
         "id": "pretend-busy",
@@ -1510,7 +1515,7 @@
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
         "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
-        "callback": "I started planning that revenge event in my notes app. I’m a little scared of myself.",
+        "callback": "I keep picturing that revenge event. I’m not doing it. But I’m picturing it.",
         "followUp": {
           "id": "revenge-event-pushback",
           "client": "I don’t actually want to exclude anyone. I just want to know if I still matter to them.",
@@ -1558,7 +1563,8 @@
               "ethicsNote": "Emotional needs aren’t captured by engagement data."
             }
           ]
-        }
+        },
+        "recall": "I started planning that revenge event in my notes app. I’m a little scared of myself."
       },
       {
         "id": "unlikable-proof",
@@ -2513,7 +2519,8 @@
         "clientRead": "Their wish for rest gets distorted into abandonment.",
         "ethicsNote": "Therapy should help clients choose proportionate boundaries.",
         "violation": "harmfulAdvice",
-        "callback": "I drafted the ‘I retire from being emotionally useful’ text. It’s still in drafts. Watching me."
+        "callback": "I’m not sending a ‘retiring from being emotionally useful’ text. I just want that clear.",
+        "recall": "I drafted the ‘I retire from being emotionally useful’ text. It’s still in drafts. Watching me."
       },
       {
         "id": "take-over-calendar",
@@ -2729,7 +2736,8 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel the therapist wants control of their private life.",
         "ethicsNote": "Therapists support clients in their own tasks; they do not take over their accounts or contacts.",
-        "callback": "I listened to one voicemail. Myself. Without giving anyone my passcode. Just so we’re clear."
+        "callback": "Before I go on: my phone stays in my pocket. The passcode stays in my head.",
+        "recall": "I listened to one voicemail. Myself. Without giving anyone my passcode. Just so we’re clear."
       }
     ],
     "id": "voicemail-dread",
@@ -2779,7 +2787,8 @@
         "archetype": "coerciveFixer",
         "clientRead": "They feel watched and controlled during their own free time.",
         "ethicsNote": "Coercive rules and surveillance undermine client autonomy.",
-        "callback": "It’s been a Sunday since you told me to text you a dread score. I didn’t. My score was a five, though."
+        "callback": "I’m not texting you a dread score. Ever. But for the record, right now it’s a six.",
+        "recall": "It’s been a Sunday since you told me to text you a dread score. I didn’t. My score was a five, though."
       }
     ],
     "id": "sunday-dread",
@@ -2829,7 +2838,7 @@
         "archetype": "confidentialityBreach",
         "clientRead": "They feel exposed in front of the people they were worried about.",
         "ethicsNote": "A client’s therapy is private; colleagues should never learn about it from the therapist.",
-        "callback": "I sent three emails this week without CC’ing you. I want a sticker. A quiet sticker.",
+        "callback": "Can we agree you’ll never be CC’d on anything? I need that in writing. Not in an email.",
         "followUp": {
           "id": "email-cc-pushback",
           "client": "Please don’t ever reply-all to my coworkers. I’d have to move to a different country.",
@@ -2877,7 +2886,8 @@
               "ethicsNote": "Privacy concerns deserve direct reassurance, not a pivot to publicity."
             }
           ]
-        }
+        },
+        "recall": "I sent three emails this week without CC’ing you. I want a sticker. A quiet sticker."
       }
     ],
     "id": "email-tone",
@@ -2927,7 +2937,7 @@
         "archetype": "confidentialityBreach",
         "clientRead": "They feel their family is about to hear about their sessions.",
         "ethicsNote": "Clients decide whether and how to tell family about therapy.",
-        "callback": "I didn’t send any email that starts with ‘per my therapist.’ I still might not host, though.",
+        "callback": "Please don’t write any emails that start with ‘per my therapist.’ I’m still recovering from the idea.",
         "followUp": {
           "id": "holiday-email-pushback",
           "client": "I really don’t want my family knowing what I talk about here. Can we just figure out what I actually want first?",
@@ -2975,7 +2985,8 @@
               "ethicsNote": "Avoiding the emotional core of a concern leaves the client without help."
             }
           ]
-        }
+        },
+        "recall": "I didn’t send any email that starts with ‘per my therapist.’ I still might not host, though."
       }
     ],
     "id": "holiday-hosting",
@@ -3025,7 +3036,8 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel the therapist wants to enter their family life.",
         "ethicsNote": "Therapists do not insert themselves into clients’ family conversations.",
-        "callback": "My parent called about the printer again. I did not conference you in. I did say ‘ten minutes,’ though."
+        "callback": "If my parent calls during this, I am not conferencing you in. Just so we’re clear.",
+        "recall": "My parent called about the printer again. I did not conference you in. I did say ‘ten minutes,’ though."
       }
     ],
     "id": "parent-tech-support",
@@ -3075,7 +3087,8 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel alarmed at the idea of their therapist at their table.",
         "ethicsNote": "Therapists avoid dual relationships, like attending clients’ family events.",
-        "callback": "I had dinner with my family this week, and you weren’t there. That was the best part."
+        "callback": "You are not coming to family dinner. I needed to say that once more, out loud.",
+        "recall": "I had dinner with my family this week, and you weren’t there. That was the best part."
       }
     ],
     "id": "home-regression",
@@ -3125,7 +3138,7 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel the therapist wants to take over their relationships.",
         "ethicsNote": "Therapists help clients communicate; they do not communicate on clients’ behalf.",
-        "callback": "I asked for something directly this week. Out loud. Nobody needed a translator. I almost passed out.",
+        "callback": "I’m going to say this one directly, without a translator. Here goes.",
         "followUp": {
           "id": "hinting-translator-pushback",
           "client": "You can’t text people for me. Then I’d never learn to say it myself, and everyone would think I hired a hint interpreter.",
@@ -3173,7 +3186,8 @@
               "ethicsNote": "Humor that derails a client’s insight costs them the moment."
             }
           ]
-        }
+        },
+        "recall": "I asked for something directly this week. Out loud. Nobody needed a translator. I almost passed out."
       }
     ],
     "id": "hinting-needs",
@@ -3223,7 +3237,8 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel pushed toward something creepy.",
         "ethicsNote": "Encouraging covert research on others is harmful advice that damages trust.",
-        "callback": "I met the friends. I did not bring a dossier. One of them liked my shoes. I’m counting it."
+        "callback": "I’m not researching anyone’s friends. I’m just going to be nervous like a normal person.",
+        "recall": "I met the friends. I did not bring a dossier. One of them liked my shoes. I’m counting it."
       }
     ],
     "id": "meeting-their-friends",
@@ -3273,7 +3288,8 @@
         "archetype": "confidentialityBreach",
         "clientRead": "They feel their private insecurity would be broadcast.",
         "ethicsNote": "A client’s private struggles must never be shared with the people in their life.",
-        "callback": "I caught myself scorekeeping this week and just… stopped. No referee. No announcements."
+        "callback": "No referee for this one, please. I just want to talk.",
+        "recall": "I caught myself scorekeeping this week and just… stopped. No referee. No announcements."
       }
     ],
     "id": "scorekeeping",
@@ -3323,7 +3339,8 @@
         "archetype": "confidentialityBreach",
         "clientRead": "They feel the worst possible version of the situation is being proposed.",
         "ethicsNote": "Revealing someone is a client, to anyone, requires their explicit consent.",
-        "callback": "The group chat replied, by the way. Someone sent a thumbs-up. Nobody needed their therapist to join."
+        "callback": "You’re still not joining the group chat. I checked my phone twice to make sure.",
+        "recall": "The group chat replied, by the way. Someone sent a thumbs-up. Nobody needed their therapist to join."
       }
     ],
     "id": "group-chat-silence",
@@ -3373,7 +3390,7 @@
         "archetype": "chaosAdvice",
         "clientRead": "They feel alarmed by where this is going.",
         "ethicsNote": "Encouraging people to track down strangers can lead to real harm.",
-        "callback": "I stopped writing replies to that stranger. I did not find out where they work. That was never an option.",
+        "callback": "I’m not finding anyone’s workplace. I want that on the record before we keep going.",
         "followUp": {
           "id": "online-argument-pushback",
           "client": "Wait, no. I don’t want to find anyone. I just want my brain to stop arguing in the shower.",
@@ -3421,7 +3438,8 @@
               "ethicsNote": "Redirecting distress into content-making avoids the actual problem."
             }
           ]
-        }
+        },
+        "recall": "I stopped writing replies to that stranger. I did not find out where they work. That was never an option."
       }
     ],
     "id": "online-argument",
@@ -3471,7 +3489,8 @@
         "archetype": "coerciveFixer",
         "clientRead": "They feel controlled and humiliated.",
         "ethicsNote": "Coercive monitoring undermines autonomy and trust.",
-        "callback": "I kept the apps off for the first hour three days this week. No tracker. No apology letters."
+        "callback": "No trackers. No apology letters. I’m saying it now so it doesn’t come up again.",
+        "recall": "I kept the apps off for the first hour three days this week. No tracker. No apology letters."
       }
     ],
     "id": "app-detox-relapse",
@@ -3521,7 +3540,8 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel the therapist is overstepping into their job.",
         "ethicsNote": "Therapists support clients at work from the outside; they do not attend workplace meetings.",
-        "callback": "I wrote down the good parts of my review. There were nine. You did not come to my workplace. Both good things."
+        "callback": "You’re not coming to my workplace, right? Okay. Moving on.",
+        "recall": "I wrote down the good parts of my review. There were nine. You did not come to my workplace. Both good things."
       }
     ],
     "id": "review-one-sentence",
@@ -3571,7 +3591,8 @@
         "archetype": "confidentialityBreach",
         "clientRead": "They feel their privacy at work is under threat.",
         "ethicsNote": "Clients decide whether their employer learns anything about their therapy.",
-        "callback": "I said ‘not this month’ to one project. My boss was fine. You did not email anyone. Thank you."
+        "callback": "Please don’t email my boss about this one either. My boss can’t know I have feelings.",
+        "recall": "I said ‘not this month’ to one project. My boss was fine. You did not email anyone. Thank you."
       }
     ],
     "id": "yes-to-everything-at-work",
@@ -3621,7 +3642,7 @@
         "archetype": "influencerBrain",
         "clientRead": "They feel encouraged toward a reckless move.",
         "ethicsNote": "Advice that puts the client’s livelihood at risk is harmful.",
-        "callback": "I sent a follow-up email about my idea. My manager replied ‘great point.’ No case study required.",
+        "callback": "I’m not posting a case study about anyone. I just want to be clear about that.",
         "followUp": {
           "id": "idea-stolen-pushback",
           "client": "I can’t post that. I still work with this person. I just want to stop feeling like a doormat.",
@@ -3669,7 +3690,8 @@
               "ethicsNote": "Generic programs are less helpful than tailored, achievable steps."
             }
           ]
-        }
+        },
+        "recall": "I sent a follow-up email about my idea. My manager replied ‘great point.’ No case study required."
       }
     ],
     "id": "idea-stolen",
@@ -3719,7 +3741,8 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel the therapist wants something from them.",
         "ethicsNote": "Therapists must not benefit materially from clients outside agreed fees.",
-        "callback": "I picked up one of my old hobbies again this week. I’m keeping the kayak, though. It’s mine."
+        "callback": "You can’t have my kayak. I want to start with that.",
+        "recall": "I picked up one of my old hobbies again this week. I’m keeping the kayak, though. It’s mine."
       }
     ],
     "id": "hobby-hopping",
@@ -3769,7 +3792,8 @@
         "archetype": "coerciveFixer",
         "clientRead": "They feel controlled and alarmed.",
         "ethicsNote": "Coercive monitoring has no place in therapy.",
-        "callback": "I put the coffee on a timer. I snoozed only four times. Nobody called my landlord."
+        "callback": "Nobody is calling my landlord. Okay. Now I can think.",
+        "recall": "I put the coffee on a timer. I snoozed only four times. Nobody called my landlord."
       }
     ],
     "id": "snooze-routine",
@@ -3819,7 +3843,7 @@
         "archetype": "coerciveFixer",
         "clientRead": "They feel pushed toward something reckless.",
         "ethicsNote": "Advice that endangers financial stability is harmful.",
-        "callback": "I didn’t quit my job, despite your boat-burning advice. I did close twelve tabs and message one person.",
+        "callback": "I am not quitting my job today, despite the boats. Just so you know where I stand.",
         "followUp": {
           "id": "career-quit-pushback",
           "client": "I can’t quit today. I have rent. Can we find something between ‘46 tabs’ and ‘burn the boats’?",
@@ -3867,7 +3891,8 @@
               "ethicsNote": "Help should move clients toward action."
             }
           ]
-        }
+        },
+        "recall": "I didn’t quit my job, despite your boat-burning advice. I did close twelve tabs and message one person."
       }
     ],
     "id": "career-change-research",
@@ -3917,7 +3942,7 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel confused about what the therapy relationship is.",
         "ethicsNote": "Therapists do not become friends with clients, however lonely they are.",
-        "callback": "I went to the climbing class. Someone said hi. Twice. I didn’t need to have dinner with my therapist.",
+        "callback": "Just so we’re clear, we’re not getting dinner. I like you better in that chair.",
         "followUp": {
           "id": "new-city-dinner-pushback",
           "client": "Wait, are you asking me to dinner? I don’t think that’s how this works. I think I need actual friends, not my therapist.",
@@ -3965,7 +3990,8 @@
               "ethicsNote": "Clear communication matters most after a boundary misstep."
             }
           ]
-        }
+        },
+        "recall": "I went to the climbing class. Someone said hi. Twice. I didn’t need to have dinner with my therapist."
       }
     ],
     "id": "new-city-dinners",
@@ -4015,7 +4041,7 @@
         "archetype": "confidentialityBreach",
         "clientRead": "They feel embarrassed and exposed.",
         "ethicsNote": "Clients decide who knows about their therapy and what is shared.",
-        "callback": "I sent my friend a photo of our old café. They replied with three exclamation points. My therapist was not involved.",
+        "callback": "You don’t have my friend’s number, and you’re not getting it. Okay.",
         "followUp": {
           "id": "friend-drift-text-pushback",
           "client": "If you text them, they’ll think I’m in crisis. I just miss them. Can I do this myself?",
@@ -4063,7 +4089,8 @@
               "ethicsNote": "Emotional bonds deserve emotional language."
             }
           ]
-        }
+        },
+        "recall": "I sent my friend a photo of our old café. They replied with three exclamation points. My therapist was not involved."
       }
     ],
     "id": "friend-drift",
@@ -4113,7 +4140,8 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel the therapist is becoming their only social contact.",
         "ethicsNote": "Therapists maintain boundaries to avoid becoming a substitute for real-world relationships.",
-        "callback": "I talked to the bread person at the market this weekend. Five whole sentences. Off the clock calls not required."
+        "callback": "No weekend calls, please. I’ll find someone at the market to talk to.",
+        "recall": "I talked to the bread person at the market this weekend. Five whole sentences. Off the clock calls not required."
       }
     ],
     "id": "quiet-weekends",
@@ -4163,7 +4191,7 @@
         "archetype": "boundaryCross",
         "clientRead": "They feel the therapist is taking over the conflict.",
         "ethicsNote": "Therapists help clients handle conflicts; they do not intervene directly.",
-        "callback": "I told my friend the waiting bothers me. They were on time this week. Nobody was on speakerphone.",
+        "callback": "Nobody is going on speakerphone. I just want to say that before the next thing.",
         "followUp": {
           "id": "late-friend-speaker-pushback",
           "client": "I don’t want you on speaker with my friend. I want to be able to say it myself. I just don’t know how.",
@@ -4211,7 +4239,8 @@
               "ethicsNote": "Concrete skills are more useful than vague mantras."
             }
           ]
-        }
+        },
+        "recall": "I told my friend the waiting bothers me. They were on time this week. Nobody was on speakerphone."
       }
     ],
     "id": "always-late-friend",
@@ -4261,7 +4290,8 @@
         "archetype": "influencerBrain",
         "clientRead": "They feel encouraged to make their home life worse.",
         "ethicsNote": "Public shaming escalates conflict and can cause real harm.",
-        "callback": "I knocked on my neighbor’s door. Short speech. They said sorry. Zero flyers were involved."
+        "callback": "I’m not making flyers about anyone. I still have to use that hallway.",
+        "recall": "I knocked on my neighbor’s door. Short speech. They said sorry. Zero flyers were involved."
       }
     ],
     "id": "noisy-neighbor",
@@ -4311,7 +4341,8 @@
         "archetype": "confidentialityBreach",
         "clientRead": "They feel their private struggles would be exposed.",
         "ethicsNote": "Nothing from therapy is shared with others without explicit consent.",
-        "callback": "I gave the slides back to my group. They did them. Badly, but they did them. You didn’t email anyone."
+        "callback": "Please don’t email my group. They can’t know I talk about them here.",
+        "recall": "I gave the slides back to my group. They did them. Badly, but they did them. You didn’t email anyone."
       }
     ],
     "id": "group-project-carry",
@@ -4361,7 +4392,7 @@
         "archetype": "confidentialityBreach",
         "clientRead": "They feel their vulnerability is about to become a bit.",
         "ethicsNote": "Session content belongs to the client, never to an audience.",
-        "callback": "I skipped a joke at dinner this week and just said how I felt. Nobody left. I did not do an open mic.",
+        "callback": "No open mic. Also, this next part isn’t material, okay?",
         "followUp": {
           "id": "funny-open-mic-pushback",
           "client": "Please don’t sign me up for anything. And please don’t turn what I said into a bit. That’s kind of the whole problem.",
@@ -4409,7 +4440,8 @@
               "ethicsNote": "Reducing clients to personas misses who they are."
             }
           ]
-        }
+        },
+        "recall": "I skipped a joke at dinner this week and just said how I felt. Nobody left. I did not do an open mic."
       }
     ],
     "id": "the-funny-one",
@@ -4459,7 +4491,8 @@
         "archetype": "coerciveFixer",
         "clientRead": "They feel their life is being decided for them.",
         "ethicsNote": "Clients define their own goals; therapists do not impose them.",
-        "callback": "I had the birthday. I did not follow your five-year plan. My hair is the same. I feel fine about it."
+        "callback": "I didn’t sign your five-year plan, by the way. My hair stays.",
+        "recall": "I had the birthday. I did not follow your five-year plan. My hair is the same. I feel fine about it."
       }
     ],
     "id": "milestone-birthday",
@@ -4509,7 +4542,8 @@
         "archetype": "influencerBrain",
         "clientRead": "They feel pushed to perform their change.",
         "ethicsNote": "Growth does not require public performance.",
-        "callback": "I didn’t post an apology video. I told one friend I’d changed my mind. They said ‘same, actually.’"
+        "callback": "I’m not filming an apology video. I just want to talk like a person.",
+        "recall": "I didn’t post an apology video. I told one friend I’d changed my mind. They said ‘same, actually.’"
       }
     ],
     "id": "changed-my-mind",

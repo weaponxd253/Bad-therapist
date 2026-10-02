@@ -141,3 +141,37 @@ assert.equal(
 const blocked = { getItem() { throw new Error("blocked"); }, setItem() { throw new Error("blocked"); } };
 assert.doesNotThrow(() => career.saveCareer(blocked, start));
 assert.deepEqual(career.load(blocked), career.emptyStore());
+
+// Memories: stamped with the visit's week, newest first, capped, and saved.
+const remembered = career.applySession(start, {
+	clientId, completed: true, totalViolations: 0, weighted: 3, moodRemaining: 80,
+	memories: [{ questionId: "q1", archetype: "helpful", topic: "work", response: "Kind thing", badness: 0, moodLost: 0, recallLine: "" }]
+}, roster);
+assert.deepEqual(career.clientMemories(remembered.state, clientId).map((memory) => [memory.week, memory.questionId]), [[1, "q1"]]);
+let stacked = remembered.state;
+for (let visit = 0; visit < 4; visit += 1) {
+	stacked = career.applySession(stacked, {
+		clientId, completed: true, totalViolations: 0, weighted: 1, moodRemaining: 80,
+		memories: [{ questionId: `later-${visit}`, archetype: "dismissive", topic: "work", badness: 2, moodLost: 10 }]
+	}, roster).state;
+}
+const kept = career.clientMemories(stacked, clientId);
+assert.equal(kept.length, RULES.memoryLimit, "memories are capped per client");
+assert.equal(kept[0].questionId, "later-3", "the newest memory comes first");
+assert.equal(kept.some((memory) => memory.questionId === "q1"), false, "the oldest memory is dropped first");
+assert.deepEqual(career.clientMemories(start, "nobody"), []);
+const memoryStore = memoryStorage();
+career.saveCareer(memoryStore, stacked, fixedNow);
+assert.deepEqual(career.clientMemories(career.load(memoryStore).current, clientId), kept, "memories survive saving");
+const junk = memoryStorage({ [career.STORAGE_KEY]: JSON.stringify({ version: 1, current: { ...stacked, clients: { [clientId]: { visits: 1, memories: ["junk", { archetype: 5 }] } } } }) });
+assert.deepEqual(career.clientMemories(career.load(junk).current, clientId), [], "malformed memories are discarded");
+
+// Greetings match what the client brings up.
+const warmState = clean.state;
+assert.equal(career.returningLine(warmState, clientId), career.RETURNING_LINES.warm);
+assert.equal(career.returningGreeting(warmState, clientId, { archetype: "helpful" }), career.RETURNING_LINES.warm);
+assert.equal(career.returningGreeting(warmState, clientId, { archetype: "boundaryCross" }), career.RETURNING_LINES.neutral,
+	"a warm greeting never introduces a memory of a bad answer");
+assert.equal(career.returningGreeting(warmState, clientId, null), career.RETURNING_LINES.warm);
+assert.equal(career.returningGreeting(walkout.state, clientId, { archetype: "helpful" }), career.RETURNING_LINES.guarded,
+	"low trust stays guarded even when recalling something kind");

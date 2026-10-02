@@ -97,7 +97,7 @@
 				if (!allowedArchetypes.has(choice.archetype)) {
 					add(`${choicePath}.archetype`, `Unsupported response archetype: ${choice.archetype}.`);
 				}
-				["clientRead", "ethicsNote", "callback"].forEach((field) => {
+				["clientRead", "ethicsNote", "callback", "recall"].forEach((field) => {
 					if (choice[field] !== undefined && !nonEmpty(choice[field])) {
 						add(`${choicePath}.${field}`, `Expected a non-empty ${field} when provided.`);
 					}

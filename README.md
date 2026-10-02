@@ -11,7 +11,7 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Ten balanced questions per session selected from a 68-question pool, with 23 branching follow-ups
 - Replay-aware selection remembers your last six sessions and favors unseen and least-recent questions
 - Classic, Speed Session, and Ethics Minefield modes
-- Career mode: run a practice for twelve weeks, pick clients from a waitlist, and balance Infamy against your License. Returning clients remember how the last visit went, two walkouts lose a client for good, and the career ends in retirement, a revoked license, an empty practice, or early retirement
+- Career mode: run a practice for twelve weeks, pick clients from a waitlist, and balance Infamy against your License. Returning clients remember what you said on earlier visits and bring it up, two walkouts lose a client for good, and the career ends in retirement, a revoked license, an empty practice, or early retirement
 - Themed session packs with authored case-file previews, in-run context, and closing notes
 - A named client for every session, with a backstory, opening line, and walkout or closing farewell
 - Client callbacks: later in a session, the client brings up something you said earlier

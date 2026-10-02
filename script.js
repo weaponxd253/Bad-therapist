@@ -1,7 +1,7 @@
 const { getMode } = window.BadTherapistModes;
 const { getPack } = window.BadTherapistSessionPacks;
 const { CLIENTS, getClient, getClientsForPack, pickClient } = window.BadTherapistClients;
-const { selectCallback } = window.BadTherapistCallbacks;
+const { selectCallback, selectOpeningRecall, pickMemories } = window.BadTherapistCallbacks;
 const { shouldFollowUp, buildFollowUpQuestion, insertFollowUp } = window.BadTherapistFollowUps;
 const Career = window.BadTherapistCareer;
 const CAREER_ROSTER = CLIENTS.map((client) => client.id);
@@ -109,6 +109,8 @@ let careerState = null;
 let careerSessionClientId = "";
 let careerReturnPending = false;
 let careerRetireArmed = false;
+// What the current career client remembers from previous visits.
+let careerMemories = [];
 const INTERACTION_STATES = Object.freeze({
 	IDLE: "idle",
 	PRESENTING: "presenting",
@@ -389,6 +391,7 @@ function recordChoiceOutcome(question, choice, outcome) {
 		ethicsNote: choice.ethicsNote || "",
 		archetype: choice.archetype || "",
 		callbackLine: choice.callback || "",
+		recallLine: choice.recall || "",
 		isFollowUp: Boolean(question.isFollowUp),
 		followedUp: false,
 		badness: outcome.badnessGained,
@@ -797,12 +800,20 @@ function buildQuestionsForRun(count = activeMode.questionCount) {
 function leadInForQuestion() {
 	if (idx === 0) {
 		const returning = careerSessionClientId && careerState ? Career.returningLine(careerState, careerSessionClientId) : "";
-		if (returning) return { type: "opening", line: returning };
+		if (returning) {
+			// A returning client opens by bringing up the most memorable thing from past visits.
+			const recall = selectOpeningRecall({ memories: careerMemories, random: Math.random });
+			if (!recall) return { type: "opening", line: returning };
+			callbackLog.push(recall);
+			const greeting = Career.returningGreeting(careerState, careerSessionClientId, recall);
+			return { type: "callback", line: `${greeting} ${recall.line}` };
+		}
 		return activeClient?.opening ? { type: "opening", line: activeClient.opening } : null;
 	}
 	if (questions[idx]?.isFollowUp) return null;
 	const callback = selectCallback({
 		history: runHistory,
+		memories: careerMemories,
 		questionNumber: idx + 1,
 		previous: callbackLog,
 		random: Math.random
@@ -1262,7 +1273,7 @@ function clientCloseoutMarkup(summary) {
 	const callbackMarkup = callbacks.length
 		? `<p class="clientCallbacksTitle">What ${escapeHTML(summary.client.name)} brought back up</p>
 			<ul class="clientCallbacks">${callbacks
-				.map((item) => `<li><q>${escapeHTML(item.line)}</q><small>Recalling question ${item.sourceQuestionNumber}</small></li>`)
+				.map((item) => `<li><q>${escapeHTML(item.line)}</q><small>${item.fromWeek ? `Remembering week ${item.fromWeek}` : `Recalling question ${item.sourceQuestionNumber}`}</small></li>`)
 				.join("")}</ul>`
 		: `<p class="resultEmpty">${escapeHTML(summary.client.name)} didn’t bring anything back up. Yet.</p>`;
 	const followUps = summary.followUps || [];
@@ -1451,6 +1462,7 @@ async function startGame(options = {}) {
 	syncStartSelections();
 	careerSessionClientId = careerClientId;
 	careerReturnPending = false;
+	careerMemories = careerClientId ? Career.clientMemories(careerState, careerClientId) : [];
 	if (careerClientId) {
 		activeMode = getMode(careerState.modeId);
 		activeClient = getClient(careerClientId);
@@ -1629,7 +1641,8 @@ function recordCareerSession(summary) {
 		completed: summary.completed,
 		totalViolations: summary.totalViolations,
 		weighted: summary.weighted,
-		moodRemaining: summary.moodRemaining
+		moodRemaining: summary.moodRemaining,
+		memories: pickMemories(runHistory)
 	}, CAREER_ROSTER, Math.random);
 	careerState = state;
 	careerSessionClientId = "";
@@ -1673,6 +1686,13 @@ function careerResultMarkup(summary) {
 			</article>
 		</section>
 	`;
+}
+
+function memoryTeaser(record) {
+	const memory = record?.memories?.[0];
+	if (!memory?.response) return "";
+	const text = memory.response.replace(/^[“"]|[”"]$/g, "");
+	return text.length > 70 ? `${text.slice(0, 67).trimEnd()}…` : text;
 }
 
 function careerClientStatus(record) {
@@ -1737,6 +1757,7 @@ function renderCareerScreen() {
 						<span class="careerClientName"><span aria-hidden="true">${escapeHTML(client.avatar)}</span> ${escapeHTML(client.name)}</span>
 						<small>${escapeHTML(client.backstory)}</small>
 						<span class="careerClientStatus">${escapeHTML(careerClientStatus(careerState.clients[id]))}</span>
+						${memoryTeaser(careerState.clients[id]) ? `<span class="careerClientMemory">Remembers you said: “${escapeHTML(memoryTeaser(careerState.clients[id]))}”</span>` : ""}
 					</button>
 				</li>`;
 			}).join("")}</ul>

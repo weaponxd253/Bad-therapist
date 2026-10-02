@@ -20,7 +20,9 @@
 		// A returning client starts at the mood they left with, plus some time-heals recovery.
 		trustRecovery: 25,
 		minimumTrust: 30,
-		maximumWalkouts: 2
+		maximumWalkouts: 2,
+		// Memories kept per client across visits, newest first.
+		memoryLimit: 4
 	});
 
 	const ENDINGS = Object.freeze({
@@ -66,7 +68,26 @@
 	}
 
 	function emptyClientRecord() {
-		return { visits: 0, trust: 100, walkouts: 0, left: false, lastWeek: 0 };
+		return { visits: 0, trust: 100, walkouts: 0, left: false, lastWeek: 0, memories: [] };
+	}
+
+	function normalizeMemory(value) {
+		if (!value || typeof value !== "object" || typeof value.archetype !== "string") return null;
+		return {
+			week: Number.isInteger(value.week) ? value.week : 0,
+			questionId: typeof value.questionId === "string" ? value.questionId : "",
+			archetype: value.archetype,
+			topic: typeof value.topic === "string" ? value.topic : "",
+			response: typeof value.response === "string" ? value.response : "",
+			badness: Number.isInteger(value.badness) ? value.badness : 0,
+			moodLost: Number.isFinite(value.moodLost) ? value.moodLost : 0,
+			recallLine: typeof value.recallLine === "string" ? value.recallLine : ""
+		};
+	}
+
+	// Memories a client keeps of the therapist across visits, newest first.
+	function clientMemories(state, clientId) {
+		return clientRecord(state, clientId).memories || [];
 	}
 
 	function clientRecord(state, clientId) {
@@ -119,6 +140,14 @@
 		return RETURNING_LINES.guarded;
 	}
 
+	// The greeting for a returning client, toned to match what they bring up: a warm
+	// "last time was okay" never introduces a memory of a bad answer.
+	function returningGreeting(state, clientId, recall = null) {
+		const line = returningLine(state, clientId);
+		if (line === RETURNING_LINES.warm && recall && recall.archetype !== "helpful") return RETURNING_LINES.neutral;
+		return line;
+	}
+
 	function endCareer(state, reason) {
 		return { ...state, status: "ended", endReason: ENDINGS[reason] ? reason : "quit", waitlist: [] };
 	}
@@ -138,9 +167,13 @@
 		const trust = completed
 			? clamp((session.moodRemaining ?? 100) + RULES.trustRecovery, RULES.minimumTrust, 100)
 			: RULES.minimumTrust;
+		const newMemories = (Array.isArray(session.memories) ? session.memories : [])
+			.map((memory) => normalizeMemory({ ...memory, week: state.week }))
+			.filter(Boolean);
+		const memories = [...newMemories, ...(previous.memories || [])].slice(0, RULES.memoryLimit);
 		const clients = {
 			...state.clients,
-			[session.clientId]: { visits: previous.visits + 1, trust, walkouts, left, lastWeek: state.week }
+			[session.clientId]: { visits: previous.visits + 1, trust, walkouts, left, lastWeek: state.week, memories }
 		};
 
 		let next = {
@@ -211,7 +244,10 @@
 			trust: Number.isFinite(record?.trust) ? clamp(record.trust, RULES.minimumTrust, 100) : 100,
 			walkouts: Number.isInteger(record?.walkouts) && record.walkouts >= 0 ? record.walkouts : 0,
 			left: record?.left === true,
-			lastWeek: Number.isInteger(record?.lastWeek) ? record.lastWeek : 0
+			lastWeek: Number.isInteger(record?.lastWeek) ? record.lastWeek : 0,
+			memories: Array.isArray(record?.memories)
+				? record.memories.map(normalizeMemory).filter(Boolean).slice(0, RULES.memoryLimit)
+				: []
 		}]));
 	}
 
@@ -280,6 +316,8 @@
 		buildWaitlist,
 		startingMood,
 		returningLine,
+		returningGreeting,
+		clientMemories,
 		applySession,
 		endCareer,
 		careerSummary,
