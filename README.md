@@ -14,6 +14,7 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Themed session packs with authored case-file previews, in-run context, and closing notes
 - A named client for every session, with a backstory, opening line, and walkout or closing farewell
 - Client callbacks: later in a session, the client brings up something you said earlier
+- Branching follow-ups: some bad answers make the client push back right away, and you can repair it or double down
 - Eight persistent, non-blocking achievements
 - Four shuffled responses for every question
 - Badness, ethics-violation, and client-mood scoring
@@ -71,6 +72,7 @@ game-modes.js          Declarative game mode configuration
 session-packs.js       Declarative themed session pack configuration
 clients.js             Named client personas for each pack
 callbacks.js           When and how clients bring up earlier answers
+follow-ups.js          When a bad answer branches into a client pushback
 achievements.js        Achievement evaluation and progress
 scoring.js             Scoring and violation rules
 persistence.js         Versioned local records

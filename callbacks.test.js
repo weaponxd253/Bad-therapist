@@ -99,3 +99,9 @@ const helpfulHistory = [1, 2, 3].map((n) => entry(n, { archetype: "helpful", bad
 const firstHelpful = selectCallback({ history: helpfulHistory, questionNumber: 4, random: always });
 const secondHelpful = selectCallback({ history: helpfulHistory, questionNumber: 6, previous: [firstHelpful], random: always });
 assert.notEqual(secondHelpful.template, firstHelpful.template, "generic lines are not repeated while another remains");
+
+assert.equal(
+	selectCallback({ history: [entry(1, { followedUp: true })], questionNumber: 3, random: always }),
+	null,
+	"answers the client already pushed back on in a follow-up are not called back"
+);
