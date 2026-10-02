@@ -36,8 +36,7 @@
 			label: "Maximum Menace",
 			description: "Use only badness-3 responses for at least four questions.",
 			evaluate: (summary) =>
-				summary.completed &&
-				summary.questionsAnswered > 0 &&
+				summary.questionsAnswered >= 4 &&
 				summary.badnessThreeCount === summary.questionsAnswered
 		}),
 		Object.freeze({

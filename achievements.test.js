@@ -63,7 +63,32 @@ assert.deepEqual(
 	["lastNerve", "maximumMenace", "mineSweeper"]
 );
 
-const walkout = achievements.evaluateRun(memoryStorage(), summary({
+const menaceWalkout = achievements.evaluateRun(memoryStorage(), summary({
+	completed: false,
+	questionsAnswered: 5,
+	badnessThreeCount: 5,
+	moodRemaining: 4
+}));
+assert.ok(
+	menaceWalkout.newUnlocks.some((item) => item.id === "maximumMenace"),
+	"maximum menace unlocks when an all-badness-3 run ends early"
+);
+const menaceTooShort = achievements.evaluateRun(memoryStorage(), summary({
+	completed: false,
+	questionsAnswered: 3,
+	badnessThreeCount: 3,
+	moodRemaining: 4
+}));
+assert.ok(!menaceTooShort.newUnlocks.some((item) => item.id === "maximumMenace"));
+const menaceMixed = achievements.evaluateRun(memoryStorage(), summary({
+	completed: false,
+	questionsAnswered: 6,
+	badnessThreeCount: 5,
+	moodRemaining: 4
+}));
+assert.ok(!menaceMixed.newUnlocks.some((item) => item.id === "maximumMenace"));
+
+const walkout =achievements.evaluateRun(memoryStorage(), summary({
 	completed: false,
 	questionsAnswered: 4,
 	moodRemaining: 0
