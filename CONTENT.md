@@ -14,6 +14,8 @@ New questions must follow the schema in `questions.js` and pass `content-schema.
 - Avoid jokes targeting protected traits or vulnerable identities.
 - Structure most response sets around four distinct roles: ethical/helpful, silly bad, emotionally harmful, and ethics disaster.
 - Vary answer length and tone so the helpful response is not mechanically obvious.
+- Give each question’s signature worst choice a `callback`: a line the client might say later in the session when bringing that answer back up. Write it in the client’s voice, so it works as an opener before any other question.
+- Keep client-facing copy free of gendered pronouns; clients in `clients.js` are referred to by name.
 - Use `moodModifier` only for exceptional balance needs and keep it between -10 and 10.
 
 Run-selection goals are ten unique questions, at least six topics, no more than two questions per topic, and at least three violation categories whenever the pool permits.

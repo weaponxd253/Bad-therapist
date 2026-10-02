@@ -472,6 +472,71 @@ button#start {
 	margin-top: 6px;
 }
 
+.caseFileClient {
+	margin-top: 6px !important;
+	padding-top: 6px;
+	border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.packWaitlist {
+	display: block;
+	margin-top: 4px;
+}
+
+.clientCloseout {
+	padding: 14px 16px;
+	border: 2px solid rgba(0, 0, 0, 0.1);
+	border-radius: 14px;
+	background: rgba(0, 0, 0, 0.03);
+	text-align: left;
+}
+
+.clientCloseout h4 {
+	margin: 2px 0 4px;
+}
+
+.clientCloseout > p {
+	margin: 0;
+}
+
+.clientCallbacksTitle {
+	margin: 12px 0 6px !important;
+	font-weight: 800;
+}
+
+.clientCallbacks {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.clientCallbacks li {
+	display: grid;
+	gap: 2px;
+	padding: 8px 10px;
+	border-left: 4px solid rgba(0, 0, 0, 0.18);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.6);
+}
+
+.clientCallbacks small {
+	opacity: 0.7;
+}
+
+.bubble.leadIn {
+	font-style: italic;
+	opacity: 0.88;
+}
+
+.bubble.leadIn.is-callback {
+	font-style: normal;
+	opacity: 1;
+	border-left: 4px solid #b3541e;
+	background: rgba(179, 84, 30, 0.09);
+}
+
 .bubble {
 	padding: 12px 14px;
 	border-radius: 16px;

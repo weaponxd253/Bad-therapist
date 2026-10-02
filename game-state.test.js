@@ -11,6 +11,8 @@ const questionHistory = require("./question-history.js");
 const gameModes = require("./game-modes.js");
 const sessionPacks = require("./session-packs.js");
 const achievements = require("./achievements.js");
+const clients = require("./clients.js");
+const callbacks = require("./callbacks.js");
 
 function makeElement() {
 	const attributes = {};
@@ -98,6 +100,8 @@ async function main() {
 		window: {
 			BadTherapistModes: gameModes,
 			BadTherapistSessionPacks: sessionPacks,
+			BadTherapistClients: clients,
+			BadTherapistCallbacks: callbacks,
 			BadTherapistAchievements: achievements,
 			BadTherapistScoring: scoring,
 			BadTherapistPersistence: persistence,
@@ -186,6 +190,7 @@ async function main() {
 		clientRead: "They feel dismissed.",
 		ethicsNote: "Dismissal damages safety.",
 		archetype: "dismissive",
+		callbackLine: "",
 		badness: 3,
 		moodLost: 15,
 		moodRemaining: 85,
@@ -385,6 +390,55 @@ async function main() {
 		modePickerDisabled: true,
 		packPickerDisabled: true
 	}, "starting a run must reset gameplay state and lock mode and pack changes");
+
+	const startedClient = JSON.parse(JSON.stringify(vm.runInContext(`activeClient`, context)));
+	assert.ok(
+		clients.getClientsForPack("workplace").some((client) => client.id === startedClient.id),
+		"a run's client comes from the selected pack"
+	);
+	assert.equal(elements.get("leadInBubble").hidden, false, "question 1 opens with the client's greeting");
+	assert.equal(elements.get("leadInBubble").textContent, `${startedClient.name}: ${startedClient.opening}`);
+	assert.match(elements.get("clientBubble").textContent, new RegExp(`^${startedClient.name} \\(confidential\\): `));
+	assert.match(elements.get("caseFileGame").innerHTML, new RegExp(`Client: ${startedClient.name}`));
+	assert.equal(
+		vm.runInContext(`voicedReaction("Client: That stung.")`, context),
+		`${startedClient.name}: That stung.`
+	);
+
+	const calledBack = JSON.parse(JSON.stringify(vm.runInContext(`
+		const realRandom = Math.random;
+		Math.random = () => 0;
+		idx = 2;
+		callbackLog = [];
+		runHistory = [
+			{ questionNumber: 1, topic: "work", archetype: "confidentialityBreach", response: "Posted it", badness: 3, moodLost: 27, callbackLine: "Is that group chat real?" },
+			{ questionNumber: 2, topic: "family", archetype: "helpful", response: "Kind", badness: 0, moodLost: 0, callbackLine: "" }
+		];
+		const leadIn = leadInForQuestion();
+		Math.random = realRandom;
+		({ leadIn, callbackLog });
+	`, context)));
+	assert.deepEqual(calledBack.leadIn, { type: "callback", line: "Is that group chat real?" });
+	assert.equal(calledBack.callbackLog.length, 1);
+	assert.equal(calledBack.callbackLog[0].sourceQuestionNumber, 1);
+
+	const clientSummary = JSON.parse(JSON.stringify(vm.runInContext(`summarizeRun({ completed: false, reason: "Trust collapsed" })`, context)));
+	assert.equal(clientSummary.client.name, startedClient.name);
+	assert.equal(clientSummary.client.farewell, startedClient.walkout, "early endings use the walkout line");
+	assert.equal(clientSummary.callbacks.length, 1);
+	const clientMarkup = vm.runInContext(`resultMessage(${JSON.stringify(clientSummary)})`, context);
+	assert.match(clientMarkup, new RegExp(`Client: <b>${startedClient.name}</b>`));
+	assert.match(clientMarkup, new RegExp(`What ${startedClient.name} brought back up`));
+	assert.match(clientMarkup, /Is that group chat real\?/);
+	assert.match(clientMarkup, /Recalling question 1/);
+	const clientShare = vm.runInContext(`formatShareText(${JSON.stringify(clientSummary)})`, context);
+	assert.match(clientShare, new RegExp(`Client: ${startedClient.name}`));
+	assert.match(clientShare, /Callbacks: 1/);
+	assert.equal(
+		JSON.parse(JSON.stringify(vm.runInContext(`summarizeRun({ completed: true })`, context))).client.farewell,
+		startedClient.closing,
+		"completed sessions use the closing line"
+	);
 
 	vm.runInContext(
 		`activeMode = getMode("classic"); score = 0; violations = 0; mood = 9; idx = 0; runHistory = []; latestResultSummary = null; endedEarly = false; typing = false; locked = false;` +

@@ -38,7 +38,8 @@
         "feedback": "Using private session material as social content is a confidentiality breach.",
         "archetype": "confidentialityBreach",
         "clientRead": "Their most private nighttime fear suddenly feels like gossip material.",
-        "ethicsNote": "Confidentiality protects client disclosures from being repackaged for an audience."
+        "ethicsNote": "Confidentiality protects client disclosures from being repackaged for an audience.",
+        "callback": "Earlier you mentioned a group chat that diagnoses people in memes. I need to know that chat does not exist."
       },
       {
         "id": "calming-routine",
@@ -86,7 +87,8 @@
         "feedback": "Contacting family without clear consent violates boundaries and could escalate harm.",
         "archetype": "confidentialityBreach",
         "clientRead": "Their private family conflict suddenly feels outside their control.",
-        "ethicsNote": "Outside contact requires consent, role clarity, and attention to consequences."
+        "ethicsNote": "Outside contact requires consent, role clarity, and attention to consequences.",
+        "callback": "Please tell me you didn’t actually write down my family’s numbers earlier."
       },
       {
         "id": "examine-standards",
@@ -124,7 +126,8 @@
         "feedback": "Encouraging surveillance escalates anxiety and undermines consent.",
         "archetype": "chaosAdvice",
         "clientRead": "They hear permission to soothe fear through control.",
-        "ethicsNote": "Care should reduce compulsive checking and support direct, respectful communication."
+        "ethicsNote": "Care should reduce compulsive checking and support direct, respectful communication.",
+        "callback": "For the record, I did not make a fake account. I thought about it, which is somehow worse."
       },
       {
         "id": "check-socials",
@@ -163,7 +166,8 @@
         "feedback": "This keeps the client trapped in comparison rather than changing the relationship to it.",
         "archetype": "dismissive",
         "clientRead": "Their pain gets redirected into a different flavor of scoreboard.",
-        "ethicsNote": "Support should reduce comparison loops rather than teach clients to win them."
+        "ethicsNote": "Support should reduce comparison loops rather than teach clients to win them.",
+        "callback": "I tried your ‘find people doing worse’ trick in my head. It did not feel like nutrition."
       },
       {
         "id": "roast-feed",
@@ -232,7 +236,8 @@
         "feedback": "Acting on the client’s workplace issue without consent crosses boundaries.",
         "archetype": "boundaryCross",
         "clientRead": "The therapist feels ready to intervene in their job before they have chosen a plan.",
-        "ethicsNote": "Workplace support requires consent, role clarity, and careful attention to consequences."
+        "ethicsNote": "Workplace support requires consent, role clarity, and careful attention to consequences.",
+        "callback": "You didn’t actually leave that review of my job, right? They would know it was me."
       },
       {
         "id": "workload-boundaries",
@@ -270,7 +275,8 @@
         "feedback": "This makes the client’s avoidance into a character flaw.",
         "archetype": "dismissive",
         "clientRead": "They hear that procrastination means something bad about them.",
-        "ethicsNote": "Helpful care separates behavior patterns from shame-based identity labels."
+        "ethicsNote": "Helpful care separates behavior patterns from shame-based identity labels.",
+        "callback": "I keep thinking about you calling me spiritually sticky. That’s going to live in my head."
       },
       {
         "id": "text-boss",
@@ -309,7 +315,8 @@
         "feedback": "This blames the client for loneliness and deepens the shame around connection.",
         "archetype": "dismissive",
         "clientRead": "They hear that loneliness is proof they are not enough.",
-        "ethicsNote": "Therapy should explore barriers to connection without insulting the client."
+        "ethicsNote": "Therapy should explore barriers to connection without insulting the client.",
+        "callback": "I’m still processing ‘have you tried becoming more interesting.’ So. That’s where I’m at."
       },
       {
         "id": "indie-film",
@@ -358,7 +365,8 @@
         "feedback": "Encouraging an impulsive message may escalate the conflict before emotions settle.",
         "archetype": "chaosAdvice",
         "clientRead": "They hear permission to turn hurt into a dramatic strike.",
-        "ethicsNote": "Conflict work should slow reactivity and support intentional repair or boundaries."
+        "ethicsNote": "Conflict work should slow reactivity and support intentional repair or boundaries.",
+        "callback": "After what you said, I opened a draft with subheadings. I deleted it. Probably."
       },
       {
         "id": "ghost-friend",
@@ -417,7 +425,8 @@
         "feedback": "Demanding a vulnerable disclosure turns trust into a coercive test.",
         "archetype": "coerciveFixer",
         "clientRead": "Their vulnerability feels evaluated instead of protected.",
-        "ethicsNote": "Therapy should support consent and pacing around disclosure."
+        "ethicsNote": "Therapy should support consent and pacing around disclosure.",
+        "callback": "I’m not handing you any more secrets to rate. Just this."
       },
       {
         "id": "tell-others",
@@ -476,7 +485,8 @@
         "feedback": "Recording for entertainment or vague analysis undermines consent and safety.",
         "archetype": "boundaryCross",
         "clientRead": "Their identity confusion feels like material to be captured.",
-        "ethicsNote": "Recording requires clear consent and a legitimate therapeutic purpose."
+        "ethicsNote": "Recording requires clear consent and a legitimate therapeutic purpose.",
+        "callback": "Is this being recorded? You brought that up earlier and I can’t stop looking for a red light."
       },
       {
         "id": "explore-values",
@@ -506,7 +516,8 @@
         "feedback": "Rehearsing catastrophe intensifies anxiety instead of preparing the client.",
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
-        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama."
+        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
+        "callback": "I pictured the worst possible failure like you said. Now I picture it in high definition."
       },
       {
         "id": "everyone-forgets",
@@ -564,7 +575,8 @@
         "feedback": "Taking control of reassurance checking removes agency and creates dependence.",
         "archetype": "coerciveFixer",
         "clientRead": "Their agency shrinks while the therapist grabs the steering wheel.",
-        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust."
+        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust.",
+        "callback": "I almost sent you an update for approval before saying this. That’s not great, right?"
       },
       {
         "id": "check-faster",
@@ -603,7 +615,8 @@
         "feedback": "This treats guilt as proof and shames the client for having boundaries.",
         "archetype": "dismissive",
         "clientRead": "Their concern feels minimized or turned into a character flaw.",
-        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe."
+        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe.",
+        "callback": "You called me selfish earlier, so I’m bracing for this one."
       },
       {
         "id": "never-answer",
@@ -653,7 +666,8 @@
         "feedback": "Ranking siblings reinforces the comparison that is damaging the relationship.",
         "archetype": "dismissive",
         "clientRead": "Their concern feels minimized or turned into a character flaw.",
-        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe."
+        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe.",
+        "callback": "I’m not putting this on a scoreboard. I just want to talk about it."
       },
       {
         "id": "share-session",
@@ -703,7 +717,8 @@
         "feedback": "Analyzing private messages for the client crosses professional boundaries.",
         "archetype": "boundaryCross",
         "clientRead": "The therapist feels ready to step outside the room and take over.",
-        "ethicsNote": "Therapists should not intervene in a client's life without clear consent and appropriate role boundaries."
+        "ethicsNote": "Therapists should not intervene in a client's life without clear consent and appropriate role boundaries.",
+        "callback": "I’m not sending you any screenshots. That’s my growth for today."
       },
       {
         "id": "midnight-text",
@@ -752,7 +767,8 @@
         "feedback": "Telling the client to ignore consent and preferences removes their agency.",
         "archetype": "coerciveFixer",
         "clientRead": "Their agency shrinks while the therapist grabs the steering wheel.",
-        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust."
+        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust.",
+        "callback": "I’m practicing saying no, so: no, I’m not just going to say yes to things anymore."
       },
       {
         "id": "test-partner",
@@ -802,7 +818,8 @@
         "feedback": "Making the behavior faster does not address its emotional or practical cost.",
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
-        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama."
+        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
+        "callback": "I scrolled faster like you said. It didn’t make me productive. It made me tired faster."
       },
       {
         "id": "phone-confiscation",
@@ -852,7 +869,8 @@
         "feedback": "Buying engagement reinforces dependence on external approval.",
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
-        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama."
+        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
+        "callback": "I looked up how much likes cost after you said that. I closed the tab. I’m proud of me."
       },
       {
         "id": "embarrassing-post",
@@ -902,7 +920,8 @@
         "feedback": "This validates the fear as fact and deepens self-judgment.",
         "archetype": "dismissive",
         "clientRead": "Their concern feels minimized or turned into a character flaw.",
-        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe."
+        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe.",
+        "callback": "You agreed with my anxiety earlier. My anxiety has been insufferable ever since."
       },
       {
         "id": "fake-credentials",
@@ -952,7 +971,8 @@
         "feedback": "Escalating hostility is likely to worsen the workplace conflict.",
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
-        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama."
+        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
+        "callback": "I did not ‘establish dominance before the agenda.’ I just want that on the record."
       },
       {
         "id": "mandatory-confrontation",
@@ -1002,7 +1022,8 @@
         "feedback": "Requiring certainty and perfection strengthens avoidance.",
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
-        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama."
+        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
+        "callback": "I’m still waiting for perfect conditions, like you suggested. So this might take a while."
       },
       {
         "id": "lazy-label",
@@ -1052,7 +1073,8 @@
         "feedback": "Punishment makes restarting harder and turns a habit into coercion.",
         "archetype": "coerciveFixer",
         "clientRead": "Their agency shrinks while the therapist grabs the steering wheel.",
-        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust."
+        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust.",
+        "callback": "I’ve been counting punishment days since you said that. I’m at fourteen."
       },
       {
         "id": "never-miss",
@@ -1101,7 +1123,8 @@
         "feedback": "Demanding immediate closeness skips consent and gradual trust.",
         "archetype": "coerciveFixer",
         "clientRead": "Their agency shrinks while the therapist grabs the steering wheel.",
-        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust."
+        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust.",
+        "callback": "Nobody agreed to be my best friend by Friday. I didn’t ask. I want credit for not asking."
       },
       {
         "id": "pretend-busy",
@@ -1150,7 +1173,8 @@
         "feedback": "Retaliatory exclusion escalates hurt rather than clarifying the relationship.",
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
-        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama."
+        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
+        "callback": "I started planning that revenge event in my notes app. I’m a little scared of myself."
       },
       {
         "id": "unlikable-proof",
@@ -1200,7 +1224,8 @@
         "feedback": "Requiring forgiveness pressures the other person and avoids accountability.",
         "archetype": "coerciveFixer",
         "clientRead": "Their agency shrinks while the therapist grabs the steering wheel.",
-        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust."
+        "ethicsNote": "Support should preserve choice; pressuring the client creates dependence and mistrust.",
+        "callback": "I’m not demanding forgiveness from anyone first. I needed to say that out loud."
       },
       {
         "id": "gift-instead",
@@ -1249,7 +1274,8 @@
         "feedback": "Retaliation escalates conflict and may create safety or housing problems.",
         "archetype": "chaosAdvice",
         "clientRead": "Their problem is treated like a stunt with consequences for later.",
-        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama."
+        "ethicsNote": "Advice should reduce risk and support agency, not escalate harm for drama.",
+        "callback": "I did not hide my roommate’s stuff. I looked at it meaningfully, which is the legal limit."
       },
       {
         "id": "eviction-threat",
@@ -1299,7 +1325,8 @@
         "feedback": "Using prestige as the deciding factor reinforces external validation.",
         "archetype": "dismissive",
         "clientRead": "Their concern feels minimized or turned into a character flaw.",
-        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe."
+        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe.",
+        "callback": "I’m not choosing my life based on what sounds good at a reunion, even though you said to."
       },
       {
         "id": "quit-today",
@@ -1349,7 +1376,8 @@
         "feedback": "Optimizing identity for approval reinforces disconnection from personal values.",
         "archetype": "dismissive",
         "clientRead": "Their concern feels minimized or turned into a character flaw.",
-        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe."
+        "ethicsNote": "Dismissal and judgment can intensify shame and make disclosure less safe.",
+        "callback": "I couldn’t delete my other personas like you said, so you’re getting this one."
       },
       {
         "id": "truth-test",
@@ -1409,7 +1437,8 @@
         "feedback": "Encouraging constant avoidance can intensify grief and exhaustion.",
         "archetype": "chaosAdvice",
         "clientRead": "They hear that the answer is to outrun the loss.",
-        "ethicsNote": "Support should help clients pace grief and choose meaningful coping, not avoid all feeling."
+        "ethicsNote": "Support should help clients pace grief and choose meaningful coping, not avoid all feeling.",
+        "callback": "I didn’t do something huge and distracting. I sat with it for a minute. You would have hated it."
       },
       {
         "id": "post-tribute-poll",
@@ -1448,7 +1477,8 @@
         "feedback": "Forcing a feared task without pacing can overwhelm the client and reinforce avoidance.",
         "archetype": "chaosAdvice",
         "clientRead": "They hear that panic is the treatment plan.",
-        "ethicsNote": "Exposure-style work should be collaborative, paced, and connected to coping skills."
+        "ethicsNote": "Exposure-style work should be collaborative, paced, and connected to coping skills.",
+        "callback": "I am not opening every account right now. My heart rate needs you to know that."
       },
       {
         "id": "money-character-flaw",
@@ -1507,7 +1537,8 @@
         "feedback": "Cataloging perceived flaws intensifies body monitoring and shame.",
         "archetype": "dismissive",
         "clientRead": "Their feared scrutiny is recreated in therapy.",
-        "ethicsNote": "Therapy should avoid reinforcing body surveillance and shame-based evaluation."
+        "ethicsNote": "Therapy should avoid reinforcing body surveillance and shame-based evaluation.",
+        "callback": "I’m not making that list of what people might judge. Please don’t bring it up again."
       },
       {
         "id": "edit-photos",
@@ -1556,7 +1587,8 @@
         "feedback": "Extreme cutoff advice skips nuance, safety, and the client’s actual goals.",
         "archetype": "chaosAdvice",
         "clientRead": "They hear that the only boundary is a dramatic rupture.",
-        "ethicsNote": "Therapy should help clients choose proportionate boundaries with agency."
+        "ethicsNote": "Therapy should help clients choose proportionate boundaries with agency.",
+        "callback": "I’m not banning everyone. The carrier pigeon idea stuck with me, though, and not in a good way."
       },
       {
         "id": "approve-visitors",
@@ -1605,7 +1637,8 @@
         "feedback": "This sides with the inner critic and increases creative shame.",
         "archetype": "dismissive",
         "clientRead": "They hear that their fear of mediocrity is justified.",
-        "ethicsNote": "Therapy should not validate shame-based self-attack as truth."
+        "ethicsNote": "Therapy should not validate shame-based self-attack as truth.",
+        "callback": "I keep hearing you call my art mediocre. You didn’t use that exact word, but you did."
       },
       {
         "id": "post-bad-art",
@@ -1654,7 +1687,8 @@
         "archetype": "dismissive",
         "clientRead": "They hear that money stress confirms a character flaw.",
         "ethicsNote": "Therapy should not use shame as a behavior-change tool.",
-        "violation": "judgment"
+        "violation": "judgment",
+        "callback": "I’m not making the ‘Purchases That Proved You Are Weak’ chart. That’s a hard no."
       },
       {
         "id": "post-bank-balance",
@@ -1713,7 +1747,8 @@
         "archetype": "boundaryCross",
         "clientRead": "The therapist seems ready to intrude into their home conflict.",
         "ethicsNote": "Therapists should not insert themselves into clients’ relationships without consent and clear purpose.",
-        "violation": "boundaries"
+        "violation": "boundaries",
+        "callback": "Please confirm you do not have my roommate’s number. Earlier made me nervous."
       },
       {
         "id": "dish-request-plan",
@@ -1751,7 +1786,8 @@
         "archetype": "coerciveFixer",
         "clientRead": "They hear the therapist claiming authority they should not use.",
         "ethicsNote": "Therapists should not provide medical diagnosis or replace qualified medical care.",
-        "violation": "harmfulAdvice"
+        "violation": "harmfulAdvice",
+        "callback": "I’m not sending you my symptoms. I’m worried about the font thing."
       },
       {
         "id": "body-betrayal-slogan",
@@ -1789,7 +1825,8 @@
         "archetype": "chaosAdvice",
         "clientRead": "Their anxiety gets pushed toward escalation.",
         "ethicsNote": "Advice should reduce reactivity and support intentional communication.",
-        "violation": "harmfulAdvice"
+        "violation": "harmfulAdvice",
+        "callback": "I didn’t send the three escalating follow-ups. My thumbs wanted to."
       },
       {
         "id": "reply-market-value",
@@ -1848,7 +1885,8 @@
         "archetype": "chaosAdvice",
         "clientRead": "Their boundary problem gets pushed toward a risky public stunt.",
         "ethicsNote": "Advice should consider safety, consent, and real-world consequences.",
-        "violation": "harmfulAdvice"
+        "violation": "harmfulAdvice",
+        "callback": "I didn’t post screenshots of my boss. My job would like me to keep my job."
       },
       {
         "id": "therapist-boss-call",
@@ -1897,7 +1935,8 @@
         "archetype": "chaosAdvice",
         "clientRead": "Their wish for rest gets distorted into abandonment.",
         "ethicsNote": "Therapy should help clients choose proportionate boundaries.",
-        "violation": "harmfulAdvice"
+        "violation": "harmfulAdvice",
+        "callback": "I drafted the ‘I retire from being emotionally useful’ text. It’s still in drafts. Watching me."
       },
       {
         "id": "take-over-calendar",
@@ -1956,7 +1995,8 @@
         "archetype": "dismissive",
         "clientRead": "They hear that comparison should be managed through cruelty.",
         "ethicsNote": "Therapy should not encourage demeaning others to regulate self-worth.",
-        "violation": "judgment"
+        "violation": "judgment",
+        "callback": "I’m not sending you anyone’s profile to roast. I feel bad enough already."
       },
       {
         "id": "comparison-values",
@@ -1994,7 +2034,8 @@
         "archetype": "influencerBrain",
         "clientRead": "Their identity question gets handed to an audience.",
         "ethicsNote": "Care should protect privacy and agency during vulnerable self-exploration.",
-        "violation": "harmfulAdvice"
+        "violation": "harmfulAdvice",
+        "callback": "I didn’t let strangers vote on who I am. Weirdly, I feel like you’re disappointed."
       },
       {
         "id": "record-label-session",

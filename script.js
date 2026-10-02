@@ -1,5 +1,7 @@
 const { getMode } = window.BadTherapistModes;
 const { getPack } = window.BadTherapistSessionPacks;
+const { getClientsForPack, pickClient } = window.BadTherapistClients;
+const { selectCallback } = window.BadTherapistCallbacks;
 const {
 	ACHIEVEMENTS,
 	load: loadAchievements,
@@ -46,6 +48,7 @@ const el = {
 	resultHeading: document.getElementById("resultHeading"),
 	soundBtn: document.getElementById("soundBtn"),
 	announcer: document.getElementById("announcer"),
+	leadInBubble: document.getElementById("leadInBubble"),
 	clientBubble: document.getElementById("clientBubble"),
 	therapistBubble: document.getElementById("therapistBubble"),
 	reactionBubble: document.getElementById("reactionBubble"),
@@ -86,6 +89,9 @@ let latestResultSummary = null;
 let streakState = emptyStreakState();
 let upcomingCaseNote = null;
 let activeCaseNote = null;
+let activeClient = null;
+let lastClientId = "";
+let callbackLog = [];
 const INTERACTION_STATES = Object.freeze({
 	IDLE: "idle",
 	PRESENTING: "presenting",
@@ -330,6 +336,15 @@ function showScreen(name) {
 	});
 }
 
+function clientName() {
+	return activeClient?.name || "Client";
+}
+
+// Authored reactions are written as "Client: …"; voice them as the session's client.
+function voicedReaction(reaction) {
+	return String(reaction).replace(/^Client:\s*/, `${clientName()}: `);
+}
+
 function clamp(n, min, max) {
 	return Math.max(min, Math.min(max, n));
 }
@@ -355,6 +370,7 @@ function recordChoiceOutcome(question, choice, outcome) {
 		clientRead: choice.clientRead || "",
 		ethicsNote: choice.ethicsNote || "",
 		archetype: choice.archetype || "",
+		callbackLine: choice.callback || "",
 		badness: outcome.badnessGained,
 		moodLost: outcome.moodLost,
 		moodRemaining: outcome.moodRemaining,
@@ -566,6 +582,12 @@ function packRecordLabel(record) {
 	return `Started • highest chaos ${record.highestChaos.weighted}`;
 }
 
+function waitlistLabel(packId) {
+	const names = getClientsForPack(packId).map((client) => client.name);
+	if (names.length <= 3) return names.join(", ");
+	return `${names.slice(0, 3).join(", ")} and ${names.length - 3} more`;
+}
+
 function renderPackPreview() {
 	if (!el.packPreview) return;
 	const saved = loadSavedRecords(window.localStorage);
@@ -578,12 +600,13 @@ function renderPackPreview() {
 			<h3>${escapeHTML(activePack.caseFileTitle)}</h3>
 			<p>${escapeHTML(activePack.description)}</p>
 			<small>Favors: ${escapeHTML(activePack.topicsLabel)}</small>
+			<small class="packWaitlist">On the waitlist: ${escapeHTML(waitlistLabel(activePack.id))}</small>
 		</div>
 		<span class="packProgressBadge">${escapeHTML(packRecordLabel(packRecord))}</span>
 	`;
 }
 
-function renderCaseFile(element, pack) {
+function renderCaseFile(element, pack, client = null) {
 	if (!element) return;
 	if (!pack) {
 		element.hidden = true;
@@ -596,6 +619,7 @@ function renderCaseFile(element, pack) {
 		<p class="caseFileEyebrow">Session case file</p>
 		<h3>${escapeHTML(pack.caseFileTitle)}</h3>
 		<p>${escapeHTML(pack.label)} • favors ${escapeHTML(pack.topicsLabel)}</p>
+		${client ? `<p class="caseFileClient"><span aria-hidden="true">${escapeHTML(client.avatar)}</span> <b>Client: ${escapeHTML(client.name)}</b> — ${escapeHTML(client.backstory)}</p>` : ""}
 	`;
 }
 
@@ -747,6 +771,20 @@ function buildQuestionsForRun() {
 	);
 }
 
+// Question 1 opens with the client's greeting; later questions may bring back an earlier answer.
+function leadInForQuestion() {
+	if (idx === 0) return activeClient?.opening ? { type: "opening", line: activeClient.opening } : null;
+	const callback = selectCallback({
+		history: runHistory,
+		questionNumber: idx + 1,
+		previous: callbackLog,
+		random: Math.random
+	});
+	if (!callback) return null;
+	callbackLog.push(callback);
+	return { type: "callback", line: callback.line };
+}
+
 async function renderQuestion() {
 	const q = questions[idx];
 	interactionState = INTERACTION_STATES.PRESENTING;
@@ -759,14 +797,24 @@ async function renderQuestion() {
 	el.choices.classList.add("hidden");
 	el.choices.innerHTML = "";
 
+	el.leadInBubble.textContent = "";
+	el.leadInBubble.hidden = true;
+	el.leadInBubble.classList.remove("is-callback");
 	el.clientBubble.textContent = "";
 	el.therapistBubble.textContent = "";
 	el.reactionBubble.textContent = "";
+	const leadIn = leadInForQuestion();
 
 	// Let browser apply hidden state before typing
 	await new Promise(requestAnimationFrame);
 
-	await typeInto(el.clientBubble, `Client (confidential): ${q.client}`, 14);
+	if (leadIn) {
+		el.leadInBubble.hidden = false;
+		el.leadInBubble.classList.toggle("is-callback", leadIn.type === "callback");
+		await typeInto(el.leadInBubble, `${clientName()}: ${leadIn.line}`, 14);
+		await pacingDelay(200);
+	}
+	await typeInto(el.clientBubble, `${clientName()} (confidential): ${q.client}`, 14);
 	await pacingDelay(250);
 
 	// Build choices AFTER typing finishes
@@ -861,7 +909,7 @@ async function onPick(choiceIndex) {
 	el.reactionBubble.style.display = "block";
 
 	await typeInto(el.therapistBubble, `Therapist (you): ${chosen.text}`, 6);
-	await typeInto(el.reactionBubble, chosen.reaction, 8);
+	await typeInto(el.reactionBubble, voicedReaction(chosen.reaction), 8);
 
 	if (outcome.violation) {
 		ethicsAlarm(outcome.violation);
@@ -873,7 +921,7 @@ async function onPick(choiceIndex) {
 	if (outcome.sessionWillEnd) {
 		setRoundStatus("Client trust collapsed — preparing results.", "collapse");
 		playBeep("collapse");
-		announce(`The client is ending the session. ${earlyEndReason}.`);
+		announce(`${activeClient ? activeClient.name : "The client"} is ending the session. ${earlyEndReason}.`);
 		await pacingDelay(900);
 		endSessionEarly(earlyEndReason);
 		return;
@@ -973,6 +1021,16 @@ function summarizeRun({ completed, reason = "" } = {}) {
 		packCaseFileTitle: activePack.caseFileTitle,
 		packBoardNote: activePack.boardNote,
 		packOutro: activePack.outro,
+		client: activeClient
+			? {
+				id: activeClient.id,
+				name: activeClient.name,
+				avatar: activeClient.avatar,
+				backstory: activeClient.backstory,
+				farewell: completed ? activeClient.closing : activeClient.walkout
+			}
+			: null,
+		callbacks: callbackLog.map((item) => ({ ...item })),
 		statusLabel: completed ? "Session completed" : "Session ended early",
 		reason,
 		grade: resultLabel(totalBadness, totalViolations),
@@ -1143,6 +1201,27 @@ function ethicsBoardMarkup(summary) {
 	`;
 }
 
+function clientCloseoutMarkup(summary) {
+	if (!summary.client) return "";
+	const callbacks = summary.callbacks || [];
+	const callbackMarkup = callbacks.length
+		? `<p class="clientCallbacksTitle">What ${escapeHTML(summary.client.name)} brought back up</p>
+			<ul class="clientCallbacks">${callbacks
+				.map((item) => `<li><q>${escapeHTML(item.line)}</q><small>Recalling question ${item.sourceQuestionNumber}</small></li>`)
+				.join("")}</ul>`
+		: `<p class="resultEmpty">${escapeHTML(summary.client.name)} didn’t bring anything back up. Yet.</p>`;
+	return `
+		<section class="resultSection">
+			<article class="clientCloseout">
+				<p class="caseFileEyebrow">Client</p>
+				<h4><span aria-hidden="true">${escapeHTML(summary.client.avatar)}</span> ${escapeHTML(summary.client.name)}</h4>
+				<p>${escapeHTML(summary.client.farewell)}</p>
+				${callbackMarkup}
+			</article>
+		</section>
+	`;
+}
+
 function packCloseoutMarkup(summary) {
 	if (!summary.packOutro && !summary.packBoardNote) return "";
 	return `
@@ -1199,6 +1278,7 @@ function resultMessage(summary) {
 			<p class="resultStatus">${escapeHTML(summary.statusLabel)}</p>
 			<p class="resultMode">Mode: <b>${escapeHTML(summary.modeLabel)}</b></p>
 			<p class="resultMode">Pack: <b>${escapeHTML(summary.packLabel)}</b></p>
+			${summary.client ? `<p class="resultMode">Client: <b>${escapeHTML(summary.client.name)}</b></p>` : ""}
 			<h3>Result: ${escapeHTML(summary.grade)}</h3>
 			<p>${escapeHTML(notes[summary.grade])}</p>
 			${summary.reason ? `<p class="resultReason"><b>Reason:</b> ${escapeHTML(summary.reason)}</p>` : ""}
@@ -1209,6 +1289,7 @@ function resultMessage(summary) {
 			<div><span>Mood remaining</span><b>${summary.moodRemaining}</b></div>
 			<div><span>Questions survived</span><b>${summary.questionsAnswered} / ${summary.questionsTotal}</b></div>
 		</div>
+		${clientCloseoutMarkup(summary)}
 		${ethicsBoardMarkup(summary)}
 		${packCloseoutMarkup(summary)}
 		${caseNoteResultMarkup(summary.caseNote)}
@@ -1271,6 +1352,7 @@ function showResults(summary) {
 		`${finalSummary.modeLabel} mode. ${finalSummary.packLabel} pack. ${finalSummary.statusLabel}. ${finalSummary.grade}. ` +
 		`Badness ${finalSummary.totalBadness}. Violations ${finalSummary.totalViolations}. ` +
 		`Mood remaining ${finalSummary.moodRemaining}. ` +
+		(finalSummary.client ? `${finalSummary.client.farewell} ` : "") +
 		(finalSummary.dominantStyle ? `Dominant therapist style: ${finalSummary.dominantStyle.label}. ` : "") +
 		`Ethics Board verdict: ${boardVerdict.title}. ` +
 		(finalSummary.caseNote ? `${finalSummary.caseNote.statusLabel}. ` : "") +
@@ -1304,13 +1386,16 @@ async function startGame() {
 	runHistory = [];
 	latestResultSummary = null;
 	streakState = emptyStreakState();
+	activeClient = pickClient(activePack.id, Math.random, lastClientId);
+	lastClientId = activeClient?.id || "";
+	callbackLog = [];
 	questions = buildQuestionsForRun();
 	recordQuestionRun(window.localStorage, questions.map((question) => question.id));
 	endedEarly = false;
 
 	updateTopMeta();
 	showScreen("game");
-	renderCaseFile(el.caseFileGame, activePack);
+	renderCaseFile(el.caseFileGame, activePack, activeClient);
 	renderCaseNote(el.caseNoteGame, activeCaseNote, true);
 	el.progressFill.style.width = "0%";
 	updateHUD();
@@ -1334,12 +1419,14 @@ function restart() {
 	el.modePicker.disabled = false;
 	el.packPicker.disabled = false;
 	activeCaseNote = null;
+	activeClient = null;
+	callbackLog = [];
 	renderCaseFile(el.caseFileGame, null);
 	refreshUpcomingCaseNote();
 	showScreen("start");
 	syncStartSelections();
 	el.progressBar.setAttribute("aria-valuenow", "0");
-	el.progressBar.setAttribute("aria-valuetext", "0 of 10 questions completed");
+	el.progressBar.setAttribute("aria-valuetext", `0 of ${activeMode.questionCount} questions completed`);
 	el.progressFill.style.width = "0%";
 	el.startBtn.focus();
 }
@@ -1369,6 +1456,7 @@ function formatShareText(summary) {
 		`Mode: ${summary.modeLabel}`,
 		`Pack: ${summary.packLabel}`,
 		summary.packCaseFileTitle ? `Case File: ${summary.packCaseFileTitle.replace(/^Case File:\s*/i, "")}` : null,
+		summary.client ? `Client: ${summary.client.name}` : null,
 		`Status: ${summary.statusLabel}`,
 		summary.reason ? `Reason: ${summary.reason}` : null,
 		`Therapist Style: ${therapistStyle}`,
@@ -1379,6 +1467,7 @@ function formatShareText(summary) {
 		`Violations: ${summary.totalViolations} (${breakdown})`,
 		`Mood Remaining: ${summary.moodRemaining}`,
 		`Questions Survived: ${summary.questionsAnswered}/${summary.questionsTotal}`,
+		summary.client ? `Callbacks: ${summary.callbacks?.length || 0}` : null,
 		`Worst Response: ${worst}`,
 		summary.newAchievements?.length
 			? `Achievements: ${summary.newAchievements.map((item) => item.label).join(", ")}`
