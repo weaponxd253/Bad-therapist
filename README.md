@@ -47,6 +47,14 @@ python -m http.server 8000
 
 Then visit [http://localhost:8000](http://localhost:8000).
 
+## Tests
+
+The tests use Node's built-in test runner (Node 18+) and need no dependencies:
+
+```bash
+npm test
+```
+
 ## Project structure
 
 ```text

@@ -1,0 +1,8 @@
+{
+  "name": "bad-therapist",
+  "private": true,
+  "description": "A browser-based parody game about choosing the worst possible therapy responses.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
