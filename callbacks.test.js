@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const questions = require("./questions.js");
 const { RESPONSE_ARCHETYPES, TOPICS } = require("./content-schema.js");
-const { RULES, TOPIC_PHRASES, ARCHETYPE_LINES, fillTemplate, selectCallback } = require("./callbacks.js");
+const { RULES, TOPIC_PHRASES, ARCHETYPE_LINES, PAST_ARCHETYPE_LINES, fillTemplate, pickMemories, selectCallback, selectOpeningRecall } = require("./callbacks.js");
 
 // Content coverage: every archetype and topic can produce a line, and templates use only {topic}.
 RESPONSE_ARCHETYPES.forEach((archetype) => {
@@ -105,3 +105,54 @@ assert.equal(
 	null,
 	"answers the client already pushed back on in a follow-up are not called back"
 );
+
+// --- Memory across visits ---
+RESPONSE_ARCHETYPES.forEach((archetype) => {
+	assert.ok(PAST_ARCHETYPE_LINES[archetype]?.length >= 2, `${archetype} needs at least two last-visit lines`);
+});
+questions.flatMap((question) => question.choices).forEach((choice) => {
+	if (choice.callback) {
+		assert.doesNotMatch(choice.callback, /\b(this week|this weekend|since you said|since last)\b/i,
+			`in-session callback describes time passing; move it to recall: ${choice.callback}`);
+	}
+});
+
+const sessionHistory = [
+	entry(1, { questionId: "q-a", archetype: "helpful", badness: 0, moodLost: 0 }),
+	entry(2, { questionId: "q-b", moodLost: 25, callbackLine: "You said that earlier and I hated it." }),
+	entry(3, { questionId: "q-c", moodLost: 18, recallLine: "I did not take your advice. Everyone is fine." }),
+	entry(4, { questionId: "q-d", moodLost: 30, isFollowUp: true })
+];
+const memories = pickMemories(sessionHistory);
+assert.equal(memories.length, RULES.memoriesPerVisit);
+assert.deepEqual(memories.map((memory) => memory.questionId), ["q-b", "q-c"], "the most memorable answers are kept, follow-ups skipped");
+assert.equal(memories[0].recallLine, "", "same-session wording like ‘earlier’ is not carried into later visits");
+assert.equal(memories[1].recallLine, "I did not take your advice. Everyone is fine.", "authored recall lines are kept");
+assert.equal(pickMemories([entry(1, { callbackLine: "I’m not doing that. Just so we’re clear." })])[0].recallLine,
+	"I’m not doing that. Just so we’re clear.", "stance lines that work in any session can be recalled");
+
+const pastMemories = memories.map((memory) => ({ ...memory, week: 2 }));
+const opening = selectOpeningRecall({ memories: pastMemories, random: always });
+assert.equal(opening.fromWeek, 2);
+assert.equal(opening.sourceQuestionNumber, null);
+assert.equal(opening.line, "I did not take your advice. Everyone is fine.");
+assert.equal(selectOpeningRecall({ memories: [], random: always }), null, "new clients have nothing to recall");
+// Once stored, q-b (25 mood, no carried line) scores below q-c (18 mood + authored recall bonus).
+const generic = selectOpeningRecall({ memories: [pastMemories[0]], random: always });
+assert.ok(PAST_ARCHETYPE_LINES.chaosAdvice.map((line) => fillTemplate(line, "work")).includes(generic.line),
+	"without an authored recall line, a last-visit template is used");
+
+const pastPick = selectCallback({ history: [], memories: pastMemories, questionNumber: 3, random: always });
+assert.equal(pastPick.fromWeek, 2, "mid-session callbacks can reach back to previous visits");
+assert.equal(
+	selectCallback({ history: [], memories: pastMemories, questionNumber: 3, previous: [opening], random: always }).sourceKey === opening.sourceKey,
+	false,
+	"a memory used in the greeting is not repeated mid-session"
+);
+const freshBeatsStale = selectCallback({
+	history: [entry(1, { moodLost: 30 })],
+	memories: [{ ...pastMemories[1], moodLost: 30, recallLine: "" }],
+	questionNumber: 3,
+	random: always
+});
+assert.equal(freshBeatsStale.fromWeek, null, "this session's answers outweigh equally memorable older ones");
