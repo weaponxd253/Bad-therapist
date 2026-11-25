@@ -30,7 +30,10 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 - Separate persistent records for highest chaos, completed sessions, and completed packs
 - Keyboard controls and skippable typing animation
 - Responsive layout for phones, tablets, and desktop
-- No build process or runtime dependencies
+- Phaser 3 character creator with six body/outfit choices, fifteen standing presets for the cardigan body, and eighteen conversation portraits
+- Connected waiting and therapy rooms, with click-to-walk, keyboard movement, furniture collision, and perspective scaling
+- Locally saved character name and appearance; matching walking and seated previews where sheets are available
+- No build process; Phaser is bundled locally for offline use and GitHub Pages
 
 ## Controls
 
@@ -40,20 +43,35 @@ A browser-based parody game where you play a spectacularly unhelpful therapist. 
 
 ## Run locally
 
-Clone the repository and open `index.html` in a browser:
+Clone the repository and start the local server (Node 18+):
 
 ```bash
 git clone https://github.com/weaponxd253/Bad-therapist.git
 cd Bad-therapist
+npm start
 ```
 
-You can also serve it locally:
+Visit [http://127.0.0.1:8000](http://127.0.0.1:8000). Use an HTTP server rather than opening `index.html` directly, because Phaser loads image assets. The checked-in `vendor/` runtime means no dependency installation or build is needed to play.
+
+You can also use another static server:
 
 ```bash
 python -m http.server 8000
 ```
 
 Then visit [http://localhost:8000](http://localhost:8000).
+
+The opening screen creates your therapist. **Open your practice** enters the waiting room; walk into the back hallway or use **Go to therapy room**. In the therapy room, **Begin a session** opens the existing session and career controls beside the room. **Return to room** preserves the current game. Click accessible floor areas to walk in a straight line, or use arrows / WASD to navigate around furniture. Room buttons also work with keyboard and touch.
+
+## Character assets and expansion
+
+`character-data.js` is the asset manifest: each body has its own standing frame, conversation portraits, and optional `walking`, `seated`, `emotions`, and `regionMask` slots. Missing assets remain `null`; a body never uses another body's animation. Add a sheet entry with its file and grid dimensions, then point the appropriate body slot to it. Walking sheets use four columns and four rows: down, left, right, up. Seated sheets have listening, speaking, note-taking and explaining rows, selectable in the creator and driven by gameplay phases in sessions. Emotional portraits are active for the original vest portrait style; region-mask recoloring remains reserved for future assets.
+
+The supplied art is preserved in `assets/`. Runtime extraction handles fractional cell widths, trims transparent padding, uses a shared scale within each sheet, and aligns all frames at their feet. Rooms use the backgrounds' native 1536 × 1024 coordinates, with furniture footprints, door trigger rectangles, and depth scaling defined in the manifest.
+
+Available now: all six original bodies have walking sheets. Vest and original cardigan bodies also have seated art. Non-original cardigan presets use standing sprites while moving. Portrait hairstyle choices affect only conversation UI because matching walking hairstyles were not supplied. The fifteen supplied presets are complete standing looks, not independently mixable skin, hair, and garment layers. Mask-driven recoloring can be added once aligned masks exist for each animation sheet. See [the asset inventory](assets/README.md) for all eleven additional attachments, their body associations, and the sit/stand transition reference that needs cleanup before use. The creator includes randomize and explicit save buttons as well as automatic saving.
+
+Phaser 3.90.0 is pinned in `package.json`; `vendor/phaser.min.js` and its MIT license are checked in for static hosting. After intentionally updating Phaser, replace the vendored runtime from the installed package as well.
 
 ## Tests
 
@@ -67,6 +85,12 @@ npm test
 
 ```text
 index.html             Page structure
+studio.js              Phaser preview, connected rooms, and existing-game handoff
+studio.css             Character creator and room presentation
+character-data.js      Character assets, saved appearance validation, room geometry
+assets/                Supplied backgrounds and transparent sprite sheets
+vendor/                Local Phaser runtime and license
+tools/serve.js         Local static preview server
 styles.css             Visual design and responsive layout
 script.js              Game state and interactions
 questions.js           Validated question content

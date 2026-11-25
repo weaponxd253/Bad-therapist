@@ -6,10 +6,29 @@
 	<meta name="description" content="Bad Therapist is a parody game about choosing the worst possible therapy responses.">
 	<title>Bad Therapist</title>
 	<link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="studio.css">
 </head>
-<body>
+<body class="studioApp">
+<header class="studioHeader">
+	<div class="studioBrand"><span class="brandMark" aria-hidden="true">Ψ</span> Bad Therapist <small>A practice in poor judgment.</small></div>
+	<nav class="studioSteps" aria-label="Your practice"><span class="current" data-step="studio"><b>1</b> Your therapist</span><span data-step="waiting"><b>2</b> Waiting room</span><span data-step="therapy"><b>3</b> Therapy room</span></nav>
+</header>
+<div id="studioShell" class="studioMain">
+	<div class="studioIntro"><div><p class="studioEyebrow" id="studioEyebrow">Before the questionable advice</p><h1 id="studioTitle">Every practice starts with you.</h1><p id="studioSubtitle">Look the part. The qualifications are another matter.</p></div><button type="button" class="subtleButton" id="resetCharacter">Reset character</button></div>
+	<div class="studioLayout">
+		<section aria-label="Character and room preview">
+			<div class="scenePanel"><div class="sceneBar"><span id="sceneLabel">YOUR NEW PRACTICE</span><span id="sceneMode">Character preview</span></div><div id="phaserStage" role="img" aria-label="Your therapist in a warmly lit office. Choose appearance using the controls beside the preview."><p id="assetStatus" role="status">Opening your practice…</p></div><div class="sceneFooter"><span id="previewCaption">A little warmth. A lot of plausible deniability.</span><div class="poseButtons" id="poseButtons"><button type="button" data-pose="stand" aria-pressed="true">Standing</button><button type="button" data-pose="walk" aria-pressed="false">Walking</button><button type="button" data-pose="sit" aria-pressed="false">Seated</button></div></div></div>
+			<div id="roomControls" hidden><button type="button" class="subtleButton" id="editCharacter">Edit therapist</button><button type="button" class="primaryButton" id="changeRoom">Go to therapy room</button><button type="button" class="primaryButton" id="openPractice" hidden>Begin a session</button></div>
+			<div class="roomStrip"><article class="roomCard"><img src="assets/studio.png" alt="Sunlit office with a bookcase"><div><strong>Your therapist</strong><small>A face clients can trust. Maybe.</small></div></article><article class="roomCard"><img src="assets/waiting.png" alt="Waiting room with reception desk"><div><strong>The waiting room</strong><small>First impressions happen here.</small></div></article><article class="roomCard"><img src="assets/therapy.png" alt="Therapy room with sofa and armchair"><div><strong>The therapy room</strong><small>Where the bad advice begins.</small></div></article></div>
+		</section>
+		<aside class="characterPanel" id="characterPanel" aria-label="Customize your therapist"><div class="panelHeading"><h2>Your therapist</h2><span>CHARACTER FILE</span></div><label class="fieldLabel" for="characterName">Name on the door</label><input id="characterName" maxlength="28" value="Dr. Morgan" autocomplete="off"><div class="sectionLabel"><span>Choose your look</span><small>6 characters</small></div><div id="bodyChoices" class="bodyGrid" role="group" aria-label="Body and outfit"></div><div id="lookSection"><div class="sectionLabel"><span>Standing look</span><small>15 presets</small></div><div id="lookChoices" class="lookGrid" role="group" aria-label="Standing appearance presets"></div></div><div class="sectionLabel"><span>Conversation portrait</span><small>3 styles</small></div><div id="portraitChoices" class="portraitGrid" role="group" aria-label="Conversation portrait"></div><div id="emotionControls" class="emotionControls" hidden><div id="emotionPreview" aria-hidden="true"></div><label for="emotionSelect">Expression preview<select id="emotionSelect"></select></label></div><div id="seatedControls" class="emotionControls" hidden><label for="seatedAction">Seated action</label><select id="seatedAction"><option value="0">Listening</option><option value="1">Speaking</option><option value="2">Taking notes</option><option value="3">Explaining</option></select></div><div class="characterActions"><button type="button" class="subtleButton" id="randomCharacter">Randomize</button><button type="button" class="subtleButton" id="saveCharacter">Save</button></div><p class="assetNote" id="availabilityNote"></p><button type="button" class="primaryButton" id="enterPractice" disabled>Open your practice</button><p class="saveNote" id="saveStatus" role="status">Your character is saved on this device.</p></aside>
+	</div>
+	<aside id="practiceFile" class="practiceFile" aria-label="Therapist file" hidden><h2>THERAPIST FILE</h2><div class="fileContents"><div id="filePortrait" aria-hidden="true"></div><strong id="fileName"></strong><p id="fileOutfit"></p><p id="fileAvailability"></p></div></aside>
+	<footer class="studioBottom"><span>A cozy office. A deeply questionable therapist.</span><span>A parody game · Not therapy or advice</span></footer>
+</div>
+<div class="practiceBanner" id="practiceBanner" hidden><span id="practiceName"></span><button type="button" id="returnToRoom">Return to room</button></div>
 <a class="skipLink" href="#gameContent">Skip to game</a>
-<main class="wrap" id="gameContent" tabindex="-1">
+<main class="wrap" id="gameContent" tabindex="-1" hidden>
 	<section class="card" id="card" aria-labelledby="appTitle">
 		<div class="ethicsOverlay" aria-hidden="true"></div>
 
@@ -174,5 +193,8 @@
 <script src="question-history.js"></script>
 <script src="question-selector.js"></script>
 <script src="script.js"></script>
+<script src="vendor/phaser.min.js"></script>
+<script src="character-data.js"></script>
+<script src="studio.js"></script>
 </body>
 </html>

@@ -3,6 +3,11 @@
   "private": true,
   "description": "A browser-based parody game about choosing the worst possible therapy responses.",
   "scripts": {
+    "dev": "node tools/serve.js",
+    "start": "node tools/serve.js",
     "test": "node --test"
+  },
+  "dependencies": {
+    "phaser": "3.90.0"
   }
 }

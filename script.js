@@ -129,6 +129,8 @@ let typing = false;
 let skipTypingNow = false;
 let skipCurrentSequence = false;
 let interactionState = INTERACTION_STATES.IDLE;
+// Read-only presentation bridge for the Phaser room. Gameplay remains authoritative here.
+window.BadTherapistSessionVisuals = () => interactionState;
 let activeMode = getMode("classic");
 let activePack = getPack("chaos");
 let endedEarly = false;
@@ -2103,6 +2105,7 @@ el.soundBtn.addEventListener("click", () => {
 initializeContent();
 
 document.addEventListener("keydown", (e) => {
+	if (document.getElementById("gameContent")?.hidden) return;
 	if (!el.gameScreen.classList.contains("active")) return;
 
 	const canSkip =

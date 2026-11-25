@@ -1,0 +1,73 @@
+:root { --ink: #efe9d9; --muted: #b7b9a8; --olive: #a9ba85; --line: #41473a; --panel: #242b23; }
+html { background: #171e18; }
+body.studioApp { display: block; padding: 0; margin: 0; background: #171e18; color: var(--ink); font-family: 'Segoe UI', system-ui, sans-serif; }
+.studioApp button { border-radius: 6px; font-size: .9rem; transition: background .15s, border-color .15s; }
+.studioApp button:focus-visible, .studioApp input:focus-visible { outline: 3px solid #d8b679; outline-offset: 3px; }
+.studioHeader { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 4vw; border-bottom: 1px solid var(--line); }
+.studioBrand { display: flex; align-items: center; gap: 13px; font-family: Georgia, serif; font-size: 1.45rem; }
+.brandMark { width: 36px; height: 36px; display: grid; place-items: center; color: #c9af7f; border: 1px solid #7c8065; border-radius: 50%; font-size: 1.6rem; }
+.studioHeader small { color: var(--muted); font-size: .85rem; }
+.studioSteps { display: flex; gap: 26px; color: #909886; font-size: .85rem; }
+.studioSteps span { display: flex; align-items: center; gap: 8px; }
+.studioSteps b { font-weight: 400; border: 1px solid #68715a; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; }
+.studioSteps .current { color: var(--ink); }.studioSteps .current b { background: #afbd8e; color: #20281c; }
+.studioMain { max-width: 1510px; margin: 0 auto; padding: 36px 4vw 20px; }
+.studioEyebrow { text-transform: uppercase; letter-spacing: .17em; font-size: .75rem; color: var(--olive); margin: 0 0 10px; }
+.studioIntro { display: flex; justify-content: space-between; gap: 20px; align-items: end; margin-bottom: 25px; }
+.studioIntro h1 { font: 400 clamp(2rem, 3vw, 3rem)/1.12 Georgia, serif; margin: 0 0 10px; letter-spacing: -.03em; }
+.studioIntro p:not(.studioEyebrow) { color: var(--muted); margin: 0; font-size: .95rem; }
+.subtleButton { background: transparent; color: #ced0bf; border: 1px solid #535d48; }
+.studioLayout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 24px; align-items: start; }
+.scenePanel { background: #101610; border: 1px solid #576047; border-radius: 10px; overflow: hidden; }
+.sceneBar { padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #293024; font-size: .8rem; }
+.sceneBar span:last-child { color: #c9c3aa; }
+#phaserStage { width: 100%; aspect-ratio: 3 / 2; position: relative; background: #1e251c; }
+#phaserStage canvas { display: block; }
+.sceneFooter { min-height: 55px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: .8rem; color: var(--muted); }
+.poseButtons { display: flex; gap: 5px; }.poseButtons button { background: transparent; color: #c6c8b6; padding: 6px 10px; min-height: 34px; font-size: .8rem; border: 1px solid transparent; }
+.poseButtons button[aria-pressed=true] { background: #424d35; border-color: #677554; color: #fff7e2; }
+.characterPanel { padding: 23px; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; }
+.panelHeading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }.panelHeading h2 { font: 400 1.5rem Georgia, serif; margin: 0; }.panelHeading span { color: var(--olive); font-size: .75rem; }
+.fieldLabel { display: block; color: #d7d7c7; margin-bottom: 9px; font-size: .85rem; }
+#characterName { display: block; width: 100%; border: 1px solid #59604d; border-radius: 5px; background: #192018; color: #f1eada; padding: 12px; font: inherit; font-size: 1rem; margin-bottom: 22px; }
+.sectionLabel { display: flex; justify-content: space-between; margin: 20px 0 10px; font-size: .85rem; }.sectionLabel small { color: var(--muted); font-size: .75rem; }
+.bodyGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }.bodyChoice { padding: 5px !important; background: #1a211b; border: 1px solid #46513d !important; color: #d6d6c4; display: flex; flex-direction: column; align-items: center; }
+.bodyChoice canvas { width: 100%; height: 80px; object-fit: contain; image-rendering: pixelated; }.bodyChoice span { font-size: .7rem; margin: 4px 0; }
+.bodyChoice[aria-pressed=true], .portraitChoice[aria-pressed=true], .lookChoice[aria-pressed=true] { border-color: #c2d197 !important; background: #3b4831; box-shadow: inset 0 0 0 1px #c2d197; }
+.portraitGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }.portraitChoice { background: #1a211b; border: 1px solid #46513d !important; padding: 4px !important; }.portraitChoice canvas { width: 100%; height: 68px; object-fit: contain; image-rendering: pixelated; }
+.lookGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }.lookChoice { padding: 4px !important; background: #1a211b; border: 1px solid #46513d !important; }.lookChoice canvas { width: 100%; height: 58px; object-fit: contain; image-rendering: pixelated; }
+.assetNote { color: #afb59f; font-size: .78rem; line-height: 1.5; margin: 14px 0; }.primaryButton { width: 100%; background: #b7c696; color: #1c2818; padding: 14px 16px; font-weight: 600; border: 1px solid #c7d5a9 !important; }.primaryButton:hover { background: #d0dcb5; }.primaryButton:disabled { opacity: .5; cursor: wait; }
+.saveNote { margin: 10px 0 0; color: #9fa88d; text-align: center; font-size: .75rem; }
+.roomStrip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }.roomCard { background: #242c22; padding: 13px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 7px; }.roomCard img { width: 85px; height: 60px; object-fit: cover; border-radius: 4px; }.roomCard strong { display: block; font: 400 1rem Georgia, serif; margin-bottom: 5px; }.roomCard small { color: var(--muted); font-size: .75rem; }
+.studioBottom { display: flex; justify-content: space-between; color: #8f9982; font-size: .75rem; margin-top: 25px; padding-bottom: 10px; }
+.studioLayout:has(#characterPanel[hidden]) { grid-template-columns: minmax(0, 1fr) 245px; max-width: 1200px; margin: auto; }
+.controlIcon { width: 30px; height: 30px; object-fit: contain; vertical-align: middle; margin-right: 8px; image-rendering: pixelated; }
+.sectionLabel { align-items: center; }.sectionLabel .controlIcon { width: 25px; height: 25px; margin-right: 5px; }.sectionLabel small { margin-left: auto; }
+.characterActions { display: flex; gap: 8px; margin: 12px 0; }.characterActions button { flex: 1; font-size: .8rem; padding: 8px; }
+.emotionControls { display: flex; align-items: center; gap: 10px; margin: 14px 0; font-size: .85rem; }.emotionControls select { width: 100%; background: #192018; color: var(--ink); border: 1px solid #59604d; padding: 8px; font: inherit; }
+#emotionPreview canvas { width: 72px; height: 72px; image-rendering: pixelated; }
+.practiceFile { background: url('assets/clipboard.png') center / 100% 100% no-repeat; aspect-ratio: 1086 / 1448; color: #563c2c; padding: 19% 12% 10%; position: relative; text-align: center; }
+.practiceFile h2 { position: absolute; top: 15.5%; left: 15%; right: 15%; font: 600 .9rem Georgia,serif; color: #f7dfb5; margin: 0; }
+.practiceFile .fileContents { position: absolute; top: 29%; left: 13%; right: 13%; font-size: .85rem; line-height: 1.5; }.practiceFile p { margin: 5px 0; }.practiceFile canvas { width: 88px; height: 88px; object-fit: contain; image-rendering: pixelated; }.practiceFile strong { overflow-wrap: anywhere; }
+.sessionActive .studioLayout:has(#characterPanel[hidden]) { grid-template-columns: minmax(0,1fr); }.sessionActive .practiceFile { display: none; }
+@media (max-width: 740px) { .studioLayout:has(#characterPanel[hidden]) { grid-template-columns: minmax(0,1fr); }.practiceFile { width: 245px; margin: auto; } }
+.sessionActive { display: grid !important; grid-template-columns: minmax(0, 1.1fr) minmax(400px, 1fr); align-items: start; }
+.sessionActive .studioHeader, .sessionActive .practiceBanner { grid-column: 1 / -1; }
+.sessionActive .studioHeader { grid-row: 1; }
+.sessionActive .practiceBanner { grid-row: 2; }
+.sessionActive #studioShell { grid-column: 1; grid-row: 3; }
+.sessionActive #gameContent { grid-column: 2; grid-row: 3; }
+.sessionActive .studioMain { width: 100%; padding: 24px; position: sticky; top: 0; }
+.sessionActive .studioIntro, .sessionActive .roomStrip, .sessionActive .studioBottom, .sessionActive #roomControls { display: none; }
+.sessionActive .wrap { margin: 0; width: 100%; }
+.sessionActive .modePicker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sessionActive .packPicker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sessionActive .modeOption { min-width: 0; overflow-wrap: anywhere; }
+#practiceName { display: flex; align-items: center; gap: 12px; }#practiceName canvas { width: 42px; height: 52px; object-fit: contain; image-rendering: pixelated; }
+#roomControls { padding: 18px 0 0; display: flex; gap: 10px; flex-wrap: wrap; }#roomControls button { width: auto; }.roomHelp { color: var(--muted); font-size: .85rem; line-height: 1.6; }
+.studioApp .wrap { margin: 24px auto; padding: 16px; width: min(940px, 100%); color: #1b1b23; }.studioApp .card { background: #f1e8d6; }.practiceBanner { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--ink); padding: 10px 4vw; border-bottom: 1px solid var(--line); }.practiceBanner button { color: var(--ink); background: #35402e; }
+@media (max-width: 1050px) { .studioLayout { grid-template-columns: minmax(0,1fr) 290px; gap: 16px; }.characterPanel { padding: 16px; }.studioHeader small { display: none; }.roomCard img { width: 55px; height: 45px; } }
+@media (max-width: 740px) { .studioHeader { padding: 16px 5vw; }.studioBrand { font-size: 1.2rem; }.studioSteps { gap: 10px; }.studioSteps span { font-size: 0; }.studioSteps b { font-size: .75rem; }.studioMain { padding: 25px 5vw 15px; }.studioLayout { grid-template-columns: 1fr; }.studioIntro { align-items: start; }.studioIntro .subtleButton { padding: 8px; font-size: .75rem; }.characterPanel { padding: 20px; }.bodyGrid { grid-template-columns: repeat(6, 1fr); }.bodyChoice canvas { height: 70px; }.bodyChoice span { font-size: .6rem; }.portraitChoice canvas { height: 75px; }.roomStrip { gap: 8px; }.roomCard { padding: 8px; display: block; }.roomCard img { width: 100%; height: 55px; margin-bottom: 8px; }.roomCard strong { font-size: .85rem; }.roomCard small { font-size: .7rem; }.sceneFooter { flex-wrap: wrap; }.studioBottom { gap: 20px; line-height: 1.5; } }
+@media (max-width: 900px) { .sessionActive { grid-template-columns: minmax(0, 1fr); }.sessionActive .studioMain { position: static; padding: 16px; max-width: 640px; }.sessionActive .wrap { max-width: 940px; margin: auto; }.sessionActive #gameContent { grid-column: 1; grid-row: 4; } }
+@media (max-width: 480px) { .bodyGrid { grid-template-columns: repeat(3, 1fr); }.bodyChoice span { font-size: .75rem; } }
+@media (prefers-reduced-motion: reduce) { .studioApp button { transition: none; } }
